@@ -109,7 +109,7 @@ export default function SearchResultsScreen() {
                     <Badge
                       label={`${featured.etaMinutes} MIN DROP`}
                       color={colors.playportOrange}
-                      backgroundColor="#2A1A14"
+                      backgroundColor={colors.orangeTint}
                       left={<Ionicons name="time-outline" size={12} color={colors.playportOrange} />}
                     />
                     <Badge label={`★ ${featured.rating} (${featured.reviewCount}+)`} />
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  filterActive: { borderColor: colors.playportOrange, backgroundColor: '#241610' },
+  filterActive: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTintStrong },
   filterText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
   filterActiveText: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     borderRadius: radii.full,
     paddingHorizontal: 10,
     paddingVertical: 5,

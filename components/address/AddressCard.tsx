@@ -39,7 +39,7 @@ export function AddressCard({
             <View style={styles.titleRow}>
               <Text style={styles.title}>{address.label}</Text>
               {address.isDefault ? (
-                <Badge label="DEFAULT" color={colors.playportOrange} backgroundColor="#2A1A14" />
+                <Badge label="DEFAULT" color={colors.playportOrange} backgroundColor={colors.orangeTint} />
               ) : null}
               {!address.inRapidZone ? <Badge label="OUT OF RAPID ZONE" /> : null}
             </View>
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     alignItems: 'center',
     justifyContent: 'center',
   },

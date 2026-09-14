@@ -27,7 +27,7 @@ export function ExperienceCard({ experience, onPress, onBook }: Props) {
           <Badge
             label={`${experience.etaMinutes} mins delivery`}
             color={colors.playportOrange}
-            backgroundColor="#2A1A14"
+            backgroundColor={colors.orangeTint}
             left={<Ionicons name="time-outline" size={12} color={colors.playportOrange} />}
           />
         </View>

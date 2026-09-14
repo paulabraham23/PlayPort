@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   },
   selected: {
     borderColor: colors.playportOrange,
-    backgroundColor: '#241610',
+    backgroundColor: colors.orangeTintStrong,
   },
   popular: {
     position: 'absolute',

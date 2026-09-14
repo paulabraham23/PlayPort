@@ -166,7 +166,7 @@ export default function OrderDetailScreen() {
                   {item.badges?.length ? (
                     <View style={styles.badgeRow}>
                       {item.badges.map((b) => (
-                        <Badge key={b} label={b} color={colors.playportOrange} backgroundColor="#2A1A14" />
+                        <Badge key={b} label={b} color={colors.playportOrange} backgroundColor={colors.orangeTint} />
                       ))}
                     </View>
                   ) : null}
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     alignItems: 'center',
     justifyContent: 'center',
   },

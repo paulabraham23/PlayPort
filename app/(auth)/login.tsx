@@ -76,7 +76,7 @@ export default function LoginScreen() {
           <Badge
             label="FLASH ACCESS"
             color={colors.playportOrange}
-            backgroundColor="#2A1A14"
+            backgroundColor={colors.orangeTint}
             left={<Ionicons name="flash" size={12} color={colors.playportOrange} />}
           />
           <Text style={styles.heroTitle}>
@@ -290,13 +290,13 @@ const styles = StyleSheet.create({
   },
   altRow: { flexDirection: 'row', gap: 10 },
   altBtn: { flex: 1 },
-  hubCard: { backgroundColor: colors.surfaceElevated },
+  hubCard: { backgroundColor: colors.surfaceAlt },
   hubRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   hubIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     alignItems: 'center',
     justifyContent: 'center',
   },

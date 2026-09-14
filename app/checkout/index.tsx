@@ -76,7 +76,7 @@ export default function CheckoutScreen() {
             <View style={{ flex: 1 }}>
               <View style={styles.timingHeader}>
                 <Text style={styles.timingLabel}>Instant Dropoff</Text>
-                <Badge label="20-35 MINS" color={colors.playportOrange} backgroundColor="#2A1A14" />
+                <Badge label="20-35 MINS" color={colors.playportOrange} backgroundColor={colors.orangeTint} />
               </View>
               <Text style={styles.timingValue}>Arriving by 7:45 PM tonight</Text>
             </View>

@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: 'center',
   },
-  typeChipActive: { borderColor: colors.playportOrange, backgroundColor: '#2A1A14' },
+  typeChipActive: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTint },
   typeText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
   typeTextActive: { color: colors.playportOrange },
   switchRow: {

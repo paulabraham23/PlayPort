@@ -116,7 +116,7 @@ function LiveDispatchCard({ order }: { order: Order }) {
         <Badge
           label="LIVE DISPATCH"
           color={colors.playportOrange}
-          backgroundColor="#2A1A14"
+          backgroundColor={colors.orangeTint}
           left={<View style={styles.pulse} />}
         />
         <Text style={styles.liveId}>#{order.id}</Text>

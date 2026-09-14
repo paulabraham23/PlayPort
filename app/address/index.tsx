@@ -39,7 +39,7 @@ export default function AddressIndexScreen() {
             <Badge
               label="ACTIVE SECTOR"
               color={colors.playportOrange}
-              backgroundColor="#2A1A14"
+              backgroundColor={colors.orangeTint}
             />
           </View>
           <Text style={styles.hubName}>{HUB.name}</Text>
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -160,13 +160,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     alignItems: 'flex-start',
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.surfaceAlt,
   },
   bannerIcon: {
     width: 44,
     height: 44,
     borderRadius: radii.md,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     alignItems: 'center',
     justifyContent: 'center',
   },

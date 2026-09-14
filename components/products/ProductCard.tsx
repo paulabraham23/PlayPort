@@ -48,7 +48,7 @@ export function ProductCard({ product, durationId = '12h', onPress, onRent, comp
         <Image source={{ uri: product.images[0] }} style={styles.image} contentFit="cover" />
         <View style={styles.body}>
           {product.badge ? (
-            <Badge label={product.badge} color={colors.playportOrange} backgroundColor="#2A1A14" />
+            <Badge label={product.badge} color={colors.playportOrange} backgroundColor={colors.orangeTint} />
           ) : null}
           <Text style={styles.title} numberOfLines={2}>
             {product.name}

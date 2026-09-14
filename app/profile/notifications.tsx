@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconUnread: { backgroundColor: '#2A1A14' },
+  iconUnread: { backgroundColor: colors.orangeTint },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15, flex: 1 },
   dot: {

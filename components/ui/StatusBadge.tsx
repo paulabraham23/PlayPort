@@ -3,24 +3,24 @@ import { colors, fonts, radii } from '@/constants/theme';
 import { orderStatusLabel } from '@/utils/format';
 import type { OrderStatus } from '@/types';
 
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  confirmed: colors.info,
-  preparing: colors.warning,
-  out_for_delivery: colors.playportOrange,
-  delivered: colors.success,
-  active: colors.playportOrange,
-  returning: colors.info,
-  completed: colors.success,
-  cancelled: colors.danger,
-  refunded: colors.danger,
+const STATUS_STYLE: Record<OrderStatus, { color: string; bg: string }> = {
+  confirmed: { color: colors.info, bg: colors.infoBg },
+  preparing: { color: colors.warning, bg: colors.orangeTint },
+  out_for_delivery: { color: colors.playportOrange, bg: colors.orangeTint },
+  delivered: { color: colors.success, bg: colors.successBg },
+  active: { color: colors.playportOrange, bg: colors.orangeTint },
+  returning: { color: colors.info, bg: colors.infoBg },
+  completed: { color: colors.success, bg: colors.successBg },
+  cancelled: { color: colors.danger, bg: colors.dangerBg },
+  refunded: { color: colors.danger, bg: colors.dangerBg },
 };
 
 export function StatusBadge({ status, label }: { status: OrderStatus; label?: string }) {
-  const color = STATUS_COLORS[status];
+  const style = STATUS_STYLE[status];
   return (
-    <View style={[styles.wrap, { backgroundColor: `${color}22`, borderColor: `${color}55` }]}>
-      <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text style={[styles.text, { color }]}>{label ?? orderStatusLabel(status)}</Text>
+    <View style={[styles.wrap, { backgroundColor: style.bg, borderColor: `${style.color}55` }]}>
+      <View style={[styles.dot, { backgroundColor: style.color }]} />
+      <Text style={[styles.text, { color: style.color }]}>{label ?? orderStatusLabel(status)}</Text>
     </View>
   );
 }

@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.lg,
   },
-  methodSelected: { borderColor: colors.playportOrange, backgroundColor: '#241610' },
+  methodSelected: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTintStrong },
   radio: {
     width: 20,
     height: 20,

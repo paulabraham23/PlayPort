@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  durationSelected: { borderColor: colors.playportOrange, backgroundColor: '#241610' },
+  durationSelected: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTintStrong },
   durationOptionText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
   durationOptionDesc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
 });

@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.lg,
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   otpBoxActive: {
     borderColor: colors.playportOrange,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
   },
   resendRow: { alignItems: 'center', marginTop: spacing.sm },
   resendMuted: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 14 },

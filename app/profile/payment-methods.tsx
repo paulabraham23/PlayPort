@@ -71,7 +71,7 @@ export default function PaymentMethodsScreen() {
                           <Badge
                             label="RECOMMENDED"
                             color={colors.playportOrange}
-                            backgroundColor="#2A1A14"
+                            backgroundColor={colors.orangeTint}
                           />
                         ) : null}
                       </View>
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radii.md,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     alignItems: 'center',
     justifyContent: 'center',
   },

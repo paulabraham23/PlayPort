@@ -1,33 +1,54 @@
+/**
+ * PlayPort colour system — source: playport-colour-palette.pdf
+ * Background + CTA are global constants (never change per category).
+ * Category accents are for icons / titles / badges only — never replace CTA.
+ */
 export const colors = {
-  baseBlack: '#121212',
-  surface: '#1A1A1F',
-  surfaceAlt: '#2A2A30',
-  surfaceElevated: '#222228',
-  border: '#2E2E36',
-  primaryText: '#F5F5F5',
-  secondaryText: '#9CA3AF',
-  mutedText: '#6B7280',
-  playportOrange: '#FF5722',
-  orangeSoft: '#FF6B4A',
+  // Core (used everywhere)
+  baseBlack: '#121212', // bg-base — page background
+  surface: '#1A1A1F', // bg-surface — cards, panels, sections
+  surfaceAlt: '#2A2A30', // bg-surface-alt — placeholders, dividers, inputs
+  border: '#2A2A30', // hairline borders, dividers (same as surface-alt)
+  primaryText: '#F5F5F5', // text-primary — headings, body
+  secondaryText: '#9CA3AF', // text-secondary — captions, muted labels
+  mutedText: '#9CA3AF',
+
+  // Primary CTA (fixed brand — do not vary by category)
+  playportOrange: '#FF5722', // cta-primary
+  ctaPrimary: '#FF5722',
+  ctaPrimaryText: '#FFFFFF',
+  ctaPrimaryHover: '#FF6A3D',
+  orangeSoft: '#FF6B4A', // gaming accent (warm coral)
+  orangeTint: '#2A1A14', // soft orange surface for chips / selected states
+  orangeTintStrong: '#241610',
+
+  // Status (fixed, semantic)
   success: '#4ADE80',
+  successBg: '#0A2F38',
   info: '#3B9EFF',
-  danger: '#EF4444',
+  infoBg: '#0A2A3D',
   warning: '#E8A33D',
+  danger: '#EF4444',
+  dangerBg: 'rgba(239,68,68,0.15)',
+
   white: '#FFFFFF',
   black: '#000000',
   badgeRed: '#FF3B30',
   overlay: 'rgba(0,0,0,0.65)',
+
+  // Category accents (vary by experience type — not for CTAs)
   categories: {
     gaming: '#FF6B4A',
     movieNights: '#E8A33D',
     musicKaraoke: '#E2618F',
     partySocial: '#4ADE80',
-    family: '#3B9EFF',
-    kids: '#A78BFA',
-    dateNight: '#F472B6',
-    racing: '#F97316',
-    vr: '#22D3EE',
-    boardGames: '#84CC16',
+    // Additional marketplace vibes mapped to nearest palette accents
+    family: '#E8A33D',
+    kids: '#E2618F',
+    dateNight: '#E2618F',
+    racing: '#FF6B4A',
+    vr: '#3B9EFF',
+    boardGames: '#4ADE80',
   },
 } as const;
 

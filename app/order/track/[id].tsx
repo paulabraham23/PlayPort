@@ -38,7 +38,7 @@ export default function OrderTrackComingSoonScreen() {
           <View style={styles.icon}>
             <Ionicons name="navigate-circle-outline" size={40} color={colors.playportOrange} />
           </View>
-          <Badge label="COMING SOON" color={colors.playportOrange} backgroundColor="#2A1A14" />
+          <Badge label="COMING SOON" color={colors.playportOrange} backgroundColor={colors.orangeTint} />
           <Text style={styles.title}>Live map tracking is on the way</Text>
           <Text style={styles.sub}>
             Real-time rider location isn&apos;t available yet. Follow status, ETA, and delivery details
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     borderWidth: 1,
     borderColor: 'rgba(255,87,34,0.22)',
     alignItems: 'center',

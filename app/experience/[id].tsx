@@ -58,7 +58,7 @@ export default function ExperienceDetailScreen() {
             <Badge
               label={`${experience.etaMinutes} mins`}
               color={colors.playportOrange}
-              backgroundColor="#2A1A14"
+              backgroundColor={colors.orangeTint}
               left={<Ionicons name="time-outline" size={12} color={colors.playportOrange} />}
             />
           </View>
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -124,7 +124,7 @@ export default function ProfileScreen() {
                 <Badge
                   label="ACTIVE ORDER"
                   color={colors.playportOrange}
-                  backgroundColor="#2A1A14"
+                  backgroundColor={colors.orangeTint}
                 />
                 <Ionicons name="chevron-forward" size={18} color={colors.secondaryText} />
               </View>
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radii.md,
-    backgroundColor: '#2A1A14',
+    backgroundColor: colors.orangeTint,
     borderWidth: 1,
     borderColor: 'rgba(255,87,34,0.18)',
     alignItems: 'center',

@@ -58,7 +58,7 @@ export default function ConfirmationScreen() {
   const activeStepIndex = 1; // Pre-Testing active after Confirmed
 
   return (
-    <Screen showHeader showCart={false}>
+    <Screen showHeader={false} edges={['top']}>
       <ScreenHeader title="Dropoff Confirmed" onBack={() => router.replace('/(tabs)')} />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -66,9 +66,9 @@ export default function ConfirmationScreen() {
       >
         <View style={styles.heroCard}>
           <View style={styles.heroIcon}>
-            <Ionicons name="flash" size={28} color={colors.white} />
+            <Ionicons name="checkmark" size={28} color={colors.white} />
           </View>
-          <Text style={styles.heroTitle}>Dropoff Confirmed! ⚡</Text>
+          <Text style={styles.heroTitle}>Dropoff Confirmed</Text>
           <Text style={styles.heroSub}>
             Your entertainment gear is being packed and pre-tested at our Indiranagar Dark Hub.
           </Text>
@@ -95,9 +95,17 @@ export default function ConfirmationScreen() {
             {STEPS.map((step, index) => {
               const done = index < activeStepIndex;
               const active = index === activeStepIndex;
+              const lineDone = index < activeStepIndex;
               return (
                 <View key={step.id} style={styles.stepItem}>
-                  <View style={styles.stepTrack}>
+                  <View style={styles.stepDotRow}>
+                    <View
+                      style={[
+                        styles.stepConnector,
+                        index === 0 && styles.stepConnectorHidden,
+                        lineDone && index > 0 && styles.stepConnectorActive,
+                      ]}
+                    />
                     <View
                       style={[
                         styles.stepDot,
@@ -111,9 +119,13 @@ export default function ConfirmationScreen() {
                         <View style={styles.activeInner} />
                       ) : null}
                     </View>
-                    {index < STEPS.length - 1 ? (
-                      <View style={[styles.stepLine, index < activeStepIndex && styles.stepLineActive]} />
-                    ) : null}
+                    <View
+                      style={[
+                        styles.stepConnector,
+                        index === STEPS.length - 1 && styles.stepConnectorHidden,
+                        index < activeStepIndex && styles.stepConnectorActive,
+                      ]}
+                    />
                   </View>
                   <Text style={[styles.stepLabel, (done || active) && styles.stepLabelActive]}>
                     {step.label}
@@ -180,13 +192,13 @@ export default function ConfirmationScreen() {
         </View>
 
         <Button
-          title="Track Live Order Status"
+          title="Track Order"
           fullWidth
           icon={<Ionicons name="navigate" size={16} color={colors.white} />}
           onPress={() => router.push(`/order/track/${order.id}`)}
         />
         <Button
-          title="Continue Exploring More Fun"
+          title="Continue Exploring"
           fullWidth
           variant="secondary"
           onPress={() => router.replace('/(tabs)')}
@@ -256,9 +268,16 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   etaPillText: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 10 },
-  stepper: { flexDirection: 'row', justifyContent: 'space-between' },
+  stepper: { flexDirection: 'row', alignItems: 'flex-start' },
   stepItem: { flex: 1, alignItems: 'center', gap: 8 },
-  stepTrack: { flexDirection: 'row', alignItems: 'center', width: '100%', justifyContent: 'center' },
+  stepDotRow: { flexDirection: 'row', alignItems: 'center', width: '100%' },
+  stepConnector: {
+    flex: 1,
+    height: 2,
+    backgroundColor: colors.border,
+  },
+  stepConnectorActive: { backgroundColor: colors.playportOrange },
+  stepConnectorHidden: { backgroundColor: 'transparent' },
   stepDot: {
     width: 22,
     height: 22,
@@ -268,20 +287,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
   },
   stepDotActive: { borderColor: colors.playportOrange, backgroundColor: '#2A1A14' },
   stepDotDone: { backgroundColor: colors.playportOrange, borderColor: colors.playportOrange },
   activeInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.playportOrange },
-  stepLine: {
-    position: 'absolute',
-    left: '50%',
-    right: -999,
-    height: 2,
-    backgroundColor: colors.border,
-    width: '100%',
-  },
-  stepLineActive: { backgroundColor: colors.playportOrange },
   stepLabel: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 11, textAlign: 'center' },
   stepLabelActive: { color: colors.playportOrange, fontFamily: fonts.bodyMedium },
   addressRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },

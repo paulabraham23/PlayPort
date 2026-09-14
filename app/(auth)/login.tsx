@@ -46,7 +46,12 @@ export default function LoginScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingHorizontal: horizontalPadding, maxWidth: isDesktop ? 520 : undefined, alignSelf: 'center', width: '100%' },
+          {
+            paddingHorizontal: horizontalPadding,
+            maxWidth: isDesktop ? 480 : undefined,
+            alignSelf: 'center',
+            width: '100%',
+          },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -74,7 +79,10 @@ export default function LoginScreen() {
             backgroundColor="#2A1A14"
             left={<Ionicons name="flash" size={12} color={colors.playportOrange} />}
           />
-          <Text style={styles.heroTitle}>Entertain tonight in 30 mins</Text>
+          <Text style={styles.heroTitle}>
+            Entertain tonight{' '}
+            <Text style={styles.heroAccent}>in 30 mins</Text>
+          </Text>
           <Text style={styles.heroSub}>
             Consoles, cinema kits & karaoke pods — sanitized and doorstep-ready from your nearest dark hub.
           </Text>
@@ -89,6 +97,7 @@ export default function LoginScreen() {
             <View key={exp.id} style={styles.carouselCard}>
               <Image source={{ uri: exp.image }} style={styles.carouselImage} contentFit="cover" />
               <View style={styles.carouselOverlay} />
+              <View style={styles.carouselFade} />
               <Text style={styles.carouselTag}>{exp.tag}</Text>
               <Text style={styles.carouselTitle} numberOfLines={2}>
                 {exp.name}
@@ -119,7 +128,7 @@ export default function LoginScreen() {
             fullWidth
             size="lg"
             disabled={!canGetOtp}
-            icon={<Ionicons name="arrow-forward" size={18} color={colors.white} />}
+            iconRight={<Ionicons name="arrow-forward" size={18} color={colors.white} />}
             onPress={() => {
               setPhoneDraft(localPhone);
               router.push('/(auth)/otp');
@@ -140,7 +149,7 @@ export default function LoginScreen() {
           />
           <Button
             title="Guest Browse"
-            variant="ghost"
+            variant="secondary"
             style={styles.altBtn}
             icon={<Ionicons name="compass-outline" size={18} color={colors.primaryText} />}
             onPress={() => {
@@ -185,7 +194,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.baseBlack },
-  scroll: { paddingBottom: spacing.xxxl, gap: spacing.xl, paddingTop: spacing.md },
+  scroll: { paddingBottom: spacing.xxl, gap: spacing.lg, paddingTop: spacing.sm },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logoMark: {
@@ -204,19 +213,20 @@ const styles = StyleSheet.create({
   heroTitle: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 30,
+    lineHeight: 36,
   },
+  heroAccent: { color: colors.playportOrange },
   heroSub: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 21,
   },
   carousel: { gap: 12, paddingRight: 8 },
   carouselCard: {
-    width: 160,
-    height: 200,
+    width: 148,
+    height: 160,
     borderRadius: radii.lg,
     overflow: 'hidden',
     borderWidth: 1,
@@ -227,7 +237,15 @@ const styles = StyleSheet.create({
   carouselImage: { ...StyleSheet.absoluteFill },
   carouselOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  carouselFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '70%',
+    backgroundColor: 'rgba(0,0,0,0.72)',
   },
   carouselTag: {
     color: colors.playportOrange,

@@ -5,12 +5,13 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
 import { DurationSelector } from '@/components/products/DurationSelector';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, fonts, layout, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
@@ -35,6 +36,7 @@ const FLOW_STEPS = [
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { horizontalPadding } = useResponsive();
+  const stickyPad = useStickyBarPadding();
   const [durationId, setDurationId] = useState<RentalDurationId>('12h');
   const [wishlisted, setWishlisted] = useState(false);
   const reviews = useAppStore((s) => s.reviews);
@@ -76,15 +78,16 @@ export default function ProductDetailScreen() {
       <ScreenHeader title="Item Detail" onBack={() => router.back()} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding, paddingBottom: layout.bottomBarHeight + 40 }]}
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad }]}
       >
         <View style={styles.hero}>
           <Image source={{ uri: product.images[0] }} style={styles.heroImage} contentFit="cover" />
           <View style={styles.heroTop}>
             <Badge
-              label={`⚡ DELIVERED IN ${product.etaMinutes} MINS`}
+              label={`DELIVERED IN ${product.etaMinutes} MINS`}
               color={colors.playportOrange}
               backgroundColor="rgba(0,0,0,0.65)"
+              left={<Ionicons name="flash" size={12} color={colors.playportOrange} />}
             />
             <Pressable
               accessibilityRole="button"
@@ -230,8 +233,8 @@ export default function ProductDetailScreen() {
         ) : null}
       </ScrollView>
 
-      <View style={[styles.sticky, { paddingHorizontal: horizontalPadding }]}>
-        <View>
+      <StickyBottomBar>
+        <View style={{ flex: 1 }}>
           <Text style={styles.selectedLabel}>Selected Plan</Text>
           <Text style={styles.selectedPrice}>
             {formatINR(price)} / {durationLabel}
@@ -246,7 +249,7 @@ export default function ProductDetailScreen() {
           }}
           style={styles.bookBtn}
         />
-      </View>
+      </StickyBottomBar>
     </Screen>
   );
 }
@@ -256,8 +259,9 @@ const styles = StyleSheet.create({
   hero: {
     borderRadius: radii.xl,
     overflow: 'hidden',
-    height: 260,
-    backgroundColor: colors.surface,
+    width: '100%',
+    aspectRatio: 1.1,
+    backgroundColor: colors.surfaceAlt,
   },
   heroImage: { ...StyleSheet.absoluteFill },
   heroTop: {
@@ -360,21 +364,6 @@ const styles = StyleSheet.create({
   reviewText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
   noReviews: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
   relatedList: { gap: spacing.md },
-  sticky: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    backgroundColor: colors.surfaceElevated,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingVertical: spacing.md,
-    minHeight: layout.bottomBarHeight,
-  },
   selectedLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   selectedPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 16, marginTop: 2 },
   bookBtn: { minWidth: 140 },

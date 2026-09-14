@@ -33,7 +33,8 @@ export function DurationSelector({ product, value, onChange }: Props) {
           >
             {d.popular ? (
               <View style={styles.popular}>
-                <Text style={styles.popularText}>🔥 POPULAR</Text>
+                <Ionicons name="flame" size={10} color={colors.white} />
+                <Text style={styles.popularText}>POPULAR</Text>
               </View>
             ) : null}
             <Ionicons
@@ -72,12 +73,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     backgroundColor: colors.playportOrange,
-    borderRadius: radii.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    borderRadius: radii.full,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
-  popularText: { color: colors.white, fontSize: 9, fontFamily: fonts.monoMedium },
+  popularText: { color: colors.white, fontSize: 9, fontFamily: fonts.monoMedium, letterSpacing: 0.4 },
   label: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14, marginTop: 4 },
   price: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 15 },
   desc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 11 },

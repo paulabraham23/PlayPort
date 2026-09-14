@@ -7,9 +7,10 @@ import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
 import { QuantitySelector } from '@/components/cart/QuantitySelector';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, fonts, layout, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { DURATIONS, LOCATION_LABEL, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
@@ -33,6 +34,7 @@ const UPSELLS = [
 
 export default function CartScreen() {
   const { horizontalPadding } = useResponsive();
+  const stickyPad = useStickyBarPadding();
   const cart = useAppStore((s) => s.cart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
   const updateCartDuration = useAppStore((s) => s.updateCartDuration);
@@ -48,7 +50,7 @@ export default function CartScreen() {
         <EmptyState
           icon="bag-handle-outline"
           title="Your cart is empty"
-          subtitle="Explore kits near you and amp up tonight's session."
+          subtitle="Browse gaming kits, projectors, and party gear near you — dropoff in ~30 mins."
           actionLabel="Explore Tonight"
           onAction={() => router.push('/(tabs)/explore')}
         />
@@ -57,7 +59,7 @@ export default function CartScreen() {
   }
 
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} edges={['top']}>
       <ScreenHeader
         title="My Entertainment Cart"
         subtitle={`${totals.count} PREMIUM ITEM${totals.count === 1 ? '' : 'S'}`}
@@ -67,13 +69,13 @@ export default function CartScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scroll,
-          { paddingHorizontal: horizontalPadding, paddingBottom: layout.bottomBarHeight + 48 },
+          { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad },
         ]}
       >
         <View style={styles.promise}>
           <Ionicons name="flash" size={18} color={colors.playportOrange} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.promiseTitle}>⚡ 30–35 Min Express Drop</Text>
+            <Text style={styles.promiseTitle}>30–35 Min Express Drop</Text>
             <Text style={styles.promiseSub}>
               {LOCATION_LABEL} · Free sanitization & live setup included
             </Text>
@@ -209,19 +211,20 @@ export default function CartScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.sticky, { paddingHorizontal: horizontalPadding }]}>
-        <View>
+      <StickyBottomBar>
+        <View style={{ flex: 1 }}>
           <Text style={styles.finalLabel}>FINAL AMOUNT</Text>
           <Text style={styles.finalPrice}>
             {formatINR(totals.total)} · {totals.count} Item{totals.count === 1 ? '' : 's'}
           </Text>
         </View>
         <Button
-          title="Proceed to Pay →"
+          title="Proceed to Pay"
+          iconRight={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
           onPress={() => router.push('/checkout')}
           style={styles.payBtn}
         />
-      </View>
+      </StickyBottomBar>
 
       <Modal visible={!!editingItem} transparent animationType="fade" onRequestClose={() => setEditingItem(null)}>
         <View style={styles.modalOverlay}>
@@ -351,21 +354,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
-  },
-  sticky: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    backgroundColor: colors.surfaceElevated,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingVertical: spacing.md,
-    minHeight: layout.bottomBarHeight,
   },
   finalLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
   finalPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 15, marginTop: 2 },

@@ -61,8 +61,14 @@ export default function SearchDiscoveryScreen() {
         />
 
         <View style={styles.statusRow}>
-          <Text style={styles.flashStatus}>● FLASH HUB ACTIVE</Text>
-          <Text style={styles.express}>⚡ {HUB.etaMinutes}–45m express</Text>
+          <View style={styles.statusLeft}>
+            <View style={styles.statusDot} />
+            <Text style={styles.flashStatus}>FLASH HUB ACTIVE</Text>
+          </View>
+          <View style={styles.expressRow}>
+            <Ionicons name="flash" size={12} color={colors.secondaryText} />
+            <Text style={styles.express}>{HUB.etaMinutes}–45m express</Text>
+          </View>
         </View>
 
         {recentSearches.length > 0 ? (
@@ -207,14 +213,17 @@ export default function SearchDiscoveryScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingTop: spacing.sm, paddingBottom: spacing.xxxl, gap: spacing.xl },
-  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  scroll: { paddingTop: spacing.sm, paddingBottom: spacing.xxxl, gap: spacing.xxl },
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  statusLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.playportOrange },
   flashStatus: {
     color: colors.playportOrange,
     fontFamily: fonts.monoMedium,
     fontSize: 11,
     letterSpacing: 0.8,
   },
+  expressRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   express: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   section: { gap: spacing.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

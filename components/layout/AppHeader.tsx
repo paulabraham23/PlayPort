@@ -1,10 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LOCATION_LABEL } from '@/data/mock';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LOCATION_LABEL, HUB } from '@/data/mock';
 import { useCartCount } from '@/store/appStore';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 
 interface Props {
@@ -14,27 +13,44 @@ interface Props {
 }
 
 export function AppHeader({ showLocation = true, showCart = true, rightSlot }: Props) {
-  const insets = useSafeAreaInsets();
   const cartCount = useCartCount();
   const { horizontalPadding, isDesktop, width } = useResponsive();
 
   return (
-    <View style={[styles.wrap, { paddingTop: Math.max(insets.top, 12), paddingHorizontal: horizontalPadding, maxWidth: isDesktop ? 1100 : width, alignSelf: 'center', width: '100%' }]}>
+    <View
+      style={[
+        styles.wrap,
+        {
+          paddingHorizontal: horizontalPadding,
+          maxWidth: isDesktop ? 1100 : width,
+          alignSelf: 'center',
+          width: '100%',
+        },
+      ]}
+    >
       <View style={styles.row}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go to home"
-          onPress={() => router.push('/(tabs)')}
-          style={styles.brand}
-        >
-          <View style={styles.logoMark}>
+        <View style={styles.brand}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go to home"
+            onPress={() => router.push('/(tabs)')}
+            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+              styles.logoMark,
+              (pressed || hovered) && styles.pressed,
+            ]}
+          >
             <Ionicons name="game-controller" size={14} color={colors.white} />
-          </View>
-          <View>
-            <View style={styles.brandRow}>
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go to home"
+              onPress={() => router.push('/(tabs)')}
+              style={styles.brandRow}
+            >
               <Text style={styles.brandText}>PlayPort</Text>
               <Ionicons name="flash" size={14} color={colors.playportOrange} />
-            </View>
+            </Pressable>
             {showLocation ? (
               <Pressable
                 accessibilityRole="button"
@@ -46,12 +62,12 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
                   {LOCATION_LABEL}
                 </Text>
                 <View style={styles.etaDot} />
-                <Text style={styles.etaText}>30m</Text>
+                <Text style={styles.etaText}>{HUB.etaMinutes}m</Text>
                 <Ionicons name="chevron-down" size={12} color={colors.secondaryText} />
               </Pressable>
             ) : null}
           </View>
-        </Pressable>
+        </View>
 
         <View style={styles.right}>
           {rightSlot}
@@ -60,7 +76,10 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
               accessibilityRole="button"
               accessibilityLabel={`Cart with ${cartCount} items`}
               onPress={() => router.push('/cart')}
-              style={styles.cartBtn}
+              style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                styles.cartBtn,
+                (pressed || hovered) && styles.pressed,
+              ]}
             >
               <Ionicons name="bag-handle-outline" size={22} color={colors.primaryText} />
               {cartCount > 0 ? (
@@ -79,6 +98,7 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
 const styles = StyleSheet.create({
   wrap: {
     backgroundColor: colors.baseBlack,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
   row: {
@@ -88,14 +108,18 @@ const styles = StyleSheet.create({
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   logoMark: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: colors.black,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    ...Platform.select({
+      web: { cursor: 'pointer' as unknown as undefined },
+      default: {},
+    }),
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   brandText: {
@@ -104,18 +128,30 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  locationText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, maxWidth: 160 },
+  locationText: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: 12,
+    maxWidth: 180,
+  },
   etaDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.playportOrange },
   etaText: { color: colors.playportOrange, fontFamily: fonts.mono, fontSize: 11 },
   right: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cartBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...Platform.select({
+      web: { cursor: 'pointer' as unknown as undefined },
+      default: {},
+    }),
   },
+  pressed: { opacity: 0.85 },
   badge: {
     position: 'absolute',
     top: 4,

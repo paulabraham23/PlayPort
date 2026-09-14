@@ -46,7 +46,12 @@ export function ExperienceCard({ experience, onPress, onBook }: Props) {
         <Text style={styles.price}>
           {formatINR(experience.price)} <Text style={styles.duration}>{experience.durationLabel}</Text>
         </Text>
-        <Button title="Quick Book ⚡" size="sm" onPress={onBook ?? onPress} />
+        <Button
+          title="Quick Book"
+          size="sm"
+          onPress={onBook ?? onPress}
+          icon={<Ionicons name="flash" size={14} color={colors.white} />}
+        />
       </View>
     </View>
   );
@@ -71,9 +76,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  image: { width: '100%', height: 180 },
+  image: { width: '100%', aspectRatio: 16 / 9 },
   body: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: 10 },
-  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
+  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 19 },
   desc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   footer: {

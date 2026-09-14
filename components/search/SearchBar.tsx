@@ -41,7 +41,6 @@ export function SearchBar({
           <Text style={styles.placeholder} numberOfLines={1}>
             {value || placeholder}
           </Text>
-          <Ionicons name="mic-outline" size={18} color={colors.secondaryText} />
         </View>
         {onFilterPress ? (
           <View style={styles.sideBtn}>
@@ -76,9 +75,7 @@ export function SearchBar({
           <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={onClear} hitSlop={8}>
             <Ionicons name="close-circle" size={18} color={colors.secondaryText} />
           </Pressable>
-        ) : (
-          <Ionicons name="mic-outline" size={18} color={colors.secondaryText} />
-        )}
+        ) : null}
       </View>
       {onFilterPress ? (
         <Pressable accessibilityRole="button" accessibilityLabel="Filters" onPress={onFilterPress} style={styles.sideBtn}>

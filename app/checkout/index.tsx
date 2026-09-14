@@ -4,16 +4,18 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AddressCard } from '@/components/address/AddressCard';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, fonts, layout, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
 import { formatINR } from '@/utils/format';
 
 export default function CheckoutScreen() {
   const { horizontalPadding } = useResponsive();
+  const stickyPad = useStickyBarPadding();
   const cart = useAppStore((s) => s.cart);
   const addresses = useAppStore((s) => s.addresses);
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
@@ -37,22 +39,23 @@ export default function CheckoutScreen() {
   const itemNames = cart.map((c) => c.name).join(' + ');
 
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} edges={['top']}>
       <ScreenHeader
         title="Checkout"
         subtitle="STEP 1 OF 2"
         onBack={() => router.back()}
         right={
-          <Text style={styles.stepMono}>
-            <Text style={styles.stepDot}>● </Text>REVIEW
-          </Text>
+          <View style={styles.stepRight}>
+            <View style={styles.stepDot} />
+            <Text style={styles.stepMono}>REVIEW</Text>
+          </View>
         }
       />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scroll,
-          { paddingHorizontal: horizontalPadding, paddingBottom: layout.bottomBarHeight + 48 },
+          { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad },
         ]}
       >
         {address ? (
@@ -121,26 +124,27 @@ export default function CheckoutScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.sticky, { paddingHorizontal: horizontalPadding }]}>
-        <View>
+      <StickyBottomBar>
+        <View style={{ flex: 1 }}>
           <Text style={styles.stickyPrice}>{formatINR(totals.total)}</Text>
           <Text style={styles.stickyMeta}>ALL-INCLUSIVE</Text>
         </View>
         <Button
           title="Continue to Payment"
-          icon={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
+          iconRight={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
           onPress={() => router.push('/checkout/payment')}
           style={styles.cta}
         />
-      </View>
+      </StickyBottomBar>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { gap: spacing.lg, paddingTop: spacing.sm },
+  stepRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   stepMono: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
-  stepDot: { color: colors.playportOrange },
+  stepDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.playportOrange },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
@@ -173,21 +177,6 @@ const styles = StyleSheet.create({
   taxNote: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
   encryptRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 4 },
   encryptText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, flex: 1, lineHeight: 17 },
-  sticky: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    backgroundColor: colors.surfaceElevated,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingVertical: spacing.md,
-    minHeight: layout.bottomBarHeight,
-  },
   stickyPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 20 },
   stickyMeta: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, marginTop: 2, letterSpacing: 0.5 },
   cta: { minWidth: 180 },

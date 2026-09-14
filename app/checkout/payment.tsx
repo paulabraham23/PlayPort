@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
-import { colors, fonts, layout, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
 import { formatINR } from '@/utils/format';
@@ -22,6 +23,7 @@ const PAY_ICONS: Record<PaymentMethodType, keyof typeof Ionicons.glyphMap> = {
 
 export default function PaymentScreen() {
   const { horizontalPadding } = useResponsive();
+  const stickyPad = useStickyBarPadding();
   const cart = useAppStore((s) => s.cart);
   const paymentMethods = useAppStore((s) => s.paymentMethods);
   const selectedPaymentMethodId = useAppStore((s) => s.selectedPaymentMethodId);
@@ -62,23 +64,26 @@ export default function PaymentScreen() {
     );
   }
 
+  const amount = displayTotal || totals.total || 0;
+
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} edges={['top']}>
       <ScreenHeader
         title="Checkout"
         subtitle="STEP 2 OF 2"
         onBack={() => router.back()}
         right={
-          <Text style={styles.stepMono}>
-            <Text style={styles.stepDot}>● </Text>PAYMENT
-          </Text>
+          <View style={styles.stepRight}>
+            <View style={styles.stepDot} />
+            <Text style={styles.stepMono}>PAYMENT</Text>
+          </View>
         }
       />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scroll,
-          { paddingHorizontal: horizontalPadding, paddingBottom: layout.bottomBarHeight + 48 },
+          { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad },
         ]}
       >
         <View style={styles.sectionHeader}>
@@ -122,7 +127,7 @@ export default function PaymentScreen() {
 
         <View style={styles.summary}>
           <Text style={styles.summaryTitle}>Order total</Text>
-          <Text style={styles.summaryTotal}>{formatINR(displayTotal || totals.total || 0)}</Text>
+          <Text style={styles.summaryTotal}>{formatINR(amount)}</Text>
           <Text style={styles.summaryNote}>Taxes included · Zero deposit</Text>
         </View>
 
@@ -136,14 +141,10 @@ export default function PaymentScreen() {
         ) : null}
       </ScrollView>
 
-      <View style={[styles.sticky, { paddingHorizontal: horizontalPadding }]}>
+      <StickyBottomBar style={styles.stickyBar}>
         <View style={styles.stickyCol}>
           <Button
-            title={
-              paying
-                ? 'Processing…'
-                : `Pay ${formatINR(displayTotal || totals.total || 0)} & Book Dropoff`
-            }
+            title={paying ? 'Processing…' : `Pay ${formatINR(amount)}`}
             icon={
               paying ? (
                 <ActivityIndicator color={colors.white} />
@@ -155,24 +156,27 @@ export default function PaymentScreen() {
             disabled={paying || !cart.length}
             onPress={() => pay(false)}
           />
-          <Button
-            title="Simulate failure"
-            variant="ghost"
-            size="sm"
-            disabled={paying || !cart.length}
-            onPress={() => pay(true)}
-            style={{ marginTop: 8 }}
-          />
+          {__DEV__ ? (
+            <Button
+              title="Simulate failure"
+              variant="ghost"
+              size="sm"
+              disabled={paying || !cart.length}
+              onPress={() => pay(true)}
+              style={{ marginTop: 8 }}
+            />
+          ) : null}
         </View>
-      </View>
+      </StickyBottomBar>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { gap: spacing.lg, paddingTop: spacing.sm },
+  stepRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   stepMono: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
-  stepDot: { color: colors.playportOrange },
+  stepDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.playportOrange },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
   secure: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
@@ -215,15 +219,6 @@ const styles = StyleSheet.create({
   summaryTitle: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
   summaryTotal: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 28 },
   summaryNote: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 12 },
-  sticky: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.surfaceElevated,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingVertical: spacing.md,
-  },
+  stickyBar: { flexDirection: 'column', alignItems: 'stretch' },
   stickyCol: { width: '100%' },
 });

@@ -39,6 +39,7 @@ export default function OrdersScreen() {
 
   const list = tab === 'active' ? active : past;
   const live = active.find((o) => o.status === 'out_for_delivery' || o.liveDispatch);
+  const visibleList = list.filter((o) => !(tab === 'active' && live && o.id === live.id));
 
   return (
     <Screen showCart={false}>
@@ -46,8 +47,9 @@ export default function OrdersScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
       >
-        <View style={styles.titleRow}>
+        <View style={styles.titleBlock}>
           <Text style={styles.title}>My Orders</Text>
+          <Text style={styles.subtitle}>Track live dispatch and past rentals</Text>
           <Badge label={`${orders.length} total`} color={colors.secondaryText} />
         </View>
 
@@ -72,6 +74,10 @@ export default function OrdersScreen() {
 
         {tab === 'active' && live ? <LiveDispatchCard order={live} /> : null}
 
+        {tab === 'past' && past.length > 0 ? (
+          <Text style={styles.sectionHeader}>Past Orders</Text>
+        ) : null}
+
         {list.length === 0 ? (
           <EmptyState
             icon="cube-outline"
@@ -86,17 +92,15 @@ export default function OrdersScreen() {
           />
         ) : (
           <View style={styles.list}>
-            {list
-              .filter((o) => !(tab === 'active' && live && o.id === live.id))
-              .map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  onPress={() => router.push(`/order/${order.id}`)}
-                  onTrack={() => router.push(`/order/track/${order.id}`)}
-                  onRentAgain={() => router.push('/(tabs)/explore')}
-                />
-              ))}
+            {visibleList.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                onPress={() => router.push(`/order/${order.id}`)}
+                onTrack={() => router.push(`/order/track/${order.id}`)}
+                onRentAgain={() => router.push('/(tabs)/explore')}
+              />
+            ))}
           </View>
         )}
       </ScrollView>
@@ -119,7 +123,7 @@ function LiveDispatchCard({ order }: { order: Order }) {
       </View>
       <View style={styles.liveRow}>
         <Image source={{ uri: first.image }} style={styles.liveImage} contentFit="cover" />
-        <View style={{ flex: 1, gap: 4 }}>
+        <View style={{ flex: 1, gap: 6 }}>
           <Text style={styles.liveName} numberOfLines={2}>
             {first.name}
             {order.items.length > 1 ? ` +${order.items.length - 1}` : ''}
@@ -131,8 +135,14 @@ function LiveDispatchCard({ order }: { order: Order }) {
           <Text style={styles.livePrice}>{formatINR(order.total)}</Text>
         </View>
       </View>
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${order.progressPercent}%` }]} />
+      <View style={styles.progressBlock}>
+        <View style={styles.progressLabels}>
+          <Text style={styles.progressLabel}>En route</Text>
+          <Text style={styles.progressPercent}>{order.progressPercent}%</Text>
+        </View>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${order.progressPercent}%` }]} />
+        </View>
       </View>
       <View style={styles.liveActions}>
         <Button
@@ -156,8 +166,19 @@ function LiveDispatchCard({ order }: { order: Order }) {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.lg, paddingTop: spacing.sm },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 28 },
+  titleBlock: { gap: spacing.sm },
+  title: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: 30,
+    letterSpacing: -0.4,
+  },
+  subtitle: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    lineHeight: 20,
+  },
   tabs: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
@@ -173,31 +194,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabActive: { backgroundColor: colors.playportOrange },
-  tabText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
-  tabTextActive: { color: colors.white },
-  list: { gap: spacing.md },
+  tabText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 13, opacity: 0.72 },
+  tabTextActive: { color: colors.white, opacity: 1 },
+  sectionHeader: {
+    color: colors.mutedText,
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: -spacing.sm,
+  },
+  list: { gap: spacing.lg },
   liveCard: {
     borderColor: colors.playportOrange,
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   liveTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   pulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.playportOrange },
   liveId: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 12 },
   liveRow: { flexDirection: 'row', gap: 12 },
-  liveImage: { width: 72, height: 72, borderRadius: radii.sm },
+  liveImage: {
+    width: 76,
+    height: 76,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceAlt,
+  },
   liveName: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
   liveMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   livePrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 15 },
+  progressBlock: { gap: spacing.sm },
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressLabel: {
+    color: colors.secondaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+  },
+  progressPercent: {
+    color: colors.playportOrange,
+    fontFamily: fonts.monoMedium,
+    fontSize: 12,
+  },
   progressTrack: {
-    height: 6,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: colors.surfaceAlt,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: colors.playportOrange,
-    borderRadius: 3,
+    borderRadius: 4,
   },
   liveActions: { flexDirection: 'row', gap: 8 },
 });

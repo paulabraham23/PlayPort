@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, layout } from '@/constants/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -14,13 +15,23 @@ function TabIcon({ name, color, focused }: { name: IconName; color: string; focu
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 8 : 0);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.playportOrange,
         tabBarInactiveTintColor: colors.mutedText,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: layout.tabBarHeight + bottomInset,
+            paddingBottom: bottomInset > 0 ? bottomInset : 8,
+          },
+          Platform.OS === 'web' && styles.tabBarWeb,
+        ],
         tabBarLabelStyle: styles.label,
         tabBarItemStyle: styles.item,
       }}
@@ -86,13 +97,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
     borderTopWidth: 1,
-    height: layout.tabBarHeight + 8,
     paddingTop: 6,
-    paddingBottom: 8,
+  },
+  tabBarWeb: {
+    maxWidth: 560,
+    width: '100%',
+    alignSelf: 'center',
   },
   label: {
     fontFamily: fonts.bodyMedium,
     fontSize: 11,
+    letterSpacing: 0.2,
   },
   item: {
     gap: 2,

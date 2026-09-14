@@ -36,13 +36,13 @@ export default function OrderTrackComingSoonScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding }]}>
         <View style={styles.hero}>
           <View style={styles.icon}>
-            <Ionicons name="navigate-circle-outline" size={36} color={colors.playportOrange} />
+            <Ionicons name="navigate-circle-outline" size={40} color={colors.playportOrange} />
           </View>
           <Badge label="COMING SOON" color={colors.playportOrange} backgroundColor="#2A1A14" />
           <Text style={styles.title}>Live map tracking is on the way</Text>
           <Text style={styles.sub}>
-            Real-time rider location isn&apos;t available yet. You can still follow order status, ETA, and
-            delivery details below — no fake map required.
+            Real-time rider location isn&apos;t available yet. Follow status, ETA, and delivery details
+            below in the meantime.
           </Text>
         </View>
 
@@ -79,7 +79,7 @@ export default function OrderTrackComingSoonScreen() {
             {order.items.map((item) => (
               <View key={`${item.name}-${item.price}`} style={styles.item}>
                 <Image source={{ uri: item.image }} style={styles.thumb} contentFit="cover" />
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, gap: 2 }}>
                   <Text style={styles.itemName}>{item.name}</Text>
                   <Text style={styles.itemMeta}>{item.durationLabel}</Text>
                 </View>
@@ -125,39 +125,50 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.xxl,
+    paddingVertical: spacing.xxxl,
+    paddingHorizontal: spacing.xxl,
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.md,
   },
   icon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#2A1A14',
+    borderWidth: 1,
+    borderColor: 'rgba(255,87,34,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing.xs,
   },
-  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20, textAlign: 'center' },
+  title: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: 22,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
   sub: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
     fontSize: 14,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
+    maxWidth: 320,
   },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.lg,
-    gap: 10,
+    padding: spacing.xl,
+    gap: spacing.md,
   },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   id: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 12 },
   eta: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 16 },
   address: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 18 },
-  timeline: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  timeline: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs },
   step: { alignItems: 'center', flex: 1, gap: 6 },
   stepDot: {
     width: 10,
@@ -175,7 +186,12 @@ const styles = StyleSheet.create({
   },
   stepLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 9, textAlign: 'center' },
   stepLabelCurrent: { color: colors.playportOrange },
-  section: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 16, marginTop: 4 },
+  section: {
+    color: colors.primaryText,
+    fontFamily: fonts.headingMedium,
+    fontSize: 16,
+    marginTop: spacing.xs,
+  },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -184,10 +200,15 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.md,
+    padding: spacing.lg,
   },
-  thumb: { width: 48, height: 48, borderRadius: radii.sm },
+  thumb: {
+    width: 52,
+    height: 52,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceAlt,
+  },
   itemName: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
-  itemMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 11, marginTop: 2 },
+  itemMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 11 },
   itemPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 13 },
 });

@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   narrow: { width: 140, height: 150 },
-  wide: { flex: 1, minHeight: 120 },
+  wide: { flex: 1, minHeight: 132 },
   image: { ...StyleSheet.absoluteFill },
   overlay: {
     ...StyleSheet.absoluteFill,

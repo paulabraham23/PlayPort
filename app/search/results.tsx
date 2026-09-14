@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
 import { ProductCard } from '@/components/products/ProductCard';
 import { SearchBar } from '@/components/search/SearchBar';
@@ -57,27 +57,30 @@ export default function SearchResultsScreen() {
           onBack={() => router.back()}
           onSubmit={() => submit(query)}
           onClear={() => setQuery('')}
-          onFilterPress={() => {}}
         />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-          <Pressable style={[styles.filterChip, styles.filterActive]}>
+          <View style={[styles.filterChip, styles.filterActive]}>
             <Ionicons name="checkmark" size={14} color={colors.playportOrange} />
             <Text style={styles.filterActiveText}>Filters (1)</Text>
-          </Pressable>
-          <Pressable style={styles.filterChip}>
+          </View>
+          <View style={styles.filterChip}>
             <Text style={styles.filterText}>Sort: Fastest Drop</Text>
             <Ionicons name="chevron-down" size={14} color={colors.secondaryText} />
-          </Pressable>
-          <Pressable style={styles.filterChip}>
+          </View>
+          <View style={styles.filterChip}>
             <Text style={styles.filterText}>Under ₹1500</Text>
-          </Pressable>
+          </View>
         </ScrollView>
 
         <View style={styles.statusRow}>
-          <Text style={styles.hubStatus}>● {setupsReady} setups ready in your hub</Text>
+          <View style={styles.statusLeft}>
+            <View style={styles.statusDot} />
+            <Text style={styles.hubStatus}>{setupsReady} setups ready in your hub</Text>
+          </View>
           <View style={styles.dropBadge}>
-            <Text style={styles.dropBadgeText}>⚡ 30-35M DROPOFF</Text>
+            <Ionicons name="flash" size={11} color={colors.playportOrange} />
+            <Text style={styles.dropBadgeText}>30-35M DROPOFF</Text>
           </View>
         </View>
 
@@ -112,7 +115,11 @@ export default function SearchResultsScreen() {
                     <Badge label={`★ ${featured.rating} (${featured.reviewCount}+)`} />
                   </View>
                 </View>
-                <Pressable onPress={() => router.push(`/product/${featured.id}`)}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/product/${featured.id}`)}
+                  style={styles.featuredImageWrap}
+                >
                   <Image source={{ uri: featured.images[0] }} style={styles.featuredImage} contentFit="cover" />
                 </Pressable>
                 <View style={styles.tagRow}>
@@ -132,7 +139,8 @@ export default function SearchResultsScreen() {
                     ) : null}
                   </View>
                   <Button
-                    title="Rent Now ⚡"
+                    title="Rent Now"
+                    icon={<Ionicons name="flash" size={16} color={colors.white} />}
                     onPress={() => {
                       addProductToCart(featured.id, '12h');
                       router.push('/cart');
@@ -217,8 +225,13 @@ const styles = StyleSheet.create({
   filterText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
   filterActiveText: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  statusLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success },
   hubStatus: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, flex: 1 },
   dropBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: '#2A1A14',
     borderRadius: radii.full,
     paddingHorizontal: 10,
@@ -236,7 +249,14 @@ const styles = StyleSheet.create({
   },
   featuredBadges: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
   featuredMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  featuredImage: { width: '100%', height: 180, borderRadius: radii.lg },
+  featuredImageWrap: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceAlt,
+  },
+  featuredImage: { width: '100%', height: '100%' },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   featuredTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
   featuredDesc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },

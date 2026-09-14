@@ -1,5 +1,14 @@
-import { Pressable, StyleSheet, Text, View, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type PressableProps,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
+import { colors, fonts, radii } from '@/constants/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -9,6 +18,7 @@ interface Props extends PressableProps {
   variant?: Variant;
   size?: Size;
   icon?: React.ReactNode;
+  iconRight?: React.ReactNode;
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
 }
@@ -18,21 +28,25 @@ export function Button({
   variant = 'primary',
   size = 'md',
   icon,
+  iconRight,
   fullWidth,
   style,
   disabled,
+  accessibilityLabel,
   ...rest
 }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
       disabled={disabled}
-      style={({ pressed }) => [
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
         styles.base,
         styles[variant],
         styles[`size_${size}`],
         fullWidth && styles.fullWidth,
-        pressed && !disabled && styles.pressed,
+        Platform.OS === 'web' && styles.webCursor,
+        (pressed || hovered) && !disabled && (variant === 'primary' ? styles.primaryHover : styles.pressed),
         disabled && styles.disabled,
         style,
       ]}
@@ -40,6 +54,7 @@ export function Button({
     >
       {icon ? <View style={styles.icon}>{icon}</View> : null}
       <Text style={[styles.text, styles[`text_${variant}`], styles[`textSize_${size}`]]}>{title}</Text>
+      {iconRight ? <View style={styles.icon}>{iconRight}</View> : null}
     </Pressable>
   );
 }
@@ -53,17 +68,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primary: { backgroundColor: colors.playportOrange },
-  secondary: { backgroundColor: colors.surfaceAlt },
+  secondary: { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border },
   ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
   danger: { backgroundColor: 'rgba(239,68,68,0.15)', borderWidth: 1, borderColor: colors.danger },
   size_sm: { paddingVertical: 8, paddingHorizontal: 12, minHeight: 36 },
   size_md: { paddingVertical: 12, paddingHorizontal: 16, minHeight: 48 },
   size_lg: { paddingVertical: 14, paddingHorizontal: 18, minHeight: 54 },
   fullWidth: { width: '100%' },
+  webCursor: {
+    cursor: 'pointer' as unknown as undefined,
+  },
   pressed: { opacity: 0.88 },
+  primaryHover: { backgroundColor: '#FF6A3D' },
   disabled: { opacity: 0.45 },
-  icon: { marginRight: 2 },
-  text: { fontFamily: fonts.bodyMedium, fontWeight: '600' },
+  icon: { marginRight: 0 },
+  text: { fontFamily: fonts.bodyMedium },
   text_primary: { color: colors.white },
   text_secondary: { color: colors.primaryText },
   text_ghost: { color: colors.primaryText },

@@ -7,6 +7,7 @@ import { ExperienceCard } from '@/components/products/ExperienceCard';
 import { ProductCard } from '@/components/products/ProductCard';
 import { SearchBar } from '@/components/search/SearchBar';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { CATEGORIES, EXPERIENCES, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -20,9 +21,10 @@ const VALUE_PROPS = [
 ];
 
 export default function HomeScreen() {
-  const { horizontalPadding, isDesktop } = useResponsive();
+  const { horizontalPadding, isDesktop, isTablet } = useResponsive();
   const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
+  const multiCol = isDesktop || isTablet;
 
   const popular = PRODUCTS.filter((p) => p.popular);
 
@@ -45,14 +47,28 @@ export default function HomeScreen() {
             />
             <Text style={styles.promoEta}>Tonight · Indiranagar</Text>
           </View>
-          <Text style={styles.promoTitle}>Fun delivered in 30–45 mins</Text>
+          <Text style={styles.promoTitle}>
+            Fun delivered in <Text style={styles.promoAccent}>30–45 mins</Text>
+          </Text>
           <Text style={styles.promoSub}>
             Book a sanitized entertainment kit. We drop, set up, and pick up — you just press play.
           </Text>
+          <Button
+            title="Browse kits"
+            size="md"
+            style={styles.promoCta}
+            iconRight={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
+            onPress={() => router.push('/(tabs)/explore')}
+          />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What&apos;s the vibe tonight?</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>What&apos;s the vibe tonight?</Text>
+            <Pressable onPress={() => router.push('/(tabs)/explore')}>
+              <Text style={styles.link}>All Vibes</Text>
+            </Pressable>
+          </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hRow}>
             {CATEGORIES.map((category) => (
               <CategoryCard
@@ -71,9 +87,9 @@ export default function HomeScreen() {
               <Text style={styles.link}>See all</Text>
             </Pressable>
           </View>
-          <View style={[styles.expList, isDesktop && styles.expListDesktop]}>
+          <View style={[styles.expList, multiCol && styles.expListMulti]}>
             {EXPERIENCES.map((experience) => (
-              <View key={experience.id} style={isDesktop ? styles.expDesktopItem : undefined}>
+              <View key={experience.id} style={multiCol ? styles.expMultiItem : undefined}>
                 <ExperienceCard
                   experience={experience}
                   onPress={() => router.push(`/experience/${experience.id}`)}
@@ -148,15 +164,17 @@ const styles = StyleSheet.create({
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
   promoEta: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 11 },
   promoTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22 },
+  promoAccent: { color: colors.playportOrange },
   promoSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
+  promoCta: { alignSelf: 'flex-start', marginTop: spacing.xs },
   section: { gap: spacing.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
+  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
   link: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
   hRow: { gap: 12, paddingRight: 8 },
   expList: { gap: spacing.lg },
-  expListDesktop: { flexDirection: 'row', flexWrap: 'wrap' },
-  expDesktopItem: { width: '48%' },
+  expListMulti: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  expMultiItem: { width: '48%', flexBasis: '48%' },
   productList: { gap: spacing.md },
   valueSection: { marginBottom: spacing.lg },
   valueGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

@@ -4,11 +4,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, fonts, layout, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { EXPERIENCES, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
@@ -17,6 +18,7 @@ import { formatINR } from '@/utils/format';
 export default function ExperienceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { horizontalPadding } = useResponsive();
+  const stickyPad = useStickyBarPadding();
   const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
 
@@ -40,13 +42,13 @@ export default function ExperienceDetailScreen() {
   }
 
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} edges={['top']}>
       <ScreenHeader title="Experience" onBack={() => router.back()} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scroll,
-          { paddingHorizontal: horizontalPadding, paddingBottom: layout.bottomBarHeight + 40 },
+          { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad },
         ]}
       >
         <View style={styles.hero}>
@@ -129,8 +131,8 @@ export default function ExperienceDetailScreen() {
         ) : null}
       </ScrollView>
 
-      <View style={[styles.sticky, { paddingHorizontal: horizontalPadding }]}>
-        <View>
+      <StickyBottomBar>
+        <View style={{ flex: 1 }}>
           <Text style={styles.stickyLabel}>Bundle total</Text>
           <Text style={styles.stickyPrice}>{formatINR(experience.price)}</Text>
         </View>
@@ -143,14 +145,14 @@ export default function ExperienceDetailScreen() {
           }}
           style={styles.bookBtn}
         />
-      </View>
+      </StickyBottomBar>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { gap: spacing.lg, paddingTop: spacing.sm },
-  hero: { borderRadius: radii.xl, overflow: 'hidden', height: 220, backgroundColor: colors.surface },
+  hero: { borderRadius: radii.xl, overflow: 'hidden', height: 220, backgroundColor: colors.surfaceAlt },
   heroImage: { ...StyleSheet.absoluteFill },
   heroBadges: {
     position: 'absolute',
@@ -186,21 +188,6 @@ const styles = StyleSheet.create({
   howNumText: { color: colors.playportOrange, fontFamily: fonts.monoMedium, fontSize: 12 },
   howText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19, flex: 1 },
   productList: { gap: spacing.md },
-  sticky: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    backgroundColor: colors.surfaceElevated,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingVertical: spacing.md,
-    minHeight: layout.bottomBarHeight,
-  },
   stickyLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   stickyPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 18, marginTop: 2 },
   bookBtn: { minWidth: 160 },

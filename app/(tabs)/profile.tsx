@@ -39,7 +39,7 @@ export default function ProfileScreen() {
       title: 'My Activity',
       items: [
         { label: 'My Orders', icon: 'cube-outline', href: '/(tabs)/orders' },
-        { label: 'Rental History', icon: 'time-outline', href: '/(tabs)/orders' },
+        { label: 'Past rentals', icon: 'time-outline', href: '/(tabs)/orders' },
         { label: 'My Reviews', icon: 'star-outline', href: '/profile/reviews' },
       ],
     },
@@ -82,18 +82,18 @@ export default function ProfileScreen() {
         <Card style={styles.userCard}>
           <View style={styles.userRow}>
             <Image source={{ uri: user.avatar }} style={styles.avatar} contentFit="cover" />
-            <View style={{ flex: 1, gap: 4 }}>
+            <View style={styles.userMeta}>
               <Text style={styles.userName}>{user.name}</Text>
               <Text style={styles.userPhone}>{user.phone}</Text>
-              {user.kycVerified ? (
-                <Badge
-                  label="KYC VERIFIED"
-                  color={colors.success}
-                  backgroundColor="rgba(74,222,128,0.12)"
-                  left={<Ionicons name="checkmark-circle" size={12} color={colors.success} />}
-                />
-              ) : null}
             </View>
+            {user.kycVerified ? (
+              <Badge
+                label="KYC"
+                color={colors.success}
+                backgroundColor="rgba(74,222,128,0.12)"
+                left={<Ionicons name="checkmark-circle" size={12} color={colors.success} />}
+              />
+            ) : null}
           </View>
         </Card>
 
@@ -107,7 +107,9 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>Deposit</Text>
           </View>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{user.homeHub}</Text>
+            <Text style={styles.statValue} numberOfLines={1}>
+              {user.homeHub}
+            </Text>
             <Text style={styles.statLabel}>Home hub</Text>
           </View>
         </View>
@@ -184,6 +186,7 @@ export default function ProfileScreen() {
           title="Log out"
           variant="danger"
           fullWidth
+          style={styles.logout}
           icon={<Ionicons name="log-out-outline" size={18} color={colors.danger} />}
           onPress={() => {
             logout();
@@ -197,10 +200,23 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.lg, paddingTop: spacing.sm },
-  pageTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 28 },
+  pageTitle: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: 30,
+    letterSpacing: -0.4,
+  },
   userCard: { gap: 0 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  avatar: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: colors.border },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+  },
+  userMeta: { flex: 1, gap: 4 },
   userName: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
   userPhone: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 13 },
   statsRow: { flexDirection: 'row', gap: 10 },
@@ -211,12 +227,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.sm,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 72,
     gap: 4,
   },
   statValue: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 16 },
   statLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 11 },
-  trackCard: { gap: spacing.sm, borderColor: colors.playportOrange },
+  trackCard: {
+    gap: spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.playportOrange,
+    borderColor: colors.border,
+  },
   trackTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   trackTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 16 },
   trackMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
@@ -240,17 +264,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    minHeight: 56,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
   menuBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
   menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
     backgroundColor: '#2A1A14',
+    borderWidth: 1,
+    borderColor: 'rgba(255,87,34,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuLabel: { flex: 1, color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
+  logout: { marginTop: spacing.xl },
 });

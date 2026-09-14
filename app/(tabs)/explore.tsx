@@ -16,6 +16,7 @@ export default function ExploreScreen() {
   const columns = isDesktop ? 4 : isTablet ? 3 : 2;
   const gap = 12;
   const cardWidth = (Math.min(width, isDesktop ? 1100 : width) - horizontalPadding * 2 - gap * (columns - 1)) / columns;
+  const multiCol = isDesktop || isTablet;
 
   return (
     <Screen>
@@ -40,7 +41,7 @@ export default function ExploreScreen() {
           <Text style={styles.sectionTitle}>All Categories</Text>
           <View style={[styles.grid, { gap }]}>
             {CATEGORIES.map((category) => (
-              <View key={category.id} style={{ width: cardWidth }}>
+              <View key={category.id} style={{ width: cardWidth, minHeight: 132 }}>
                 <CategoryCard
                   category={category}
                   wide
@@ -59,17 +60,18 @@ export default function ExploreScreen() {
               <Ionicons name="arrow-forward" size={14} color={colors.playportOrange} />
             </Pressable>
           </View>
-          <View style={styles.expList}>
+          <View style={[styles.expList, multiCol && styles.expListMulti]}>
             {EXPERIENCES.map((experience) => (
-              <ExperienceCard
-                key={experience.id}
-                experience={experience}
-                onPress={() => router.push(`/experience/${experience.id}`)}
-                onBook={() => {
-                  addExperienceToCart(experience.id);
-                  router.push('/cart');
-                }}
-              />
+              <View key={experience.id} style={multiCol ? styles.expMultiItem : undefined}>
+                <ExperienceCard
+                  experience={experience}
+                  onPress={() => router.push(`/experience/${experience.id}`)}
+                  onBook={() => {
+                    addExperienceToCart(experience.id);
+                    router.push('/cart');
+                  }}
+                />
+              </View>
             ))}
           </View>
         </View>
@@ -80,15 +82,22 @@ export default function ExploreScreen() {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.xxl, paddingTop: spacing.sm },
-  header: { gap: 4 },
-  kicker: { color: colors.playportOrange, fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1 },
-  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 28 },
-  subtitle: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14 },
+  header: { gap: 6 },
+  kicker: {
+    color: colors.playportOrange,
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    letterSpacing: 1.2,
+  },
+  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 32, lineHeight: 38 },
+  subtitle: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
   section: { gap: spacing.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
+  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   expList: { gap: spacing.lg },
+  expListMulti: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  expMultiItem: { width: '48%', flexBasis: '48%' },
   searchLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   link: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
 });

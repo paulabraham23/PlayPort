@@ -19,6 +19,7 @@ export default function OtpScreen() {
   const phoneDraft = useAppStore((s) => s.phoneDraft);
   const login = useAppStore((s) => s.login);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(0);
   const [seconds, setSeconds] = useState(30);
   const inputs = useRef<(TextInput | null)[]>([]);
 
@@ -89,22 +90,27 @@ export default function OtpScreen() {
         </Text>
 
         <View style={styles.otpRow}>
-          {otp.map((digit, index) => (
-            <TextInput
-              key={index}
-              ref={(ref) => {
-                inputs.current[index] = ref;
-              }}
-              value={digit}
-              onChangeText={(v) => updateDigit(index, v)}
-              onKeyPress={({ nativeEvent }) => onKeyPress(index, nativeEvent.key)}
-              keyboardType="number-pad"
-              maxLength={1}
-              selectTextOnFocus
-              style={[styles.otpBox, digit ? styles.otpBoxFilled : null]}
-              accessibilityLabel={`OTP digit ${index + 1}`}
-            />
-          ))}
+          {otp.map((digit, index) => {
+            const active = focusedIndex === index || !!digit;
+            return (
+              <TextInput
+                key={index}
+                ref={(ref) => {
+                  inputs.current[index] = ref;
+                }}
+                value={digit}
+                onChangeText={(v) => updateDigit(index, v)}
+                onKeyPress={({ nativeEvent }) => onKeyPress(index, nativeEvent.key)}
+                onFocus={() => setFocusedIndex(index)}
+                onBlur={() => setFocusedIndex((prev) => (prev === index ? null : prev))}
+                keyboardType="number-pad"
+                maxLength={1}
+                selectTextOnFocus
+                style={[styles.otpBox, active ? styles.otpBoxActive : null]}
+                accessibilityLabel={`OTP digit ${index + 1}`}
+              />
+            );
+          })}
         </View>
 
         <Button
@@ -174,22 +180,23 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   phone: { color: colors.primaryText, fontFamily: fonts.monoMedium },
-  otpRow: { flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
+  otpRow: { flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
   otpBox: {
     flex: 1,
     aspectRatio: 1,
-    maxWidth: 56,
+    maxWidth: 58,
+    minHeight: 56,
     backgroundColor: colors.surface,
     borderRadius: radii.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     color: colors.primaryText,
     fontFamily: fonts.monoMedium,
-    fontSize: 22,
+    fontSize: 24,
     textAlign: 'center',
     outlineStyle: 'none' as unknown as undefined,
   },
-  otpBoxFilled: {
+  otpBoxActive: {
     borderColor: colors.playportOrange,
     backgroundColor: '#2A1A14',
   },

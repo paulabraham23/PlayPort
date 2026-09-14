@@ -1,0 +1,386 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
+import { Screen } from '@/components/layout/Screen';
+import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useAppStore } from '@/store/appStore';
+import { formatINR } from '@/utils/format';
+import type { OrderStatus } from '@/types';
+
+const TIMELINE = [
+  { key: 'booked', label: 'Booked', icon: 'checkmark-circle' as const },
+  { key: 'tested', label: 'Tested', icon: 'hardware-chip' as const },
+  { key: 'on_way', label: 'On Way', icon: 'bicycle' as const },
+  { key: 'setup', label: 'Setup', icon: 'construct' as const },
+] as const;
+
+function timelineIndex(status: OrderStatus): number {
+  switch (status) {
+    case 'confirmed':
+      return 0;
+    case 'preparing':
+      return 1;
+    case 'out_for_delivery':
+      return 2;
+    case 'delivered':
+    case 'active':
+    case 'returning':
+    case 'completed':
+      return 3;
+    case 'cancelled':
+    case 'refunded':
+      return -1;
+    default:
+      return 0;
+  }
+}
+
+export default function OrderDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { horizontalPadding } = useResponsive();
+  const orders = useAppStore((s) => s.orders);
+  const order = useMemo(() => orders.find((o) => o.id === id), [orders, id]);
+  const [invoiceMsg, setInvoiceMsg] = useState<string | null>(null);
+
+  if (!order) {
+    return (
+      <Screen showHeader={false}>
+        <ScreenHeader title="Order" onBack={() => router.back()} />
+        <EmptyState
+          icon="cube-outline"
+          title="Order not found"
+          subtitle="This booking may have been removed."
+          actionLabel="Back to orders"
+          onAction={() => router.replace('/(tabs)/orders')}
+        />
+      </Screen>
+    );
+  }
+
+  const step = timelineIndex(order.status);
+  const cancellable = order.status === 'confirmed' || order.status === 'preparing';
+  const canReturn = order.status === 'active' || order.status === 'delivered' || order.status === 'returning';
+
+  return (
+    <Screen showHeader={false}>
+      <ScreenHeader
+        title={`#${order.id}`}
+        subtitle="Booking details"
+        onBack={() => router.back()}
+        right={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Help"
+            onPress={() => router.push('/profile/help')}
+            style={styles.helpBtn}
+          >
+            <Ionicons name="help-circle-outline" size={22} color={colors.primaryText} />
+          </Pressable>
+        }
+      />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
+      >
+        <Card style={styles.statusCard}>
+          <View style={styles.statusTop}>
+            <StatusBadge status={order.status} />
+            <Text style={styles.eta}>ETA {order.etaLabel}</Text>
+          </View>
+          <Text style={styles.statusTitle}>
+            {order.status === 'out_for_delivery'
+              ? 'Gear is on the way'
+              : order.status === 'preparing'
+                ? 'Hub is testing your kit'
+                : order.status === 'confirmed'
+                  ? 'Booking confirmed'
+                  : orderStatusHeadline(order.status)}
+          </Text>
+          <Text style={styles.statusSub}>
+            {order.addressLabel} · {order.addressFull}
+          </Text>
+
+          {step >= 0 ? (
+            <View style={styles.timeline}>
+              {TIMELINE.map((item, index) => {
+                const done = index <= step;
+                const current = index === step;
+                return (
+                  <View key={item.key} style={styles.timelineItem}>
+                    <View
+                      style={[
+                        styles.timelineDot,
+                        done && styles.timelineDotDone,
+                        current && styles.timelineDotCurrent,
+                      ]}
+                    >
+                      <Ionicons
+                        name={item.icon}
+                        size={14}
+                        color={done ? colors.white : colors.mutedText}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.timelineLabel,
+                        done && styles.timelineLabelDone,
+                        current && styles.timelineLabelCurrent,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                    {index < TIMELINE.length - 1 ? (
+                      <View style={[styles.timelineLine, index < step && styles.timelineLineDone]} />
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${order.progressPercent}%` }]} />
+          </View>
+        </Card>
+
+        <Text style={styles.sectionTitle}>Reserved Hardware</Text>
+        <View style={styles.list}>
+          {order.items.map((item, idx) => (
+            <Card key={`${item.name}-${idx}`} style={styles.itemCard}>
+              <View style={styles.itemRow}>
+                <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemMeta}>{item.durationLabel}</Text>
+                  <Text style={styles.itemReturn}>{item.returnLabel}</Text>
+                  {item.badges?.length ? (
+                    <View style={styles.badgeRow}>
+                      {item.badges.map((b) => (
+                        <Badge key={b} label={b} color={colors.playportOrange} backgroundColor="#2A1A14" />
+                      ))}
+                    </View>
+                  ) : null}
+                  {item.extras?.map((e) => (
+                    <Text key={e} style={styles.extra}>
+                      · {e}
+                    </Text>
+                  ))}
+                </View>
+                <Text style={styles.itemPrice}>{formatINR(item.price)}</Text>
+              </View>
+            </Card>
+          ))}
+        </View>
+
+        {order.setupIncluded ? (
+          <Card style={styles.specialist}>
+            <View style={styles.specialistAvatar}>
+              <Ionicons name="person" size={22} color={colors.playportOrange} />
+            </View>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={styles.specialistLabel}>SETUP SPECIALIST</Text>
+              <Text style={styles.specialistName}>Suresh M.</Text>
+              <Text style={styles.specialistMeta}>Doorstep calibration · ~10 min</Text>
+            </View>
+            <Badge label="ASSIGNED" color={colors.success} backgroundColor="rgba(74,222,128,0.12)" />
+          </Card>
+        ) : null}
+
+        <Card style={styles.protocol}>
+          <View style={styles.protocolHead}>
+            <Ionicons name="shield-checkmark-outline" size={18} color={colors.playportOrange} />
+            <Text style={styles.protocolTitle}>Collection Protocol</Text>
+          </View>
+          <Text style={styles.protocolBody}>
+            Leave gear assembled at the end of your slot. Our specialist unhooks HDMI/power, verifies
+            accessories, and issues a digital return receipt — no packing required.
+          </Text>
+        </Card>
+
+        <Text style={styles.sectionTitle}>Payment</Text>
+        <Card>
+          <PriceBreakdown itemsTotal={order.subtotal} taxes={order.taxes} total={order.total} />
+          <Text style={styles.payMethod}>Paid via {order.paymentMethodLabel}</Text>
+        </Card>
+
+        {invoiceMsg ? <Text style={styles.toast}>{invoiceMsg}</Text> : null}
+
+        <View style={styles.actions}>
+          <Button
+            title="Track Live Delivery"
+            fullWidth
+            icon={<Ionicons name="navigate" size={18} color={colors.white} />}
+            onPress={() => router.push(`/order/track/${order.id}`)}
+          />
+          <Button
+            title="Contact Tech Desk"
+            variant="secondary"
+            fullWidth
+            icon={<Ionicons name="headset-outline" size={18} color={colors.primaryText} />}
+            onPress={() => router.push('/profile/help')}
+          />
+          <Button
+            title="Download Invoice"
+            variant="ghost"
+            fullWidth
+            icon={<Ionicons name="download-outline" size={18} color={colors.primaryText} />}
+            onPress={() => {
+              setInvoiceMsg('Invoice downloaded');
+              setTimeout(() => setInvoiceMsg(null), 2500);
+            }}
+          />
+          {cancellable ? (
+            <Button
+              title="Cancel Order"
+              variant="danger"
+              fullWidth
+              onPress={() => router.push(`/order/cancel/${order.id}`)}
+            />
+          ) : null}
+          {canReturn ? (
+            <Button
+              title="Complete Return"
+              variant="secondary"
+              fullWidth
+              onPress={() => router.push(`/order/return/${order.id}`)}
+            />
+          ) : null}
+        </View>
+      </ScrollView>
+    </Screen>
+  );
+}
+
+function orderStatusHeadline(status: OrderStatus): string {
+  switch (status) {
+    case 'delivered':
+      return 'Delivered & ready';
+    case 'active':
+      return 'Session in progress';
+    case 'returning':
+      return 'Return pickup scheduled';
+    case 'completed':
+      return 'Rental completed';
+    case 'cancelled':
+      return 'Order cancelled';
+    case 'refunded':
+      return 'Refund processed';
+    default:
+      return 'Order update';
+  }
+}
+
+const styles = StyleSheet.create({
+  scroll: { paddingBottom: spacing.xxxl, gap: spacing.lg, paddingTop: spacing.sm },
+  helpBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusCard: { gap: spacing.md },
+  statusTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  eta: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 12 },
+  statusTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
+  statusSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 18 },
+  timeline: { flexDirection: 'row', marginTop: spacing.sm },
+  timelineItem: { flex: 1, alignItems: 'center', position: 'relative' },
+  timelineDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  timelineDotDone: { backgroundColor: colors.playportOrange },
+  timelineDotCurrent: { borderWidth: 2, borderColor: colors.orangeSoft },
+  timelineLabel: {
+    color: colors.mutedText,
+    fontFamily: fonts.mono,
+    fontSize: 10,
+    marginTop: 6,
+    letterSpacing: 0.3,
+  },
+  timelineLabelDone: { color: colors.secondaryText },
+  timelineLabelCurrent: { color: colors.playportOrange },
+  timelineLine: {
+    position: 'absolute',
+    top: 14,
+    left: '55%',
+    right: '-45%',
+    height: 2,
+    backgroundColor: colors.border,
+  },
+  timelineLineDone: { backgroundColor: colors.playportOrange },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.surfaceAlt,
+    overflow: 'hidden',
+  },
+  progressFill: { height: '100%', backgroundColor: colors.playportOrange, borderRadius: 3 },
+  sectionTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 18 },
+  list: { gap: spacing.md },
+  itemCard: { gap: 0 },
+  itemRow: { flexDirection: 'row', gap: 12 },
+  itemImage: { width: 72, height: 72, borderRadius: radii.sm },
+  itemName: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
+  itemMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
+  itemReturn: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 11 },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  extra: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 11 },
+  itemPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 14 },
+  specialist: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  specialistAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#2A1A14',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  specialistLabel: {
+    color: colors.mutedText,
+    fontFamily: fonts.mono,
+    fontSize: 10,
+    letterSpacing: 0.6,
+  },
+  specialistName: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 16 },
+  specialistMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
+  protocol: { gap: spacing.sm },
+  protocolHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  protocolTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 15 },
+  protocolBody: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  payMethod: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    marginTop: spacing.md,
+  },
+  toast: {
+    color: colors.success,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  actions: { gap: spacing.sm },
+});

@@ -1,0 +1,272 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Screen } from '@/components/layout/Screen';
+import { ProductCard } from '@/components/products/ProductCard';
+import { SearchBar } from '@/components/search/SearchBar';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { PRODUCTS } from '@/data/mock';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useAppStore } from '@/store/appStore';
+import { formatINR, searchProducts } from '@/utils/format';
+
+export default function SearchResultsScreen() {
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const initial = typeof q === 'string' ? q : '';
+  const [query, setQuery] = useState(initial);
+  const { horizontalPadding } = useResponsive();
+  const pushRecentSearch = useAppStore((s) => s.pushRecentSearch);
+  const addProductToCart = useAppStore((s) => s.addProductToCart);
+
+  const results = useMemo(() => searchProducts(query, PRODUCTS), [query]);
+  const isProjectorSearch = /projector|movie|cinema|nebula/i.test(query);
+  const featured =
+    isProjectorSearch
+      ? PRODUCTS.find((p) => p.id === 'nebula-projector') ?? results[0]
+      : results[0];
+  const listProducts = results.filter(
+    (p) => p.id !== featured?.id && p.id !== 'screen-addon'
+  );
+  const addon = isProjectorSearch ? PRODUCTS.find((p) => p.id === 'screen-addon') : undefined;
+  const setupsReady = results.length || 0;
+
+  const submit = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    pushRecentSearch(trimmed);
+    setQuery(trimmed);
+    router.setParams({ q: trimmed });
+  };
+
+  return (
+    <Screen showHeader showCart>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
+      >
+        <SearchBar
+          value={query}
+          onChangeText={setQuery}
+          showBack
+          onBack={() => router.back()}
+          onSubmit={() => submit(query)}
+          onClear={() => setQuery('')}
+          onFilterPress={() => {}}
+        />
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+          <Pressable style={[styles.filterChip, styles.filterActive]}>
+            <Ionicons name="checkmark" size={14} color={colors.playportOrange} />
+            <Text style={styles.filterActiveText}>Filters (1)</Text>
+          </Pressable>
+          <Pressable style={styles.filterChip}>
+            <Text style={styles.filterText}>Sort: Fastest Drop</Text>
+            <Ionicons name="chevron-down" size={14} color={colors.secondaryText} />
+          </Pressable>
+          <Pressable style={styles.filterChip}>
+            <Text style={styles.filterText}>Under ₹1500</Text>
+          </Pressable>
+        </ScrollView>
+
+        <View style={styles.statusRow}>
+          <Text style={styles.hubStatus}>● {setupsReady} setups ready in your hub</Text>
+          <View style={styles.dropBadge}>
+            <Text style={styles.dropBadgeText}>⚡ 30-35M DROPOFF</Text>
+          </View>
+        </View>
+
+        {!results.length ? (
+          <EmptyState
+            icon="search-outline"
+            title="No kits matched"
+            subtitle={`Nothing found for "${query}". Try PS5, projector, or karaoke.`}
+            actionLabel="Clear search"
+            onAction={() => {
+              setQuery('');
+              router.replace('/search');
+            }}
+          />
+        ) : (
+          <>
+            {featured ? (
+              <View style={styles.featured}>
+                <View style={styles.featuredBadges}>
+                  <Badge
+                    label={featured.badge ?? 'FEATURED'}
+                    color={colors.white}
+                    backgroundColor={colors.playportOrange}
+                  />
+                  <View style={styles.featuredMeta}>
+                    <Badge
+                      label={`${featured.etaMinutes} MIN DROP`}
+                      color={colors.playportOrange}
+                      backgroundColor="#2A1A14"
+                      left={<Ionicons name="time-outline" size={12} color={colors.playportOrange} />}
+                    />
+                    <Badge label={`★ ${featured.rating} (${featured.reviewCount}+)`} />
+                  </View>
+                </View>
+                <Pressable onPress={() => router.push(`/product/${featured.id}`)}>
+                  <Image source={{ uri: featured.images[0] }} style={styles.featuredImage} contentFit="cover" />
+                </Pressable>
+                <View style={styles.tagRow}>
+                  {featured.tags.slice(0, 3).map((tag) => (
+                    <Badge key={tag} label={tag} color={colors.primaryText} backgroundColor="rgba(0,0,0,0.55)" />
+                  ))}
+                </View>
+                <Text style={styles.featuredTitle}>{featured.name}</Text>
+                <Text style={styles.featuredDesc}>{featured.description}</Text>
+                <View style={styles.featuredFooter}>
+                  <View>
+                    <Text style={styles.featuredPrice}>
+                      {formatINR(featured.priceByDuration['12h'])} / night
+                    </Text>
+                    {featured.compareAtPrice ? (
+                      <Text style={styles.strike}>{formatINR(featured.compareAtPrice)}</Text>
+                    ) : null}
+                  </View>
+                  <Button
+                    title="Rent Now ⚡"
+                    onPress={() => {
+                      addProductToCart(featured.id, '12h');
+                      router.push('/cart');
+                    }}
+                  />
+                </View>
+              </View>
+            ) : null}
+
+            <View style={styles.list}>
+              {listProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  compact
+                  onPress={() => router.push(`/product/${product.id}`)}
+                  onRent={() => {
+                    addProductToCart(product.id, '12h');
+                    router.push('/cart');
+                  }}
+                />
+              ))}
+            </View>
+
+            {addon ? (
+              <View style={styles.addon}>
+                <Image source={{ uri: addon.images[0] }} style={styles.addonImage} contentFit="cover" />
+                <View style={{ flex: 1 }}>
+                  <Badge label="ADD-ON" />
+                  <Text style={styles.addonTitle} numberOfLines={1}>
+                    {addon.shortName}
+                  </Text>
+                  <Text style={styles.addonPrice}>
+                    {formatINR(addon.priceByDuration['24h'])} / day
+                  </Text>
+                </View>
+                <Button
+                  title="+ Add"
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => {
+                    addProductToCart(addon.id, '12h');
+                    router.push('/cart');
+                  }}
+                />
+              </View>
+            ) : null}
+
+            {isProjectorSearch ? (
+              <View style={styles.included}>
+                <Ionicons name="shield-checkmark" size={18} color={colors.playportOrange} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.includedTitle}>Included with all Projector Rentals</Text>
+                  <Text style={styles.includedSub}>
+                    HDMI 2.1 cables, extension rolls, and sanitized remotes in every transit case.
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+          </>
+        )}
+      </ScrollView>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: { paddingTop: spacing.sm, paddingBottom: spacing.xxxl, gap: spacing.lg },
+  filters: { gap: 8, paddingVertical: 2 },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surface,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  filterActive: { borderColor: colors.playportOrange, backgroundColor: '#241610' },
+  filterText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
+  filterActiveText: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  hubStatus: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, flex: 1 },
+  dropBadge: {
+    backgroundColor: '#2A1A14',
+    borderRadius: radii.full,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  dropBadgeText: { color: colors.playportOrange, fontFamily: fonts.monoMedium, fontSize: 10 },
+  featured: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    gap: 10,
+    overflow: 'hidden',
+  },
+  featuredBadges: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
+  featuredMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  featuredImage: { width: '100%', height: 180, borderRadius: radii.lg },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  featuredTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
+  featuredDesc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
+  featuredFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  featuredPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 18 },
+  strike: { color: colors.mutedText, textDecorationLine: 'line-through', fontFamily: fonts.mono, fontSize: 12 },
+  list: { gap: spacing.md },
+  addon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+  },
+  addonImage: { width: 56, height: 56, borderRadius: radii.sm },
+  addonTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14, marginTop: 4 },
+  addonPrice: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 12, marginTop: 2 },
+  included: {
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    alignItems: 'flex-start',
+  },
+  includedTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 14 },
+  includedSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 4, lineHeight: 17 },
+});

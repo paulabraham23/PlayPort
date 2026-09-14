@@ -1,30 +1,55 @@
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+} from '@expo-google-fonts/inter';
+import {
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+} from '@expo-google-fonts/jetbrains-mono';
+import {
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+} from '@expo-google-fonts/space-grotesk';
+import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import { colors } from '@/constants/theme';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'index',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+const PlayPortTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: colors.playportOrange,
+    background: colors.baseBlack,
+    card: colors.surface,
+    text: colors.primaryText,
+    border: colors.border,
+    notification: colors.badgeRed,
+  },
+};
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Inter_400Regular,
+    Inter_500Medium,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -39,16 +64,35 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <ThemeProvider value={PlayPortTheme}>
+      <StatusBar style="light" />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.baseBlack } }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="search/index" />
+        <Stack.Screen name="search/results" />
+        <Stack.Screen name="product/[id]" />
+        <Stack.Screen name="experience/[id]" />
+        <Stack.Screen name="category/[id]" />
+        <Stack.Screen name="cart" />
+        <Stack.Screen name="checkout/index" />
+        <Stack.Screen name="checkout/payment" />
+        <Stack.Screen name="checkout/confirmation" />
+        <Stack.Screen name="address/index" />
+        <Stack.Screen name="address/add" />
+        <Stack.Screen name="address/edit/[id]" />
+        <Stack.Screen name="order/[id]" />
+        <Stack.Screen name="order/track/[id]" />
+        <Stack.Screen name="order/cancel/[id]" />
+        <Stack.Screen name="order/return/[id]" />
+        <Stack.Screen name="profile/addresses" />
+        <Stack.Screen name="profile/payment-methods" />
+        <Stack.Screen name="profile/notifications" />
+        <Stack.Screen name="profile/settings" />
+        <Stack.Screen name="profile/help" />
+        <Stack.Screen name="profile/reviews" />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

@@ -1,66 +1,78 @@
-import { SymbolView } from 'expo-symbols';
-import { Link, Tabs } from 'expo-router';
-import { Platform, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
+import { colors, fonts, layout } from '@/constants/theme';
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+type IconName = keyof typeof Ionicons.glyphMap;
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+function TabIcon({ name, color, focused }: { name: IconName; color: string; focused: boolean }) {
+  return (
+    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+      <Ionicons name={name} size={22} color={color} />
+    </View>
+  );
+}
 
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
+        headerShown: false,
+        tabBarActiveTintColor: colors.playportOrange,
+        tabBarInactiveTintColor: colors.mutedText,
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.label,
+        tabBarItemStyle: styles.item,
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              name={focused ? 'home' : 'home-outline'}
+              color={String(color)}
+              focused={focused}
             />
-          ),
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable style={{ marginRight: 15 }}>
-                {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: 'info.circle', android: 'info', web: 'info' }}
-                    size={25}
-                    tintColor={Colors[colorScheme].text}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
           ),
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="explore"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
+          title: 'Explore',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              name={focused ? 'compass' : 'compass-outline'}
+              color={String(color)}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: 'Orders',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              name={focused ? 'cube' : 'cube-outline'}
+              color={String(color)}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              name={focused ? 'person' : 'person-outline'}
+              color={String(color)}
+              focused={focused}
             />
           ),
         }}
@@ -68,3 +80,28 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: colors.surface,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    height: layout.tabBarHeight + 8,
+    paddingTop: 6,
+    paddingBottom: 8,
+  },
+  label: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 11,
+  },
+  item: {
+    gap: 2,
+  },
+  iconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapActive: {
+    transform: [{ scale: 1.05 }],
+  },
+});

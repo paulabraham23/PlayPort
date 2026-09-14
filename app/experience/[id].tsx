@@ -1,0 +1,207 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Screen } from '@/components/layout/Screen';
+import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { ProductCard } from '@/components/products/ProductCard';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { colors, fonts, layout, radii, spacing } from '@/constants/theme';
+import { EXPERIENCES, PRODUCTS } from '@/data/mock';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useAppStore } from '@/store/appStore';
+import { formatINR } from '@/utils/format';
+
+export default function ExperienceDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { horizontalPadding } = useResponsive();
+  const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
+  const addProductToCart = useAppStore((s) => s.addProductToCart);
+
+  const experience = EXPERIENCES.find((e) => e.id === id);
+  const includedProducts = experience
+    ? PRODUCTS.filter((p) => experience.productIds.includes(p.id))
+    : [];
+
+  if (!experience) {
+    return (
+      <Screen showHeader={false}>
+        <ScreenHeader title="Experience" onBack={() => router.back()} />
+        <EmptyState
+          title="Experience not found"
+          subtitle="This vibe may have rotated out."
+          actionLabel="Explore"
+          onAction={() => router.replace('/(tabs)/explore')}
+        />
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen showHeader={false}>
+      <ScreenHeader title="Experience" onBack={() => router.back()} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingHorizontal: horizontalPadding, paddingBottom: layout.bottomBarHeight + 40 },
+        ]}
+      >
+        <View style={styles.hero}>
+          <Image source={{ uri: experience.image }} style={styles.heroImage} contentFit="cover" />
+          <View style={styles.heroBadges}>
+            <Badge label={experience.tag} color={colors.warning} backgroundColor="#2A2418" />
+            <Badge
+              label={`${experience.etaMinutes} mins`}
+              color={colors.playportOrange}
+              backgroundColor="#2A1A14"
+              left={<Ionicons name="time-outline" size={12} color={colors.playportOrange} />}
+            />
+          </View>
+        </View>
+
+        <Text style={styles.title}>{experience.name}</Text>
+        <Text style={styles.desc}>{experience.description}</Text>
+
+        <View style={styles.chips}>
+          {experience.chips.map((chip) => (
+            <Badge key={chip} label={chip} />
+          ))}
+        </View>
+
+        <View style={styles.metaRow}>
+          <View style={styles.metaItem}>
+            <Ionicons name="people-outline" size={16} color={colors.playportOrange} />
+            <Text style={styles.metaText}>{experience.people}</Text>
+          </View>
+          <Text style={styles.price}>
+            {formatINR(experience.price)}
+            <Text style={styles.duration}> {experience.durationLabel}</Text>
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>What&apos;s included</Text>
+          <View style={styles.includes}>
+            {experience.includes.map((item) => (
+              <View key={item} style={styles.includeRow}>
+                <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                <Text style={styles.includeText}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>How it works</Text>
+          <View style={styles.howList}>
+            {experience.howItWorks.map((step, index) => (
+              <View key={step} style={styles.howRow}>
+                <View style={styles.howNum}>
+                  <Text style={styles.howNumText}>{index + 1}</Text>
+                </View>
+                <Text style={styles.howText}>{step}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {includedProducts.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Included products</Text>
+            <View style={styles.productList}>
+              {includedProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  compact
+                  onPress={() => router.push(`/product/${product.id}`)}
+                  onRent={() => {
+                    addProductToCart(product.id, '12h');
+                    router.push('/cart');
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
+      </ScrollView>
+
+      <View style={[styles.sticky, { paddingHorizontal: horizontalPadding }]}>
+        <View>
+          <Text style={styles.stickyLabel}>Bundle total</Text>
+          <Text style={styles.stickyPrice}>{formatINR(experience.price)}</Text>
+        </View>
+        <Button
+          title="Book Experience"
+          icon={<Ionicons name="flash" size={16} color={colors.white} />}
+          onPress={() => {
+            addExperienceToCart(experience.id);
+            router.push('/cart');
+          }}
+          style={styles.bookBtn}
+        />
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: { gap: spacing.lg, paddingTop: spacing.sm },
+  hero: { borderRadius: radii.xl, overflow: 'hidden', height: 220, backgroundColor: colors.surface },
+  heroImage: { ...StyleSheet.absoluteFill },
+  heroBadges: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22, lineHeight: 28 },
+  desc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14, lineHeight: 21 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
+  price: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 20 },
+  duration: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
+  section: { gap: spacing.md },
+  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 17 },
+  includes: { gap: 10 },
+  includeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  includeText: { color: colors.primaryText, fontFamily: fonts.body, fontSize: 14, flex: 1 },
+  howList: { gap: 12 },
+  howRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  howNum: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#2A1A14',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  howNumText: { color: colors.playportOrange, fontFamily: fonts.monoMedium, fontSize: 12 },
+  howText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19, flex: 1 },
+  productList: { gap: spacing.md },
+  sticky: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    backgroundColor: colors.surfaceElevated,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingVertical: spacing.md,
+    minHeight: layout.bottomBarHeight,
+  },
+  stickyLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
+  stickyPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 18, marginTop: 2 },
+  bookBtn: { minWidth: 160 },
+});

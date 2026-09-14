@@ -15,7 +15,7 @@ export default function SettingsScreen() {
   const [promoAlerts, setPromoAlerts] = useState(false);
 
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} narrow>
       <ScreenHeader title="Settings" subtitle="PlayPort preferences" onBack={() => router.back()} />
       <ScrollView
         showsVerticalScrollIndicator={false}

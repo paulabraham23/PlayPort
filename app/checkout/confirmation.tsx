@@ -43,7 +43,7 @@ export default function ConfirmationScreen() {
 
   if (!order) {
     return (
-      <Screen showHeader={false}>
+      <Screen showHeader={false} narrow>
         <ScreenHeader title="Confirmation" onBack={() => router.replace('/(tabs)')} />
         <EmptyState
           title="Order not found"
@@ -58,7 +58,7 @@ export default function ConfirmationScreen() {
   const activeStepIndex = 1; // Pre-Testing active after Confirmed
 
   return (
-    <Screen showHeader={false} edges={['top']}>
+    <Screen showHeader={false} edges={['top']} narrow>
       <ScreenHeader title="Dropoff Confirmed" onBack={() => router.replace('/(tabs)')} />
       <ScrollView
         showsVerticalScrollIndicator={false}

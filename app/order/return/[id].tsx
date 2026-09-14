@@ -22,7 +22,7 @@ export default function ReturnOrderScreen() {
 
   if (!order) {
     return (
-      <Screen showHeader={false}>
+      <Screen showHeader={false} narrow>
         <ScreenHeader title="Return" onBack={() => router.back()} />
         <EmptyState
           icon="return-down-back-outline"
@@ -36,7 +36,7 @@ export default function ReturnOrderScreen() {
 
   if (done || order.status === 'completed') {
     return (
-      <Screen showHeader={false}>
+      <Screen showHeader={false} narrow>
         <ScreenHeader title="Return complete" onBack={() => router.replace('/(tabs)/orders')} />
         <View style={[styles.successWrap, { paddingHorizontal: horizontalPadding }]}>
           <View style={styles.successIcon}>
@@ -67,7 +67,7 @@ export default function ReturnOrderScreen() {
     order.items[0]?.returnLabel ?? 'Scheduled pickup at end of your rental window';
 
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} narrow>
       <ScreenHeader title="Complete Return" subtitle={`#${order.id}`} onBack={() => router.back()} />
       <ScrollView
         showsVerticalScrollIndicator={false}

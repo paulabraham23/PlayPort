@@ -47,7 +47,7 @@ export default function EditAddressScreen() {
 
   if (!existing) {
     return (
-      <Screen showHeader={false}>
+      <Screen showHeader={false} narrow>
         <ScreenHeader title="Edit Address" onBack={() => router.back()} />
         <EmptyState
           icon="location-outline"
@@ -105,7 +105,7 @@ export default function EditAddressScreen() {
   };
 
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} narrow>
       <ScreenHeader title="Edit Address" subtitle={existing.label} onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}

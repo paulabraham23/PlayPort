@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
@@ -17,7 +18,7 @@ import { formatINR } from '@/utils/format';
 
 export default function ExperienceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { horizontalPadding } = useResponsive();
+  const { horizontalPadding, useSplitPane, productColumns, gap } = useResponsive();
   const stickyPad = useStickyBarPadding();
   const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
@@ -41,6 +42,43 @@ export default function ExperienceDetailScreen() {
     );
   }
 
+  const heroBlock = (
+    <View style={[styles.hero, useSplitPane && styles.heroSplit]}>
+      <Image source={{ uri: experience.image }} style={styles.heroImage} contentFit="cover" />
+      <View style={styles.heroBadges}>
+        <Badge label={experience.tag} color={colors.warning} backgroundColor="#2A2418" />
+        <Badge
+          label={`${experience.etaMinutes} mins`}
+          color={colors.playportOrange}
+          backgroundColor={colors.orangeTint}
+          left={<Ionicons name="time-outline" size={12} color={colors.playportOrange} />}
+        />
+      </View>
+    </View>
+  );
+
+  const summaryBlock = (
+    <View style={[styles.summary, useSplitPane && styles.summarySplit]}>
+      <Text style={[styles.title, useSplitPane && styles.titleLg]}>{experience.name}</Text>
+      <Text style={styles.desc}>{experience.description}</Text>
+      <View style={styles.chips}>
+        {experience.chips.map((chip) => (
+          <Badge key={chip} label={chip} />
+        ))}
+      </View>
+      <View style={styles.metaRow}>
+        <View style={styles.metaItem}>
+          <Ionicons name="people-outline" size={16} color={colors.playportOrange} />
+          <Text style={styles.metaText}>{experience.people}</Text>
+        </View>
+        <Text style={styles.price}>
+          {formatINR(experience.price)}
+          <Text style={styles.duration}> {experience.durationLabel}</Text>
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <Screen showHeader={false} edges={['top']}>
       <ScreenHeader title="Experience" onBack={() => router.back()} />
@@ -51,37 +89,9 @@ export default function ExperienceDetailScreen() {
           { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad },
         ]}
       >
-        <View style={styles.hero}>
-          <Image source={{ uri: experience.image }} style={styles.heroImage} contentFit="cover" />
-          <View style={styles.heroBadges}>
-            <Badge label={experience.tag} color={colors.warning} backgroundColor="#2A2418" />
-            <Badge
-              label={`${experience.etaMinutes} mins`}
-              color={colors.playportOrange}
-              backgroundColor={colors.orangeTint}
-              left={<Ionicons name="time-outline" size={12} color={colors.playportOrange} />}
-            />
-          </View>
-        </View>
-
-        <Text style={styles.title}>{experience.name}</Text>
-        <Text style={styles.desc}>{experience.description}</Text>
-
-        <View style={styles.chips}>
-          {experience.chips.map((chip) => (
-            <Badge key={chip} label={chip} />
-          ))}
-        </View>
-
-        <View style={styles.metaRow}>
-          <View style={styles.metaItem}>
-            <Ionicons name="people-outline" size={16} color={colors.playportOrange} />
-            <Text style={styles.metaText}>{experience.people}</Text>
-          </View>
-          <Text style={styles.price}>
-            {formatINR(experience.price)}
-            <Text style={styles.duration}> {experience.durationLabel}</Text>
-          </Text>
+        <View style={[styles.topBlock, useSplitPane && styles.topBlockSplit]}>
+          {heroBlock}
+          {summaryBlock}
         </View>
 
         <View style={styles.section}>
@@ -113,12 +123,12 @@ export default function ExperienceDetailScreen() {
         {includedProducts.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Included products</Text>
-            <View style={styles.productList}>
+            <ResponsiveGrid columns={productColumns} gap={gap}>
               {includedProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
-                  compact
+                  compact={productColumns === 1}
                   onPress={() => router.push(`/product/${product.id}`)}
                   onRent={() => {
                     addProductToCart(product.id, '12h');
@@ -126,13 +136,13 @@ export default function ExperienceDetailScreen() {
                   }}
                 />
               ))}
-            </View>
+            </ResponsiveGrid>
           </View>
         ) : null}
       </ScrollView>
 
       <StickyBottomBar>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 140 }}>
           <Text style={styles.stickyLabel}>Bundle total</Text>
           <Text style={styles.stickyPrice}>{formatINR(experience.price)}</Text>
         </View>
@@ -152,7 +162,26 @@ export default function ExperienceDetailScreen() {
 
 const styles = StyleSheet.create({
   scroll: { gap: spacing.lg, paddingTop: spacing.sm },
-  hero: { borderRadius: radii.xl, overflow: 'hidden', height: 220, backgroundColor: colors.surfaceAlt },
+  topBlock: { gap: spacing.lg },
+  topBlockSplit: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: spacing.xl,
+  },
+  hero: {
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+    height: 220,
+    width: '100%',
+    backgroundColor: colors.surfaceAlt,
+  },
+  heroSplit: {
+    flex: 1,
+    width: undefined,
+    height: undefined,
+    minHeight: 280,
+    aspectRatio: 4 / 3,
+  },
   heroImage: { ...StyleSheet.absoluteFill },
   heroBadges: {
     position: 'absolute',
@@ -161,11 +190,20 @@ const styles = StyleSheet.create({
     right: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  summary: { gap: spacing.md },
+  summarySplit: {
+    flex: 1,
+    justifyContent: 'center',
+    minWidth: 280,
   },
   title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22, lineHeight: 28 },
+  titleLg: { fontSize: 28, lineHeight: 34 },
   desc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14, lineHeight: 21 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
   price: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 20 },
@@ -187,7 +225,6 @@ const styles = StyleSheet.create({
   },
   howNumText: { color: colors.playportOrange, fontFamily: fonts.monoMedium, fontSize: 12 },
   howText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19, flex: 1 },
-  productList: { gap: spacing.md },
   stickyLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   stickyPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 18, marginTop: 2 },
   bookBtn: { minWidth: 160 },

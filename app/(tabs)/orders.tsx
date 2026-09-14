@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { Badge } from '@/components/ui/Badge';
@@ -27,9 +28,10 @@ const ACTIVE_STATUSES = new Set([
 type TabKey = 'active' | 'past';
 
 export default function OrdersScreen() {
-  const { horizontalPadding } = useResponsive();
+  const { horizontalPadding, isDesktop, gap } = useResponsive();
   const orders = useAppStore((s) => s.orders);
   const [tab, setTab] = useState<TabKey>('active');
+  const orderColumns = isDesktop ? 2 : 1;
 
   const { active, past } = useMemo(() => {
     const activeOrders = orders.filter((o) => ACTIVE_STATUSES.has(o.status));
@@ -91,7 +93,7 @@ export default function OrdersScreen() {
             onAction={() => router.push('/(tabs)/explore')}
           />
         ) : (
-          <View style={styles.list}>
+          <ResponsiveGrid columns={orderColumns} gap={gap}>
             {visibleList.map((order) => (
               <OrderCard
                 key={order.id}
@@ -101,7 +103,7 @@ export default function OrdersScreen() {
                 onRentAgain={() => router.push('/(tabs)/explore')}
               />
             ))}
-          </View>
+          </ResponsiveGrid>
         )}
       </ScrollView>
     </Screen>
@@ -204,7 +206,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: -spacing.sm,
   },
-  list: { gap: spacing.lg },
   liveCard: {
     borderColor: colors.playportOrange,
     gap: spacing.lg,

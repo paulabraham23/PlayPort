@@ -10,7 +10,7 @@ interface Props {
 
 export function StickyBottomBar({ children, style }: Props) {
   const insets = useSafeAreaInsets();
-  const { isDesktop, horizontalPadding } = useResponsive();
+  const { horizontalPadding, contentWidth } = useResponsive();
   const bottomPad = Math.max(insets.bottom, Platform.OS === 'web' ? 12 : 8) + spacing.sm;
 
   return (
@@ -21,7 +21,7 @@ export function StickyBottomBar({ children, style }: Props) {
           {
             paddingBottom: bottomPad,
             paddingHorizontal: horizontalPadding,
-            maxWidth: isDesktop ? layout.desktopMaxWidth : undefined,
+            maxWidth: contentWidth,
           },
           style,
         ]}
@@ -46,13 +46,14 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: Platform.OS === 'web' ? 'rgba(26,26,31,0.96)' : colors.surface,
+    alignItems: 'center',
   },
   bar: {
     width: '100%',
-    alignSelf: 'center',
     paddingTop: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    flexWrap: 'wrap',
   },
 });

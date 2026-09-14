@@ -26,7 +26,7 @@ export default function NotificationsScreen() {
   const unread = notifications.filter((n) => !n.read).length;
 
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} narrow>
       <ScreenHeader
         title="Notifications"
         subtitle={unread ? `${unread} unread` : 'All caught up'}

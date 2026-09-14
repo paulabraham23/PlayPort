@@ -78,6 +78,7 @@ export function ProductCard({ product, durationId = '12h', onPress, onRent, comp
 
 const styles = StyleSheet.create({
   card: {
+    width: '100%',
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
@@ -99,6 +100,7 @@ const styles = StyleSheet.create({
   price: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 16 },
   meta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
   compact: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,

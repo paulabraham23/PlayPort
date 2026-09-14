@@ -25,7 +25,7 @@ type MenuSection = {
 };
 
 export default function ProfileScreen() {
-  const { horizontalPadding } = useResponsive();
+  const { horizontalPadding, isDesktop, gap } = useResponsive();
   const user = useAppStore((s) => s.user) ?? CURRENT_USER;
   const orders = useAppStore((s) => s.orders);
   const logout = useAppStore((s) => s.logout);
@@ -79,120 +79,126 @@ export default function ProfileScreen() {
       >
         <Text style={styles.pageTitle}>Profile</Text>
 
-        <Card style={styles.userCard}>
-          <View style={styles.userRow}>
-            <Image source={{ uri: user.avatar }} style={styles.avatar} contentFit="cover" />
-            <View style={styles.userMeta}>
-              <Text style={styles.userName}>{user.name}</Text>
-              <Text style={styles.userPhone}>{user.phone}</Text>
+        <View style={[styles.desktopSplit, isDesktop && styles.desktopSplitRow, isDesktop && { gap }]}>
+          <View style={[styles.desktopCol, isDesktop && styles.desktopColLeft]}>
+            <Card style={styles.userCard}>
+              <View style={styles.userRow}>
+                <Image source={{ uri: user.avatar }} style={styles.avatar} contentFit="cover" />
+                <View style={styles.userMeta}>
+                  <Text style={styles.userName}>{user.name}</Text>
+                  <Text style={styles.userPhone}>{user.phone}</Text>
+                </View>
+                {user.kycVerified ? (
+                  <Badge
+                    label="KYC"
+                    color={colors.success}
+                    backgroundColor="rgba(74,222,128,0.12)"
+                    left={<Ionicons name="checkmark-circle" size={12} color={colors.success} />}
+                  />
+                ) : null}
+              </View>
+            </Card>
+
+            <View style={[styles.statsRow, isDesktop && styles.statsRowDesktop]}>
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>{user.sessionsCount}</Text>
+                <Text style={styles.statLabel}>Sessions</Text>
+              </View>
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>₹0</Text>
+                <Text style={styles.statLabel}>Deposit</Text>
+              </View>
+              <View style={styles.stat}>
+                <Text style={styles.statValue} numberOfLines={1}>
+                  {user.homeHub}
+                </Text>
+                <Text style={styles.statLabel}>Home hub</Text>
+              </View>
             </View>
-            {user.kycVerified ? (
-              <Badge
-                label="KYC"
-                color={colors.success}
-                backgroundColor="rgba(74,222,128,0.12)"
-                left={<Ionicons name="checkmark-circle" size={12} color={colors.success} />}
-              />
+
+            {activeOrder ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push(`/order/track/${activeOrder.id}`)}
+              >
+                <Card style={styles.trackCard}>
+                  <View style={styles.trackTop}>
+                    <Badge
+                      label="ACTIVE ORDER"
+                      color={colors.playportOrange}
+                      backgroundColor={colors.orangeTint}
+                    />
+                    <Ionicons name="chevron-forward" size={18} color={colors.secondaryText} />
+                  </View>
+                  <Text style={styles.trackTitle}>Track #{activeOrder.id}</Text>
+                  <Text style={styles.trackMeta}>
+                    ETA {activeOrder.etaLabel} · {activeOrder.items[0]?.name}
+                  </Text>
+                  <View style={styles.progressTrack}>
+                    <View style={[styles.progressFill, { width: `${activeOrder.progressPercent}%` }]} />
+                  </View>
+                </Card>
+              </Pressable>
             ) : null}
           </View>
-        </Card>
 
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{user.sessionsCount}</Text>
-            <Text style={styles.statLabel}>Sessions</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>₹0</Text>
-            <Text style={styles.statLabel}>Deposit</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue} numberOfLines={1}>
-              {user.homeHub}
-            </Text>
-            <Text style={styles.statLabel}>Home hub</Text>
+          <View style={[styles.desktopCol, isDesktop && styles.desktopColRight]}>
+            {sections.map((section) => (
+              <View key={section.title} style={styles.section}>
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+                <Card padded={false}>
+                  {section.items.map((item, index) => (
+                    <Pressable
+                      key={item.label}
+                      accessibilityRole="button"
+                      onPress={() => {
+                        if (item.onPress) item.onPress();
+                        else if (item.href) router.push(item.href as never);
+                      }}
+                      style={[
+                        styles.menuRow,
+                        index < section.items.length - 1 && styles.menuBorder,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.menuIcon,
+                          item.danger && { backgroundColor: 'rgba(239,68,68,0.12)' },
+                        ]}
+                      >
+                        <Ionicons
+                          name={item.icon}
+                          size={18}
+                          color={item.danger ? colors.danger : colors.playportOrange}
+                        />
+                      </View>
+                      <Text style={[styles.menuLabel, item.danger && { color: colors.danger }]}>
+                        {item.label}
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={item.danger ? colors.danger : colors.mutedText}
+                      />
+                    </Pressable>
+                  ))}
+                </Card>
+              </View>
+            ))}
+
+            <Button
+              title="Log out"
+              variant="danger"
+              fullWidth
+              style={styles.logout}
+              icon={<Ionicons name="log-out-outline" size={18} color={colors.danger} />}
+              onPress={() => {
+                logout();
+                router.replace('/(auth)/login');
+              }}
+            />
           </View>
         </View>
-
-        {activeOrder ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push(`/order/track/${activeOrder.id}`)}
-          >
-            <Card style={styles.trackCard}>
-              <View style={styles.trackTop}>
-                <Badge
-                  label="ACTIVE ORDER"
-                  color={colors.playportOrange}
-                  backgroundColor={colors.orangeTint}
-                />
-                <Ionicons name="chevron-forward" size={18} color={colors.secondaryText} />
-              </View>
-              <Text style={styles.trackTitle}>Track #{activeOrder.id}</Text>
-              <Text style={styles.trackMeta}>
-                ETA {activeOrder.etaLabel} · {activeOrder.items[0]?.name}
-              </Text>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${activeOrder.progressPercent}%` }]} />
-              </View>
-            </Card>
-          </Pressable>
-        ) : null}
-
-        {sections.map((section) => (
-          <View key={section.title} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <Card padded={false}>
-              {section.items.map((item, index) => (
-                <Pressable
-                  key={item.label}
-                  accessibilityRole="button"
-                  onPress={() => {
-                    if (item.onPress) item.onPress();
-                    else if (item.href) router.push(item.href as never);
-                  }}
-                  style={[
-                    styles.menuRow,
-                    index < section.items.length - 1 && styles.menuBorder,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.menuIcon,
-                      item.danger && { backgroundColor: 'rgba(239,68,68,0.12)' },
-                    ]}
-                  >
-                    <Ionicons
-                      name={item.icon}
-                      size={18}
-                      color={item.danger ? colors.danger : colors.playportOrange}
-                    />
-                  </View>
-                  <Text style={[styles.menuLabel, item.danger && { color: colors.danger }]}>
-                    {item.label}
-                  </Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={item.danger ? colors.danger : colors.mutedText}
-                  />
-                </Pressable>
-              ))}
-            </Card>
-          </View>
-        ))}
-
-        <Button
-          title="Log out"
-          variant="danger"
-          fullWidth
-          style={styles.logout}
-          icon={<Ionicons name="log-out-outline" size={18} color={colors.danger} />}
-          onPress={() => {
-            logout();
-            router.replace('/(auth)/login');
-          }}
-        />
       </ScrollView>
     </Screen>
   );
@@ -206,6 +212,11 @@ const styles = StyleSheet.create({
     fontSize: 30,
     letterSpacing: -0.4,
   },
+  desktopSplit: { gap: spacing.lg },
+  desktopSplitRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  desktopCol: { gap: spacing.lg },
+  desktopColLeft: { flex: 1, minWidth: 0 },
+  desktopColRight: { flex: 1.15, minWidth: 0 },
   userCard: { gap: 0 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: {
@@ -220,6 +231,7 @@ const styles = StyleSheet.create({
   userName: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
   userPhone: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 13 },
   statsRow: { flexDirection: 'row', gap: 10 },
+  statsRowDesktop: { gap: 14 },
   stat: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -227,7 +239,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 72,

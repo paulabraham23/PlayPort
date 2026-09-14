@@ -24,7 +24,7 @@ export default function CheckoutScreen() {
 
   if (!cart.length) {
     return (
-      <Screen showHeader={false}>
+      <Screen showHeader={false} narrow>
         <ScreenHeader title="Checkout" onBack={() => router.back()} />
         <EmptyState
           title="Nothing to checkout"
@@ -39,7 +39,7 @@ export default function CheckoutScreen() {
   const itemNames = cart.map((c) => c.name).join(' + ');
 
   return (
-    <Screen showHeader={false} edges={['top']}>
+    <Screen showHeader={false} edges={['top']} narrow>
       <ScreenHeader
         title="Checkout"
         subtitle="STEP 1 OF 2"

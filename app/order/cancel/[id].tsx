@@ -29,7 +29,7 @@ export default function CancelOrderScreen() {
 
   if (!order) {
     return (
-      <Screen showHeader={false}>
+      <Screen showHeader={false} narrow>
         <ScreenHeader title="Cancel Order" onBack={() => router.back()} />
         <EmptyState
           icon="close-circle-outline"
@@ -43,7 +43,7 @@ export default function CancelOrderScreen() {
 
   if (done || order.status === 'cancelled') {
     return (
-      <Screen showHeader={false}>
+      <Screen showHeader={false} narrow>
         <ScreenHeader title="Cancelled" onBack={() => router.replace('/(tabs)/orders')} />
         <View style={[styles.successWrap, { paddingHorizontal: horizontalPadding }]}>
           <View style={styles.successIcon}>
@@ -73,7 +73,7 @@ export default function CancelOrderScreen() {
   const first = order.items[0];
 
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} narrow>
       <ScreenHeader title="Cancel Order" subtitle={`#${order.id}`} onBack={() => router.back()} />
       <ScrollView
         showsVerticalScrollIndicator={false}

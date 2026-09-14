@@ -52,7 +52,7 @@ export default function PaymentScreen() {
 
   if (!cart.length && !paymentError && !paying) {
     return (
-      <Screen showHeader={false}>
+      <Screen showHeader={false} narrow>
         <ScreenHeader title="Payment" onBack={() => router.back()} />
         <EmptyState
           title="Cart is empty"
@@ -67,7 +67,7 @@ export default function PaymentScreen() {
   const amount = displayTotal || totals.total || 0;
 
   return (
-    <Screen showHeader={false} edges={['top']}>
+    <Screen showHeader={false} edges={['top']} narrow>
       <ScreenHeader
         title="Checkout"
         subtitle="STEP 2 OF 2"

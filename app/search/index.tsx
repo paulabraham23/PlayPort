@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { SearchBar } from '@/components/search/SearchBar';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
@@ -26,7 +27,7 @@ const QUICK_LABELS: Record<(typeof QUICK_CATEGORY_IDS)[number], { title: string;
 };
 
 export default function SearchDiscoveryScreen() {
-  const { horizontalPadding } = useResponsive();
+  const { horizontalPadding, categoryColumns, gap, isDesktop } = useResponsive();
   const [query, setQuery] = useState('');
   const recentSearches = useAppStore((s) => s.recentSearches);
   const pushRecentSearch = useAppStore((s) => s.pushRecentSearch);
@@ -42,6 +43,7 @@ export default function SearchDiscoveryScreen() {
 
   const quickCategories = QUICK_CATEGORY_IDS.map((id) => CATEGORIES.find((c) => c.id === id)!).filter(Boolean);
   const setupsReady = CATEGORIES.reduce((sum, c) => sum + c.setupsReady, 0);
+  const quickCols = Math.min(categoryColumns, 4);
 
   return (
     <Screen showHeader showCart>
@@ -100,7 +102,7 @@ export default function SearchDiscoveryScreen() {
             <Text style={styles.sectionTitle}>Trending Vibes</Text>
             <Text style={styles.monoLabel}>PARTY MODES</Text>
           </View>
-          <View style={styles.vibeRow}>
+          <View style={[styles.vibeRow, isDesktop && styles.vibeRowDesktop]}>
             {TRENDING_VIBES.map((vibe) => (
               <Pressable
                 key={vibe.id}
@@ -121,7 +123,7 @@ export default function SearchDiscoveryScreen() {
             <Text style={styles.sectionTitle}>Quick Categories</Text>
             <Text style={styles.monoAccent}>{setupsReady} SETUPS READY</Text>
           </View>
-          <View style={styles.catGrid}>
+          <ResponsiveGrid columns={quickCols} gap={gap}>
             {quickCategories.map((cat) => {
               const meta = QUICK_LABELS[cat.id as (typeof QUICK_CATEGORY_IDS)[number]];
               return (
@@ -142,7 +144,7 @@ export default function SearchDiscoveryScreen() {
                 </Pressable>
               );
             })}
-          </View>
+          </ResponsiveGrid>
         </View>
 
         <View style={styles.section}>
@@ -226,7 +228,7 @@ const styles = StyleSheet.create({
   expressRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   express: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   section: { gap: spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
   sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 17 },
   clearAll: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
   monoLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8 },
@@ -245,6 +247,7 @@ const styles = StyleSheet.create({
   },
   chipText: { color: colors.primaryText, fontFamily: fonts.body, fontSize: 13 },
   vibeRow: { flexDirection: 'row', gap: 10 },
+  vibeRowDesktop: { maxWidth: 720 },
   vibeCard: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -257,11 +260,7 @@ const styles = StyleSheet.create({
   vibeEmoji: { fontSize: 22, marginBottom: 4 },
   vibeTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
   vibeSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   catCard: {
-    width: '48%',
-    flexGrow: 1,
-    minWidth: 140,
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,

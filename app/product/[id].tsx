@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
@@ -35,7 +36,7 @@ const FLOW_STEPS = [
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { horizontalPadding } = useResponsive();
+  const { horizontalPadding, useSplitPane, productColumns, gap } = useResponsive();
   const stickyPad = useStickyBarPadding();
   const [durationId, setDurationId] = useState<RentalDurationId>('12h');
   const [wishlisted, setWishlisted] = useState(false);
@@ -73,6 +74,68 @@ export default function ProductDetailScreen() {
   const durationLabel =
     durationId === 'weekend' ? 'Weekend' : durationId === '12h' ? '12 Hours' : durationId === '24h' ? '24 Hours' : '6 Hours';
 
+  const heroBlock = (
+    <View style={[styles.hero, useSplitPane && styles.heroSplit]}>
+      <Image source={{ uri: product.images[0] }} style={styles.heroImage} contentFit="cover" />
+      <View style={styles.heroTop}>
+        <Badge
+          label={`DELIVERED IN ${product.etaMinutes} MINS`}
+          color={colors.playportOrange}
+          backgroundColor="rgba(0,0,0,0.65)"
+          left={<Ionicons name="flash" size={12} color={colors.playportOrange} />}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Toggle wishlist"
+          onPress={() => setWishlisted((w) => !w)}
+          style={styles.heart}
+        >
+          <Ionicons
+            name={wishlisted ? 'heart' : 'heart-outline'}
+            size={20}
+            color={wishlisted ? colors.badgeRed : colors.white}
+          />
+        </Pressable>
+      </View>
+      <View style={styles.heroBottom}>
+        <View style={styles.sanitizePill}>
+          <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+          <Text style={styles.sanitizeText}>{product.badge ?? 'Sanitized Pro Kit'}</Text>
+          <Text style={styles.ratingText}>
+            ★ {product.rating} ({product.reviewCount}+)
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const summaryBlock = (
+    <View style={[styles.summary, useSplitPane && styles.summarySplit]}>
+      <View style={styles.tagRow}>
+        {product.tags.map((tag) => (
+          <Badge
+            key={tag}
+            label={tag}
+            color={tag.toLowerCase().includes('deposit') ? colors.secondaryText : colors.white}
+            backgroundColor={
+              tag.toLowerCase().includes('gaming') || tag.toLowerCase().includes('drop')
+                ? colors.playportOrange
+                : colors.surfaceAlt
+            }
+          />
+        ))}
+      </View>
+      <Text style={[styles.title, useSplitPane && styles.titleLg]}>{product.name}</Text>
+      <Text style={styles.desc}>{product.description}</Text>
+      <View style={styles.pricePreview}>
+        <Text style={styles.pricePreviewLabel}>From</Text>
+        <Text style={styles.pricePreviewValue}>
+          {formatINR(price)} / {durationLabel}
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <Screen showHeader={false} edges={['top']}>
       <ScreenHeader title="Item Detail" onBack={() => router.back()} />
@@ -80,52 +143,10 @@ export default function ProductDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad }]}
       >
-        <View style={styles.hero}>
-          <Image source={{ uri: product.images[0] }} style={styles.heroImage} contentFit="cover" />
-          <View style={styles.heroTop}>
-            <Badge
-              label={`DELIVERED IN ${product.etaMinutes} MINS`}
-              color={colors.playportOrange}
-              backgroundColor="rgba(0,0,0,0.65)"
-              left={<Ionicons name="flash" size={12} color={colors.playportOrange} />}
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Toggle wishlist"
-              onPress={() => setWishlisted((w) => !w)}
-              style={styles.heart}
-            >
-              <Ionicons
-                name={wishlisted ? 'heart' : 'heart-outline'}
-                size={20}
-                color={wishlisted ? colors.badgeRed : colors.white}
-              />
-            </Pressable>
-          </View>
-          <View style={styles.heroBottom}>
-            <View style={styles.sanitizePill}>
-              <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-              <Text style={styles.sanitizeText}>{product.badge ?? 'Sanitized Pro Kit'}</Text>
-              <Text style={styles.ratingText}>
-                ★ {product.rating} ({product.reviewCount}+)
-              </Text>
-            </View>
-          </View>
+        <View style={[styles.topBlock, useSplitPane && styles.topBlockSplit]}>
+          {heroBlock}
+          {summaryBlock}
         </View>
-
-        <View style={styles.tagRow}>
-          {product.tags.map((tag) => (
-            <Badge
-              key={tag}
-              label={tag}
-              color={tag.toLowerCase().includes('deposit') ? colors.secondaryText : colors.white}
-              backgroundColor={tag.toLowerCase().includes('gaming') || tag.toLowerCase().includes('drop') ? colors.playportOrange : colors.surfaceAlt}
-            />
-          ))}
-        </View>
-
-        <Text style={styles.title}>{product.name}</Text>
-        <Text style={styles.desc}>{product.description}</Text>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -215,12 +236,12 @@ export default function ProductDetailScreen() {
         {related.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Related in {product.categoryId.replace('-', ' ')}</Text>
-            <View style={styles.relatedList}>
+            <ResponsiveGrid columns={productColumns} gap={gap}>
               {related.map((item) => (
                 <ProductCard
                   key={item.id}
                   product={item}
-                  compact
+                  compact={productColumns === 1}
                   onPress={() => router.push(`/product/${item.id}`)}
                   onRent={() => {
                     addProductToCart(item.id, '12h');
@@ -228,13 +249,13 @@ export default function ProductDetailScreen() {
                   }}
                 />
               ))}
-            </View>
+            </ResponsiveGrid>
           </View>
         ) : null}
       </ScrollView>
 
       <StickyBottomBar>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 140 }}>
           <Text style={styles.selectedLabel}>Selected Plan</Text>
           <Text style={styles.selectedPrice}>
             {formatINR(price)} / {durationLabel}
@@ -256,12 +277,24 @@ export default function ProductDetailScreen() {
 
 const styles = StyleSheet.create({
   scroll: { gap: spacing.lg, paddingTop: spacing.sm },
+  topBlock: { gap: spacing.lg },
+  topBlockSplit: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: spacing.xl,
+  },
   hero: {
     borderRadius: radii.xl,
     overflow: 'hidden',
     width: '100%',
     aspectRatio: 1.1,
     backgroundColor: colors.surfaceAlt,
+  },
+  heroSplit: {
+    flex: 1,
+    width: undefined,
+    aspectRatio: 1,
+    minHeight: 320,
   },
   heroImage: { ...StyleSheet.absoluteFill },
   heroTop: {
@@ -291,14 +324,25 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     paddingHorizontal: 10,
     paddingVertical: 6,
+    flexWrap: 'wrap',
   },
   sanitizeText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 12 },
   ratingText: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 11 },
+  summary: { gap: spacing.md },
+  summarySplit: {
+    flex: 1,
+    justifyContent: 'center',
+    minWidth: 280,
+  },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22, lineHeight: 28 },
+  titleLg: { fontSize: 28, lineHeight: 34 },
   desc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14, lineHeight: 21 },
+  pricePreview: { gap: 4, marginTop: spacing.sm },
+  pricePreviewLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.5 },
+  pricePreviewValue: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 20 },
   section: { gap: spacing.md },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 16 },
   freeSetup: { color: colors.success, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.5 },
@@ -363,7 +407,6 @@ const styles = StyleSheet.create({
   reviewStars: { color: colors.warning, fontSize: 12 },
   reviewText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
   noReviews: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
-  relatedList: { gap: spacing.md },
   selectedLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   selectedPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 16, marginTop: 2 },
   bookBtn: { minWidth: 140 },

@@ -80,8 +80,8 @@ export const fonts = {
 } as const;
 
 export const layout = {
-  maxContentWidth: 720,
-  desktopMaxWidth: 1100,
+  maxContentWidth: 840,
+  desktopMaxWidth: 1120,
   headerHeight: 56,
   tabBarHeight: 64,
   bottomBarHeight: 72,

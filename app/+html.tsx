@@ -7,9 +7,12 @@ export default function Root({ children }: { children: ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
         <meta name="theme-color" content="#121212" />
-        <meta name="description" content="PlayPort — quick commerce for entertainment. Consoles, cinema kits, karaoke and more delivered in 30 mins." />
+        <meta
+          name="description"
+          content="PlayPort — quick commerce for entertainment. Consoles, cinema kits, karaoke and more delivered in 30 mins."
+        />
         <ScrollViewStyleReset />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap"
@@ -26,9 +29,16 @@ const globalCss = `
 html, body, #root {
   background-color: #121212;
   min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
 }
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+img, video {
+  max-width: 100%;
+  height: auto;
 }
 [role="button"], [role="tab"], button, a {
   cursor: pointer;
@@ -38,6 +48,7 @@ html, body, #root {
 }
 input, textarea {
   outline: none;
+  font-size: 16px; /* prevents iOS zoom on focus */
 }
 ::-webkit-scrollbar {
   width: 8px;
@@ -49,5 +60,12 @@ input, textarea {
 }
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+@media (min-width: 1024px) {
+  body {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255,87,34,0.08), transparent 60%),
+      #121212;
+  }
 }
 `;

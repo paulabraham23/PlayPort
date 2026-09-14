@@ -26,7 +26,7 @@ export default function PaymentMethodsScreen() {
   const selectPaymentMethod = useAppStore((s) => s.selectPaymentMethod);
 
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} narrow>
       <ScreenHeader
         title="Payment Methods"
         subtitle="Checkout preferences"

@@ -15,7 +15,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 
 export default function OtpScreen() {
-  const { horizontalPadding, isDesktop } = useResponsive();
+  const { horizontalPadding, formMaxWidth, isXs } = useResponsive();
   const phoneDraft = useAppStore((s) => s.phoneDraft);
   const login = useAppStore((s) => s.login);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -35,6 +35,7 @@ export default function OtpScreen() {
 
   const code = otp.join('');
   const canVerify = code.length === 6;
+  const columnMax = formMaxWidth;
 
   const updateDigit = (index: number, value: string) => {
     const digit = value.replace(/\D/g, '').slice(-1);
@@ -64,7 +65,7 @@ export default function OtpScreen() {
           styles.wrap,
           {
             paddingHorizontal: horizontalPadding,
-            maxWidth: isDesktop ? 480 : undefined,
+            maxWidth: columnMax,
             alignSelf: 'center',
             width: '100%',
           },
@@ -89,7 +90,7 @@ export default function OtpScreen() {
           <Text style={styles.phone}>{phoneDisplay}</Text>
         </Text>
 
-        <View style={styles.otpRow}>
+        <View style={[styles.otpRow, isXs && styles.otpRowXs]}>
           {otp.map((digit, index) => {
             const active = focusedIndex === index || !!digit;
             return (
@@ -106,7 +107,11 @@ export default function OtpScreen() {
                 keyboardType="number-pad"
                 maxLength={1}
                 selectTextOnFocus
-                style={[styles.otpBox, active ? styles.otpBoxActive : null]}
+                style={[
+                  styles.otpBox,
+                  isXs && styles.otpBoxXs,
+                  active ? styles.otpBoxActive : null,
+                ]}
                 accessibilityLabel={`OTP digit ${index + 1}`}
               />
             );
@@ -180,12 +185,16 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   phone: { color: colors.primaryText, fontFamily: fonts.monoMedium },
-  otpRow: { flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
+  otpRow: { flexDirection: 'row', gap: 10, justifyContent: 'space-between', width: '100%' },
+  otpRowXs: { gap: 6 },
   otpBox: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     aspectRatio: 1,
     maxWidth: 58,
-    minHeight: 56,
+    minWidth: 40,
+    minHeight: 48,
     backgroundColor: colors.surface,
     borderRadius: radii.md,
     borderWidth: 1.5,
@@ -195,6 +204,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     textAlign: 'center',
     outlineStyle: 'none' as unknown as undefined,
+  },
+  otpBoxXs: {
+    maxWidth: 48,
+    minHeight: 44,
+    fontSize: 20,
   },
   otpBoxActive: {
     borderColor: colors.playportOrange,

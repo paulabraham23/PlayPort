@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { ExperienceCard } from '@/components/products/ExperienceCard';
@@ -12,7 +13,7 @@ import { useAppStore } from '@/store/appStore';
 
 export default function CategoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { horizontalPadding } = useResponsive();
+  const { horizontalPadding, productColumns, experienceColumns, gap } = useResponsive();
   const addProductToCart = useAppStore((s) => s.addProductToCart);
   const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
 
@@ -50,12 +51,12 @@ export default function CategoryScreen() {
         {products.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Kits & Gear</Text>
-            <View style={styles.list}>
+            <ResponsiveGrid columns={productColumns} gap={gap}>
               {products.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
-                  compact
+                  compact={productColumns === 1}
                   onPress={() => router.push(`/product/${product.id}`)}
                   onRent={() => {
                     addProductToCart(product.id, '12h');
@@ -63,14 +64,14 @@ export default function CategoryScreen() {
                   }}
                 />
               ))}
-            </View>
+            </ResponsiveGrid>
           </View>
         ) : null}
 
         {experiences.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Experiences</Text>
-            <View style={styles.list}>
+            <ResponsiveGrid columns={experienceColumns} gap={gap}>
               {experiences.map((experience) => (
                 <ExperienceCard
                   key={experience.id}
@@ -82,7 +83,7 @@ export default function CategoryScreen() {
                   }}
                 />
               ))}
-            </View>
+            </ResponsiveGrid>
           </View>
         ) : null}
 
@@ -104,5 +105,4 @@ const styles = StyleSheet.create({
   intro: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
   section: { gap: spacing.md },
   sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
-  list: { gap: spacing.md },
 });

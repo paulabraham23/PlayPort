@@ -69,7 +69,7 @@ export default function AddAddressScreen() {
   };
 
   return (
-    <Screen showHeader={false}>
+    <Screen showHeader={false} narrow>
       <ScreenHeader title="Add Address" subtitle="New drop-off location" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}

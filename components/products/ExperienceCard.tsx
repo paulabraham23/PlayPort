@@ -59,6 +59,7 @@ export function ExperienceCard({ experience, onPress, onBook }: Props) {
 
 const styles = StyleSheet.create({
   card: {
+    width: '100%',
     backgroundColor: colors.surface,
     borderRadius: radii.xl,
     borderWidth: 1,

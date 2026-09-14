@@ -100,9 +100,7 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   tabBarWeb: {
-    maxWidth: 560,
     width: '100%',
-    alignSelf: 'center',
   },
   label: {
     fontFamily: fonts.bodyMedium,

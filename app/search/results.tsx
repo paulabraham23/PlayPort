@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { ProductCard } from '@/components/products/ProductCard';
 import { SearchBar } from '@/components/search/SearchBar';
@@ -19,7 +20,7 @@ export default function SearchResultsScreen() {
   const { q } = useLocalSearchParams<{ q?: string }>();
   const initial = typeof q === 'string' ? q : '';
   const [query, setQuery] = useState(initial);
-  const { horizontalPadding } = useResponsive();
+  const { horizontalPadding, productColumns, gap } = useResponsive();
   const pushRecentSearch = useAppStore((s) => s.pushRecentSearch);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
 
@@ -150,12 +151,12 @@ export default function SearchResultsScreen() {
               </View>
             ) : null}
 
-            <View style={styles.list}>
+            <ResponsiveGrid columns={productColumns} gap={gap}>
               {listProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
-                  compact
+                  compact={productColumns === 1}
                   onPress={() => router.push(`/product/${product.id}`)}
                   onRent={() => {
                     addProductToCart(product.id, '12h');
@@ -163,7 +164,7 @@ export default function SearchResultsScreen() {
                   }}
                 />
               ))}
-            </View>
+            </ResponsiveGrid>
 
             {addon ? (
               <View style={styles.addon}>
@@ -260,10 +261,9 @@ const styles = StyleSheet.create({
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   featuredTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
   featuredDesc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
-  featuredFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  featuredFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, flexWrap: 'wrap', gap: 8 },
   featuredPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 18 },
   strike: { color: colors.mutedText, textDecorationLine: 'line-through', fontFamily: fonts.mono, fontSize: 12 },
-  list: { gap: spacing.md },
   addon: {
     flexDirection: 'row',
     alignItems: 'center',

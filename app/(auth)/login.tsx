@@ -27,7 +27,7 @@ const TRUST = [
 ];
 
 export default function LoginScreen() {
-  const { horizontalPadding, isDesktop } = useResponsive();
+  const { horizontalPadding, formMaxWidth, isTablet, isDesktop } = useResponsive();
   const phoneDraft = useAppStore((s) => s.phoneDraft);
   const setPhoneDraft = useAppStore((s) => s.setPhoneDraft);
   const browseAsGuest = useAppStore((s) => s.browseAsGuest);
@@ -40,6 +40,8 @@ export default function LoginScreen() {
   };
 
   const canGetOtp = localPhone.length === 10;
+  const columnMax = formMaxWidth ?? (isTablet || isDesktop ? 520 : undefined);
+  const carouselSize = isTablet || isDesktop;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -48,7 +50,7 @@ export default function LoginScreen() {
           styles.scroll,
           {
             paddingHorizontal: horizontalPadding,
-            maxWidth: isDesktop ? 480 : undefined,
+            maxWidth: columnMax,
             alignSelf: 'center',
             width: '100%',
           },
@@ -94,7 +96,10 @@ export default function LoginScreen() {
           contentContainerStyle={styles.carousel}
         >
           {CAROUSEL.map((exp) => (
-            <View key={exp.id} style={styles.carouselCard}>
+            <View
+              key={exp.id}
+              style={[styles.carouselCard, carouselSize && styles.carouselCardLg]}
+            >
               <Image source={{ uri: exp.image }} style={styles.carouselImage} contentFit="cover" />
               <View style={styles.carouselOverlay} />
               <View style={styles.carouselFade} />
@@ -233,6 +238,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     justifyContent: 'flex-end',
     padding: spacing.md,
+  },
+  carouselCardLg: {
+    width: 180,
+    height: 196,
   },
   carouselImage: { ...StyleSheet.absoluteFill },
   carouselOverlay: {

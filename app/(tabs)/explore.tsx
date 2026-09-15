@@ -1,19 +1,20 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
-import { CategoryCard } from '@/components/products/CategoryCard';
-import { ExperienceCard } from '@/components/products/ExperienceCard';
+import { ProductCard } from '@/components/products/ProductCard';
 import { SearchBar } from '@/components/search/SearchBar';
 import { colors, fonts, spacing } from '@/constants/theme';
-import { CATEGORIES, EXPERIENCES } from '@/data/mock';
+import { PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
 
 export default function ExploreScreen() {
-  const { horizontalPadding, categoryColumns, experienceColumns, gap, isDesktop } = useResponsive();
-  const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
+  const { horizontalPadding, productColumns, gap, isDesktop, isMobile } = useResponsive();
+  const addProductToCart = useAppStore((s) => s.addProductToCart);
+  const catalogProducts = useCatalogStore((s) => s.products);
+  const products = catalogProducts.length ? catalogProducts : PRODUCTS;
 
   return (
     <Screen>
@@ -22,49 +23,29 @@ export default function ExploreScreen() {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
       >
         <View style={styles.header}>
-          <Text style={styles.kicker}>DISCOVER</Text>
+          <Text style={styles.kicker}>AVAILABLE NOW</Text>
           <Text style={[styles.title, isDesktop && styles.titleLg]}>Explore</Text>
-          <Text style={styles.subtitle}>Discover entertainment kits near you</Text>
+          <Text style={styles.subtitle}>Rent what we have ready at the hub tonight</Text>
         </View>
 
         <SearchBar
           value=""
           onChangeText={() => {}}
-          placeholder="Search categories & kits..."
+          placeholder="Search kits..."
           onPress={() => router.push('/search')}
         />
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>All Categories</Text>
-          <ResponsiveGrid columns={categoryColumns} gap={gap}>
-            {CATEGORIES.map((category) => (
-              <View key={category.id} style={styles.categoryWrap}>
-                <CategoryCard
-                  category={category}
-                  wide
-                  onPress={() => router.push(`/category/${category.id}`)}
-                />
-              </View>
-            ))}
-          </ResponsiveGrid>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Experiences</Text>
-            <Pressable onPress={() => router.push('/search')} style={styles.searchLink}>
-              <Text style={styles.link}>Search</Text>
-              <Ionicons name="arrow-forward" size={14} color={colors.secondaryText} />
-            </Pressable>
-          </View>
-          <ResponsiveGrid columns={experienceColumns} gap={gap}>
-            {EXPERIENCES.map((experience) => (
-              <ExperienceCard
-                key={experience.id}
-                experience={experience}
-                onPress={() => router.push(`/experience/${experience.id}`)}
-                onBook={() => {
-                  addExperienceToCart(experience.id);
+          <Text style={styles.sectionTitle}>All kits</Text>
+          <ResponsiveGrid columns={productColumns} gap={gap}>
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                compact={isMobile && productColumns === 1}
+                onPress={() => router.push(`/product/${product.id}`)}
+                onRent={() => {
+                  addProductToCart(product.id, '12h');
                   router.push('/cart');
                 }}
               />
@@ -89,9 +70,5 @@ const styles = StyleSheet.create({
   titleLg: { fontSize: 40, lineHeight: 46 },
   subtitle: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
   section: { gap: spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20, flexShrink: 1 },
-  categoryWrap: { minHeight: 132, flex: 1 },
-  searchLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  link: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
 });

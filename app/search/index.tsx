@@ -17,13 +17,13 @@ import {
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 
-const QUICK_CATEGORY_IDS = ['gaming', 'movie-nights', 'board-games', 'music-karaoke'] as const;
+const QUICK_CATEGORY_IDS = ['gaming', 'vr', 'racing', 'movie-nights'] as const;
 
 const QUICK_LABELS: Record<(typeof QUICK_CATEGORY_IDS)[number], { title: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  gaming: { title: 'Gaming Gear', icon: 'game-controller-outline' },
-  'movie-nights': { title: 'Home Cinema', icon: 'film-outline' },
-  'board-games': { title: 'Board & Social', icon: 'dice-outline' },
-  'music-karaoke': { title: 'Music & Audio', icon: 'musical-notes-outline' },
+  gaming: { title: 'Consoles', icon: 'game-controller-outline' },
+  vr: { title: 'VR', icon: 'glasses-outline' },
+  racing: { title: 'Racing', icon: 'car-sport-outline' },
+  'movie-nights': { title: 'Projectors', icon: 'film-outline' },
 };
 
 export default function SearchDiscoveryScreen() {

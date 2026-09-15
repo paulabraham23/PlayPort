@@ -18,7 +18,7 @@ export default function CategoryScreen() {
   const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
 
   const category = CATEGORIES.find((c) => c.id === id);
-  const products = PRODUCTS.filter((p) => p.categoryId === id && p.id !== 'screen-addon');
+  const products = PRODUCTS.filter((p) => p.categoryId === id);
   const experiences = EXPERIENCES.filter((e) => e.categoryId === id);
 
   if (!category) {

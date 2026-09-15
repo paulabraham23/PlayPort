@@ -21,16 +21,16 @@ import type { CartItem, RentalDurationId } from '@/types';
 
 const UPSELLS = [
   {
-    id: 'screen-addon',
-    title: '100" Pull-Up Screen',
-    subtitle: 'Anti-light cinema upgrade',
-    priceLabel: '+₹329',
+    id: 'lifelong-projector',
+    title: 'Lifelong Smart Projector',
+    subtitle: 'Movie night add-on',
+    priceLabel: '+₹749',
   },
   {
-    id: 'jbl-partybox',
-    title: 'PartyBox Boost',
-    subtitle: 'Extra bass for the room',
-    priceLabel: '+₹1,199',
+    id: 'meta-quest-2',
+    title: 'Meta Quest 2',
+    subtitle: 'VR party kit',
+    priceLabel: '+₹799',
   },
 ];
 

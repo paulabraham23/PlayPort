@@ -14,12 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
-import { EXPERIENCES, HUB } from '@/data/mock';
+import { HUB, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { resolveAuthNext } from '@/utils/authGate';
 
-const CAROUSEL = EXPERIENCES.slice(0, 3);
+const CAROUSEL = PRODUCTS.slice(0, 3);
 
 const TRUST = [
   { icon: 'shield-checkmark-outline' as const, label: 'Sanitized kits' },
@@ -94,17 +94,17 @@ export default function LoginScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.carousel}
         >
-          {CAROUSEL.map((exp) => (
+          {CAROUSEL.map((item) => (
             <View
-              key={exp.id}
+              key={item.id}
               style={[styles.carouselCard, carouselSize && styles.carouselCardLg]}
             >
-              <Image source={{ uri: exp.image }} style={styles.carouselImage} contentFit="cover" />
+              <Image source={{ uri: item.images[0] }} style={styles.carouselImage} contentFit="cover" />
               <View style={styles.carouselOverlay} />
               <View style={styles.carouselFade} />
-              <Text style={styles.carouselTag}>{exp.tag}</Text>
+              <Text style={styles.carouselTag}>{item.tags[0] ?? 'KIT'}</Text>
               <Text style={styles.carouselTitle} numberOfLines={2}>
-                {exp.name}
+                {item.shortName}
               </Text>
             </View>
           ))}

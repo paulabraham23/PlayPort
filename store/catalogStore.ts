@@ -54,8 +54,12 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         fetchInventoryForHub('indiranagar'),
       ]);
 
-      const hasCatalog = categories.length > 0 && products.length > 0;
-      if (!hasCatalog) {
+      // Prefer local catalog when Firestore still has stale/legacy items.
+      const localIds = new Set(PRODUCTS.map((p) => p.id));
+      const firestoreMatchesLocal =
+        products.length > 0 && products.every((p) => localIds.has(p.id)) && products.length === PRODUCTS.length;
+
+      if (!firestoreMatchesLocal) {
         set({ ready: true, source: 'mock', error: null });
         return;
       }
@@ -63,7 +67,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       set({
         ready: true,
         source: 'firestore',
-        categories,
+        categories: categories.length ? categories : CATEGORIES,
         products,
         experiences: experiences.length ? experiences : EXPERIENCES,
         hub: hub ?? HUB,

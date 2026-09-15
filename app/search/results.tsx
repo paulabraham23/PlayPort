@@ -25,15 +25,13 @@ export default function SearchResultsScreen() {
   const addProductToCart = useAppStore((s) => s.addProductToCart);
 
   const results = useMemo(() => searchProducts(query, PRODUCTS), [query]);
-  const isProjectorSearch = /projector|movie|cinema|nebula/i.test(query);
+  const isProjectorSearch = /projector|movie|cinema|lifelong/i.test(query);
   const featured =
     isProjectorSearch
-      ? PRODUCTS.find((p) => p.id === 'nebula-projector') ?? results[0]
+      ? PRODUCTS.find((p) => p.id === 'lifelong-projector') ?? results[0]
       : results[0];
-  const listProducts = results.filter(
-    (p) => p.id !== featured?.id && p.id !== 'screen-addon'
-  );
-  const addon = isProjectorSearch ? PRODUCTS.find((p) => p.id === 'screen-addon') : undefined;
+  const listProducts = results.filter((p) => p.id !== featured?.id);
+  const addon = undefined;
   const setupsReady = results.length || 0;
 
   const submit = (value: string) => {

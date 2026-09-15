@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   meta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   note: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  eta: { color: colors.playportOrange, fontFamily: fonts.mono, fontSize: 11, flex: 1 },
+  eta: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 11, flex: 1 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  action: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  action: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
 });

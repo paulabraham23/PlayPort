@@ -11,6 +11,9 @@ import {
   RECENT_SEARCHES,
   REVIEWS,
 } from '@/data/mock';
+import { signInAsGuest, signInWithPhoneMock, signOutUser } from '@/lib/auth';
+import { createOrder as createRemoteOrder } from '@/lib/firestore';
+import { useCatalogStore } from '@/store/catalogStore';
 import { calcCartTotals, generateOrderId } from '@/utils/format';
 import type {
   Address,
@@ -92,7 +95,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setPhoneDraft: (phone) => set({ phoneDraft: phone }),
 
-  login: (phone) =>
+  login: (phone) => {
+    void signInWithPhoneMock(phone).catch(() => {});
     set({
       isAuthenticated: true,
       user: {
@@ -100,18 +104,25 @@ export const useAppStore = create<AppState>((set, get) => ({
         phone: phone.startsWith('+') ? phone : `+91 ${phone}`,
       },
       phoneDraft: phone,
-    }),
+    });
+  },
 
-  logout: () => set({ isAuthenticated: false, user: null, cart: [] }),
+  logout: () => {
+    void signOutUser().catch(() => {});
+    set({ isAuthenticated: false, user: null, cart: [] });
+  },
 
-  browseAsGuest: () =>
+  browseAsGuest: () => {
+    void signInAsGuest().catch(() => {});
     set({
       isAuthenticated: true,
       user: { ...CURRENT_USER, name: 'Guest Explorer', phone: 'Guest', email: 'guest@playport.app' },
-    }),
+    });
+  },
 
   addProductToCart: (productId, durationId, quantity = 1) => {
-    const product = PRODUCTS.find((p) => p.id === productId);
+    const catalogProducts = useCatalogStore.getState().products;
+    const product = catalogProducts.find((p) => p.id === productId) ?? PRODUCTS.find((p) => p.id === productId);
     if (!product) return;
     const existing = get().cart.find((c) => c.productId === productId && c.durationId === durationId);
     if (existing) {
@@ -138,7 +149,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addExperienceToCart: (experienceId) => {
-    const exp = EXPERIENCES.find((e) => e.id === experienceId);
+    const catalogExperiences = useCatalogStore.getState().experiences;
+    const exp =
+      catalogExperiences.find((e) => e.id === experienceId) ?? EXPERIENCES.find((e) => e.id === experienceId);
     if (!exp) return;
     const existing = get().cart.find((c) => c.experienceId === experienceId);
     if (existing) {
@@ -290,6 +303,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       user: user ?? CURRENT_USER,
       isAuthenticated: true,
     });
+
+    const uid = user?.id;
+    if (uid) {
+      void createRemoteOrder(orderId, { ...order, userId: uid }).catch(() => {});
+    }
+
     return { ok: true, orderId };
   },
 

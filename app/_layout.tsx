@@ -18,6 +18,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { colors } from '@/constants/theme';
+import { useCatalogStore } from '@/store/catalogStore';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -41,6 +42,7 @@ const PlayPortTheme = {
 };
 
 export default function RootLayout() {
+  const hydrateCatalog = useCatalogStore((s) => s.hydrate);
   const [loaded, error] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -57,8 +59,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+      void hydrateCatalog();
     }
-  }, [loaded]);
+  }, [loaded, hydrateCatalog]);
 
   if (!loaded) {
     return null;

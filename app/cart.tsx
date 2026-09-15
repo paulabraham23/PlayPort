@@ -191,7 +191,7 @@ export default function CartScreen() {
             </View>
           </View>
           <View style={styles.guarantee}>
-            <Ionicons name="shield-checkmark" size={16} color={colors.success} />
+            <Ionicons name="shield-checkmark" size={16} color={colors.secondaryText} />
             <Text style={styles.guaranteeText}>
               Technician Test Guarantee — sign-off after live sync check.
             </Text>

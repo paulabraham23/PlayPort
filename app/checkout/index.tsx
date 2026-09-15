@@ -76,7 +76,7 @@ export default function CheckoutScreen() {
             <View style={{ flex: 1 }}>
               <View style={styles.timingHeader}>
                 <Text style={styles.timingLabel}>Instant Dropoff</Text>
-                <Badge label="20-35 MINS" color={colors.playportOrange} backgroundColor={colors.orangeTint} />
+                <Badge label="20-35 MINS" />
               </View>
               <Text style={styles.timingValue}>Arriving by 7:45 PM tonight</Text>
             </View>
@@ -96,9 +96,9 @@ export default function CheckoutScreen() {
 
         <View style={styles.card}>
           <View style={styles.trustHeader}>
-            <Ionicons name="shield-checkmark" size={18} color={colors.success} />
+            <Ionicons name="shield-checkmark" size={18} color={colors.secondaryText} />
             <Text style={styles.cardTitle}>Zero Deposit Verified</Text>
-            <Badge label="AADHAAR ACTIVE" color={colors.success} backgroundColor="rgba(74,222,128,0.12)" />
+            <Badge label="AADHAAR ACTIVE" />
           </View>
           <Text style={styles.trustBody}>
             No ₹10,000 hold or card security blockage required. Pre-cleared via DigiLocker token.
@@ -116,7 +116,7 @@ export default function CheckoutScreen() {
           <Text style={styles.summaryTotal}>{formatINR(totals.total)}</Text>
           <Text style={styles.taxNote}>TAXES INCLUDED</Text>
           <View style={styles.encryptRow}>
-            <Ionicons name="lock-closed" size={14} color={colors.success} />
+            <Ionicons name="lock-closed" size={14} color={colors.secondaryText} />
             <Text style={styles.encryptText}>
               256-Bit Bank Grade Encryption · 100% Refundable prior to dispatch
             </Text>

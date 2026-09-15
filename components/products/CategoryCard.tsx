@@ -19,9 +19,13 @@ export function CategoryCard({ category, onPress, wide }: Props) {
       style={[styles.card, wide ? styles.wide : styles.narrow]}
     >
       <Image source={{ uri: category.image }} style={styles.image} contentFit="cover" />
-      <View style={[styles.overlay, { borderColor: category.accent }]} />
+      <View style={styles.overlay} />
       <View style={styles.body}>
-        <Ionicons name={category.icon as keyof typeof Ionicons.glyphMap} size={18} color={category.accent} />
+        <Ionicons
+          name={category.icon as keyof typeof Ionicons.glyphMap}
+          size={18}
+          color={colors.secondaryText}
+        />
         <Text style={styles.title}>{category.shortName}</Text>
         <Text style={styles.meta}>{category.setupsReady} sets ready</Text>
       </View>
@@ -42,8 +46,7 @@ const styles = StyleSheet.create({
   image: { ...StyleSheet.absoluteFill },
   overlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    borderLeftWidth: 3,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   body: {
     flex: 1,

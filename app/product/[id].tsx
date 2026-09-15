@@ -99,7 +99,7 @@ export default function ProductDetailScreen() {
       </View>
       <View style={styles.heroBottom}>
         <View style={styles.sanitizePill}>
-          <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+          <Ionicons name="checkmark-circle" size={14} color={colors.secondaryText} />
           <Text style={styles.sanitizeText}>{product.badge ?? 'Sanitized Pro Kit'}</Text>
           <Text style={styles.ratingText}>
             ★ {product.rating} ({product.reviewCount}+)
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 16 },
-  freeSetup: { color: colors.success, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.5 },
+  freeSetup: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.5 },
   monoMeta: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
   includesList: { gap: 10 },
   includeRow: {
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   bigRating: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 32 },
-  stars: { color: colors.warning, fontSize: 14 },
+  stars: { color: colors.secondaryText, fontSize: 14 },
   reviewCount: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   reviewCard: {
     backgroundColor: colors.surface,
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   reviewHeader: { flexDirection: 'row', justifyContent: 'space-between' },
   reviewer: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
   reviewDate: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 12 },
-  reviewStars: { color: colors.warning, fontSize: 12 },
+  reviewStars: { color: colors.secondaryText, fontSize: 12 },
   reviewText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
   noReviews: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
   selectedLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },

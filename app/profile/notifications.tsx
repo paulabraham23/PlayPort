@@ -95,10 +95,10 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.md, paddingTop: spacing.sm },
-  markAll: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  markAll: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
   list: { gap: spacing.sm },
   card: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
-  unread: { borderColor: 'rgba(255,87,34,0.45)' },
+  unread: { borderColor: colors.border },
   icon: {
     width: 40,
     height: 40,
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconUnread: { backgroundColor: colors.orangeTint },
+  iconUnread: { backgroundColor: colors.surfaceAlt },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15, flex: 1 },
   dot: {

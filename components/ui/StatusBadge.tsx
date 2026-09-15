@@ -18,7 +18,7 @@ const STATUS_STYLE: Record<OrderStatus, { color: string; bg: string }> = {
 export function StatusBadge({ status, label }: { status: OrderStatus; label?: string }) {
   const style = STATUS_STYLE[status];
   return (
-    <View style={[styles.wrap, { backgroundColor: style.bg, borderColor: `${style.color}55` }]}>
+    <View style={[styles.wrap, { backgroundColor: style.bg }]}>
       <View style={[styles.dot, { backgroundColor: style.color }]} />
       <Text style={[styles.text, { color: style.color }]}>{label ?? orderStatusLabel(status)}</Text>
     </View>
@@ -31,6 +31,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radii.full,
     paddingHorizontal: 10,
     paddingVertical: 5,

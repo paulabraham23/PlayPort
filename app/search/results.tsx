@@ -62,7 +62,7 @@ export default function SearchResultsScreen() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
           <View style={[styles.filterChip, styles.filterActive]}>
-            <Ionicons name="checkmark" size={14} color={colors.playportOrange} />
+            <Ionicons name="checkmark" size={14} color={colors.secondaryText} />
             <Text style={styles.filterActiveText}>Filters (1)</Text>
           </View>
           <View style={styles.filterChip}>
@@ -80,7 +80,7 @@ export default function SearchResultsScreen() {
             <Text style={styles.hubStatus}>{setupsReady} setups ready in your hub</Text>
           </View>
           <View style={styles.dropBadge}>
-            <Ionicons name="flash" size={11} color={colors.playportOrange} />
+            <Ionicons name="flash" size={11} color={colors.secondaryText} />
             <Text style={styles.dropBadgeText}>30-35M DROPOFF</Text>
           </View>
         </View>
@@ -101,17 +101,12 @@ export default function SearchResultsScreen() {
             {featured ? (
               <View style={styles.featured}>
                 <View style={styles.featuredBadges}>
-                  <Badge
-                    label={featured.badge ?? 'FEATURED'}
-                    color={colors.white}
-                    backgroundColor={colors.playportOrange}
-                  />
+                  <Badge label={featured.badge ?? 'FEATURED'} />
                   <View style={styles.featuredMeta}>
                     <Badge
                       label={`${featured.etaMinutes} MIN DROP`}
-                      color={colors.playportOrange}
-                      backgroundColor={colors.orangeTint}
-                      left={<Ionicons name="time-outline" size={12} color={colors.playportOrange} />}
+                      color={colors.secondaryText}
+                      left={<Ionicons name="time-outline" size={12} color={colors.secondaryText} />}
                     />
                     <Badge label={`★ ${featured.rating} (${featured.reviewCount}+)`} />
                   </View>
@@ -192,7 +187,7 @@ export default function SearchResultsScreen() {
 
             {isProjectorSearch ? (
               <View style={styles.included}>
-                <Ionicons name="shield-checkmark" size={18} color={colors.playportOrange} />
+                <Ionicons name="shield-checkmark" size={18} color={colors.secondaryText} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.includedTitle}>Included with all Projector Rentals</Text>
                   <Text style={styles.includedSub}>

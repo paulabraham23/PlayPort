@@ -166,7 +166,7 @@ export default function OrderDetailScreen() {
                   {item.badges?.length ? (
                     <View style={styles.badgeRow}>
                       {item.badges.map((b) => (
-                        <Badge key={b} label={b} color={colors.playportOrange} backgroundColor={colors.orangeTint} />
+                        <Badge key={b} label={b} />
                       ))}
                     </View>
                   ) : null}
@@ -192,7 +192,7 @@ export default function OrderDetailScreen() {
               <Text style={styles.specialistName}>Suresh M.</Text>
               <Text style={styles.specialistMeta}>Doorstep calibration · ~10 min</Text>
             </View>
-            <Badge label="ASSIGNED" color={colors.success} backgroundColor="rgba(74,222,128,0.12)" />
+            <Badge label="ASSIGNED" />
           </Card>
         ) : null}
 

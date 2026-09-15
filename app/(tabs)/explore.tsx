@@ -54,7 +54,7 @@ export default function ExploreScreen() {
             <Text style={styles.sectionTitle}>Featured Experiences</Text>
             <Pressable onPress={() => router.push('/search')} style={styles.searchLink}>
               <Text style={styles.link}>Search</Text>
-              <Ionicons name="arrow-forward" size={14} color={colors.playportOrange} />
+              <Ionicons name="arrow-forward" size={14} color={colors.secondaryText} />
             </Pressable>
           </View>
           <ResponsiveGrid columns={experienceColumns} gap={gap}>
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.xxl, paddingTop: spacing.sm },
   header: { gap: 6, maxWidth: 640 },
   kicker: {
-    color: colors.playportOrange,
+    color: colors.mutedText,
     fontFamily: fonts.mono,
     fontSize: 11,
     letterSpacing: 1.2,
@@ -93,5 +93,5 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20, flexShrink: 1 },
   categoryWrap: { minHeight: 132, flex: 1 },
   searchLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  link: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  link: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
 });

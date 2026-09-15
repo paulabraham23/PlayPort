@@ -1,54 +1,52 @@
 /**
- * PlayPort colour system — source: playport-colour-palette.pdf
- * Background + CTA are global constants (never change per category).
- * Category accents are for icons / titles / badges only — never replace CTA.
+ * PlayPort colour system — minimal dark UI.
+ * One brand accent (CTA orange). Category / status colours stay muted.
  */
 export const colors = {
-  // Core (used everywhere)
-  baseBlack: '#121212', // bg-base — page background
-  surface: '#1A1A1F', // bg-surface — cards, panels, sections
-  surfaceAlt: '#2A2A30', // bg-surface-alt — placeholders, dividers, inputs
-  border: '#2A2A30', // hairline borders, dividers (same as surface-alt)
-  primaryText: '#F5F5F5', // text-primary — headings, body
-  secondaryText: '#9CA3AF', // text-secondary — captions, muted labels
-  mutedText: '#9CA3AF',
+  // Core
+  baseBlack: '#0F0F10',
+  surface: '#171719',
+  surfaceAlt: '#222226',
+  border: '#2C2C31',
+  primaryText: '#F2F2F3',
+  secondaryText: '#8B8B93',
+  mutedText: '#6B6B73',
 
-  // Primary CTA (fixed brand — do not vary by category)
-  playportOrange: '#FF5722', // cta-primary
-  ctaPrimary: '#FF5722',
+  // Primary CTA — single bright signal
+  playportOrange: '#D4552A',
+  ctaPrimary: '#D4552A',
   ctaPrimaryText: '#FFFFFF',
-  ctaPrimaryHover: '#FF6A3D',
-  orangeSoft: '#FF6B4A', // gaming accent (warm coral)
-  orangeTint: '#2A1A14', // soft orange surface for chips / selected states
-  orangeTintStrong: '#241610',
+  ctaPrimaryHover: '#E0663C',
+  orangeSoft: '#C4785A',
+  orangeTint: '#1C1B1A',
+  orangeTintStrong: '#211F1C',
 
-  // Status (fixed, semantic)
-  success: '#4ADE80',
-  successBg: '#0A2F38',
-  info: '#3B9EFF',
-  infoBg: '#0A2A3D',
-  warning: '#E8A33D',
-  danger: '#EF4444',
-  dangerBg: 'rgba(239,68,68,0.15)',
+  // Status — desaturated, semantic only
+  success: '#7A9E82',
+  successBg: '#161C18',
+  info: '#7A8FA0',
+  infoBg: '#161A1E',
+  warning: '#B89A6E',
+  danger: '#C46B6B',
+  dangerBg: 'rgba(196,107,107,0.12)',
 
   white: '#FFFFFF',
   black: '#000000',
-  badgeRed: '#FF3B30',
+  badgeRed: '#C45C56',
   overlay: 'rgba(0,0,0,0.65)',
 
-  // Category accents (vary by experience type — not for CTAs)
+  // Category accents — quiet, near-neutral (icons only)
   categories: {
-    gaming: '#FF6B4A',
-    movieNights: '#E8A33D',
-    musicKaraoke: '#E2618F',
-    partySocial: '#4ADE80',
-    // Additional marketplace vibes mapped to nearest palette accents
-    family: '#E8A33D',
-    kids: '#E2618F',
-    dateNight: '#E2618F',
-    racing: '#FF6B4A',
-    vr: '#3B9EFF',
-    boardGames: '#4ADE80',
+    gaming: '#9A9A9E',
+    movieNights: '#A39E94',
+    musicKaraoke: '#A398A0',
+    partySocial: '#949A96',
+    family: '#A39E94',
+    kids: '#A398A0',
+    dateNight: '#A398A0',
+    racing: '#9A9A9E',
+    vr: '#949AA3',
+    boardGames: '#949A96',
   },
 } as const;
 
@@ -91,8 +89,8 @@ export const shadows = {
   card: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 16,
-    elevation: 6,
+    elevation: 4,
   },
 } as const;

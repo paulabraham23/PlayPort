@@ -64,27 +64,12 @@ export default function LoginScreen() {
               <Ionicons name="game-controller" size={16} color={colors.white} />
             </View>
             <Text style={styles.brand}>PlayPort</Text>
-            <Ionicons name="flash" size={14} color={colors.playportOrange} />
           </View>
-          <Badge
-            label="FLEET ACTIVE"
-            color={colors.success}
-            backgroundColor="rgba(74,222,128,0.12)"
-            left={<View style={styles.liveDot} />}
-          />
+          <Badge label="LIVE" left={<View style={styles.liveDot} />} />
         </View>
 
         <View style={styles.hero}>
-          <Badge
-            label="FLASH ACCESS"
-            color={colors.playportOrange}
-            backgroundColor={colors.orangeTint}
-            left={<Ionicons name="flash" size={12} color={colors.playportOrange} />}
-          />
-          <Text style={styles.heroTitle}>
-            Entertain tonight{' '}
-            <Text style={styles.heroAccent}>in 30 mins</Text>
-          </Text>
+          <Text style={styles.heroTitle}>Entertain tonight in 30 mins</Text>
           <Text style={styles.heroSub}>
             Consoles, cinema kits & karaoke pods — sanitized and doorstep-ready from your nearest dark hub.
           </Text>
@@ -146,7 +131,7 @@ export default function LoginScreen() {
             title="WhatsApp"
             variant="secondary"
             style={styles.altBtn}
-            icon={<Ionicons name="logo-whatsapp" size={18} color={colors.success} />}
+            icon={<Ionicons name="logo-whatsapp" size={18} color={colors.secondaryText} />}
             onPress={() => {
               setPhoneDraft(localPhone || '9876543210');
               router.push('/(auth)/otp');
@@ -213,7 +198,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brand: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.secondaryText },
   hero: { gap: spacing.sm },
   heroTitle: {
     color: colors.primaryText,
@@ -221,7 +206,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     lineHeight: 36,
   },
-  heroAccent: { color: colors.playportOrange },
   heroSub: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
@@ -312,7 +296,7 @@ const styles = StyleSheet.create({
   hubName: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 15 },
   hubMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
   hubEta: { alignItems: 'center' },
-  hubEtaValue: { color: colors.playportOrange, fontFamily: fonts.monoMedium, fontSize: 22 },
+  hubEtaValue: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 22 },
   hubEtaUnit: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 10 },
   trustRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   trustItem: {

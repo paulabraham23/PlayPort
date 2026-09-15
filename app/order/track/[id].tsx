@@ -36,9 +36,9 @@ export default function OrderTrackComingSoonScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding }]}>
         <View style={styles.hero}>
           <View style={styles.icon}>
-            <Ionicons name="navigate-circle-outline" size={40} color={colors.playportOrange} />
+            <Ionicons name="navigate-circle-outline" size={40} color={colors.secondaryText} />
           </View>
-          <Badge label="COMING SOON" color={colors.playportOrange} backgroundColor={colors.orangeTint} />
+          <Badge label="COMING SOON" />
           <Text style={styles.title}>Live map tracking is on the way</Text>
           <Text style={styles.sub}>
             Real-time rider location isn&apos;t available yet. Follow status, ETA, and delivery details
@@ -134,9 +134,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.orangeTint,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: 'rgba(255,87,34,0.22)',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
@@ -176,16 +176,16 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: colors.surfaceAlt,
   },
-  stepDotDone: { backgroundColor: colors.playportOrange },
+  stepDotDone: { backgroundColor: colors.secondaryText },
   stepDotCurrent: {
     width: 14,
     height: 14,
     borderRadius: 7,
     borderWidth: 2,
-    borderColor: '#FFB199',
+    borderColor: colors.primaryText,
   },
   stepLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 9, textAlign: 'center' },
-  stepLabelCurrent: { color: colors.playportOrange },
+  stepLabelCurrent: { color: colors.primaryText },
   section: {
     color: colors.primaryText,
     fontFamily: fonts.headingMedium,

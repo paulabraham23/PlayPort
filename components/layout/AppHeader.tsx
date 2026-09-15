@@ -49,7 +49,6 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
                 style={styles.brandRow}
               >
                 <Text style={[styles.brandText, isDesktop && styles.brandTextLg]}>PlayPort</Text>
-                <Ionicons name="flash" size={14} color={colors.playportOrange} />
               </Pressable>
               {showLocation ? (
                 <Pressable
@@ -64,7 +63,6 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
                   >
                     {LOCATION_LABEL}
                   </Text>
-                  <View style={styles.etaDot} />
                   <Text style={styles.etaText}>{HUB.etaMinutes}m</Text>
                   <Ionicons name="chevron-down" size={12} color={colors.secondaryText} />
                 </Pressable>
@@ -146,8 +144,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   locationTextWide: { maxWidth: 280 },
-  etaDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.playportOrange },
-  etaText: { color: colors.playportOrange, fontFamily: fonts.mono, fontSize: 11 },
+  etaText: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 11 },
   right: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   cartBtn: {
     width: 44,

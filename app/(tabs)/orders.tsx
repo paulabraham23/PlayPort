@@ -115,12 +115,7 @@ function LiveDispatchCard({ order }: { order: Order }) {
   return (
     <Card style={styles.liveCard} padded>
       <View style={styles.liveTop}>
-        <Badge
-          label="LIVE DISPATCH"
-          color={colors.playportOrange}
-          backgroundColor={colors.orangeTint}
-          left={<View style={styles.pulse} />}
-        />
+        <Badge label="LIVE DISPATCH" left={<View style={styles.pulse} />} />
         <Text style={styles.liveId}>#{order.id}</Text>
       </View>
       <View style={styles.liveRow}>
@@ -195,9 +190,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     alignItems: 'center',
   },
-  tabActive: { backgroundColor: colors.playportOrange },
-  tabText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 13, opacity: 0.72 },
-  tabTextActive: { color: colors.white, opacity: 1 },
+  tabActive: { backgroundColor: colors.surfaceAlt },
+  tabText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  tabTextActive: { color: colors.primaryText },
   sectionHeader: {
     color: colors.mutedText,
     fontFamily: fonts.mono,
@@ -207,11 +202,11 @@ const styles = StyleSheet.create({
     marginBottom: -spacing.sm,
   },
   liveCard: {
-    borderColor: colors.playportOrange,
+    borderColor: colors.border,
     gap: spacing.lg,
   },
   liveTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.playportOrange },
+  pulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.secondaryText },
   liveId: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 12 },
   liveRow: { flexDirection: 'row', gap: 12 },
   liveImage: {
@@ -235,20 +230,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   progressPercent: {
-    color: colors.playportOrange,
+    color: colors.secondaryText,
     fontFamily: fonts.monoMedium,
     fontSize: 12,
   },
   progressTrack: {
-    height: 8,
-    borderRadius: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: colors.surfaceAlt,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.playportOrange,
-    borderRadius: 4,
+    backgroundColor: colors.secondaryText,
+    borderRadius: 2,
   },
   liveActions: { flexDirection: 'row', gap: 8 },
 });

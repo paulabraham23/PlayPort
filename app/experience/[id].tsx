@@ -46,12 +46,11 @@ export default function ExperienceDetailScreen() {
     <View style={[styles.hero, useSplitPane && styles.heroSplit]}>
       <Image source={{ uri: experience.image }} style={styles.heroImage} contentFit="cover" />
       <View style={styles.heroBadges}>
-        <Badge label={experience.tag} color={colors.warning} backgroundColor="#2A2418" />
+        <Badge label={experience.tag} />
         <Badge
           label={`${experience.etaMinutes} mins`}
-          color={colors.playportOrange}
-          backgroundColor={colors.orangeTint}
-          left={<Ionicons name="time-outline" size={12} color={colors.playportOrange} />}
+          color={colors.secondaryText}
+          left={<Ionicons name="time-outline" size={12} color={colors.secondaryText} />}
         />
       </View>
     </View>
@@ -99,7 +98,7 @@ export default function ExperienceDetailScreen() {
           <View style={styles.includes}>
             {experience.includes.map((item) => (
               <View key={item} style={styles.includeRow}>
-                <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                <Ionicons name="checkmark-circle" size={16} color={colors.secondaryText} />
                 <Text style={styles.includeText}>{item}</Text>
               </View>
             ))}

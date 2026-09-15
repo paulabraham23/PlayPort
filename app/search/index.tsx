@@ -65,7 +65,7 @@ export default function SearchDiscoveryScreen() {
         <View style={styles.statusRow}>
           <View style={styles.statusLeft}>
             <View style={styles.statusDot} />
-            <Text style={styles.flashStatus}>FLASH HUB ACTIVE</Text>
+            <Text style={styles.flashStatus}>HUB ACTIVE</Text>
           </View>
           <View style={styles.expressRow}>
             <Ionicons name="flash" size={12} color={colors.secondaryText} />
@@ -134,7 +134,7 @@ export default function SearchDiscoveryScreen() {
                   style={styles.catCard}
                 >
                   <View style={styles.catTop}>
-                    <Ionicons name={meta.icon} size={20} color={cat.accent} />
+                    <Ionicons name={meta.icon} size={20} color={colors.secondaryText} />
                     <View style={styles.etaPill}>
                       <Text style={styles.etaText}>{cat.etaMinutes}m</Text>
                     </View>
@@ -190,7 +190,7 @@ export default function SearchDiscoveryScreen() {
                     }}
                     style={styles.addBtn}
                   >
-                    <Ionicons name="add" size={20} color={colors.white} />
+                    <Ionicons name="add" size={20} color={colors.primaryText} />
                   </Pressable>
                 </Pressable>
               );
@@ -200,7 +200,7 @@ export default function SearchDiscoveryScreen() {
 
         <View style={styles.infoCard}>
           <View style={styles.infoIcon}>
-            <Ionicons name="flash" size={22} color={colors.playportOrange} />
+            <Ionicons name="flash" size={22} color={colors.secondaryText} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoTitle}>Instant 30-45m Dropoff</Text>
@@ -218,21 +218,26 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: spacing.sm, paddingBottom: spacing.xxxl, gap: spacing.xxl },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   statusLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.playportOrange },
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.secondaryText },
   flashStatus: {
-    color: colors.playportOrange,
-    fontFamily: fonts.monoMedium,
+    color: colors.secondaryText,
+    fontFamily: fonts.mono,
     fontSize: 11,
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
   expressRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   express: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   section: { gap: spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
-  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 17 },
-  clearAll: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
-  monoLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8 },
-  monoAccent: { color: colors.playportOrange, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18, flexShrink: 1 },
+  clearAll: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  monoLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
+  monoAccent: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     flexDirection: 'row',
@@ -301,7 +306,7 @@ const styles = StyleSheet.create({
   popularImage: { width: 48, height: 48, borderRadius: radii.sm },
   popularBody: { flex: 1, gap: 2 },
   popularTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
-  popularPrice: { color: colors.playportOrange, fontFamily: fonts.mono, fontSize: 12 },
+  popularPrice: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 12 },
   dropPill: {
     alignSelf: 'flex-start',
     backgroundColor: colors.surfaceAlt,
@@ -315,7 +320,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: radii.sm,
-    backgroundColor: colors.playportOrange,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -333,7 +340,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.orangeTint,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },

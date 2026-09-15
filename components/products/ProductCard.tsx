@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
@@ -47,9 +46,7 @@ export function ProductCard({ product, durationId = '12h', onPress, onRent, comp
       <Pressable accessibilityRole="button" accessibilityLabel={product.name} onPress={onPress}>
         <Image source={{ uri: product.images[0] }} style={styles.image} contentFit="cover" />
         <View style={styles.body}>
-          {product.badge ? (
-            <Badge label={product.badge} color={colors.playportOrange} backgroundColor={colors.orangeTint} />
-          ) : null}
+          {product.badge ? <Badge label={product.badge} /> : null}
           <Text style={styles.title} numberOfLines={2}>
             {product.name}
           </Text>
@@ -65,12 +62,7 @@ export function ProductCard({ product, durationId = '12h', onPress, onRent, comp
             ★ {product.rating} · {product.etaMinutes} mins
           </Text>
         </View>
-        <Button
-          title="Rent Now"
-          size="sm"
-          icon={<Ionicons name="flash" size={14} color={colors.white} />}
-          onPress={onRent ?? onPress}
-        />
+        <Button title="Rent Now" size="sm" onPress={onRent ?? onPress} />
       </View>
     </View>
   );

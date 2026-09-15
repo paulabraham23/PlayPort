@@ -39,7 +39,7 @@ export function AddressCard({
             <View style={styles.titleRow}>
               <Text style={styles.title}>{address.label}</Text>
               {address.isDefault ? (
-                <Badge label="DEFAULT" color={colors.playportOrange} backgroundColor={colors.orangeTint} />
+                <Badge label="DEFAULT" />
               ) : null}
               {!address.inRapidZone ? <Badge label="OUT OF RAPID ZONE" /> : null}
             </View>

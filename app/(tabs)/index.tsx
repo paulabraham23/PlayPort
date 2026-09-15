@@ -45,20 +45,14 @@ export default function HomeScreen() {
         <SearchBar value="" onChangeText={() => {}} onPress={() => router.push('/search')} />
 
         <View style={[styles.promo, isDesktop && styles.promoDesktop]}>
-          <View style={styles.promoGlow} />
           <View style={[styles.promoInner, isDesktop && styles.promoInnerDesktop]}>
             <View style={styles.promoCopy}>
               <View style={styles.promoTop}>
-                <Badge
-                  label="LIVE"
-                  color={colors.success}
-                  backgroundColor="rgba(74,222,128,0.15)"
-                  left={<View style={styles.liveDot} />}
-                />
+                <Badge label="LIVE" left={<View style={styles.liveDot} />} />
                 <Text style={styles.promoEta}>Tonight · Indiranagar</Text>
               </View>
               <Text style={[styles.promoTitle, isDesktop && styles.promoTitleLg]}>
-                Fun delivered in <Text style={styles.promoAccent}>30–45 mins</Text>
+                Fun delivered in 30–45 mins
               </Text>
               <Text style={[styles.promoSub, isDesktop && styles.promoSubLg]}>
                 Book a sanitized entertainment kit. We drop, set up, and pick up — you just press play.
@@ -151,7 +145,7 @@ export default function HomeScreen() {
             {VALUE_PROPS.map((item) => (
               <View key={item.title} style={styles.valueCard}>
                 <View style={styles.valueIcon}>
-                  <Ionicons name={item.icon} size={18} color={colors.playportOrange} />
+                  <Ionicons name={item.icon} size={18} color={colors.secondaryText} />
                 </View>
                 <Text style={styles.valueTitle}>{item.title}</Text>
                 <Text style={styles.valueSub}>{item.subtitle}</Text>
@@ -175,31 +169,21 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   promoDesktop: { padding: spacing.xxxl },
-  promoGlow: {
-    position: 'absolute',
-    top: -40,
-    right: -20,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,87,34,0.18)',
-  },
   promoInner: { gap: spacing.sm },
   promoInnerDesktop: { maxWidth: 640 },
   promoCopy: { gap: spacing.sm },
   promoTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.secondaryText },
   promoEta: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 11 },
   promoTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22 },
   promoTitleLg: { fontSize: 36, lineHeight: 42 },
-  promoAccent: { color: colors.playportOrange },
   promoSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
   promoSubLg: { fontSize: 16, lineHeight: 24, maxWidth: 520 },
   promoCta: { alignSelf: 'flex-start', marginTop: spacing.xs },
   section: { gap: spacing.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20, flexShrink: 1 },
-  link: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  link: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
   hRow: { gap: 12, paddingRight: 8 },
   valueSection: { marginBottom: spacing.lg },
   valueCard: {
@@ -215,7 +199,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.orangeTint,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,

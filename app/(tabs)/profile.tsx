@@ -91,9 +91,7 @@ export default function ProfileScreen() {
                 {user.kycVerified ? (
                   <Badge
                     label="KYC"
-                    color={colors.success}
-                    backgroundColor="rgba(74,222,128,0.12)"
-                    left={<Ionicons name="checkmark-circle" size={12} color={colors.success} />}
+                    left={<Ionicons name="checkmark-circle" size={12} color={colors.secondaryText} />}
                   />
                 ) : null}
               </View>
@@ -123,11 +121,7 @@ export default function ProfileScreen() {
               >
                 <Card style={styles.trackCard}>
                   <View style={styles.trackTop}>
-                    <Badge
-                      label="ACTIVE ORDER"
-                      color={colors.playportOrange}
-                      backgroundColor={colors.orangeTint}
-                    />
+                    <Badge label="ACTIVE ORDER" />
                     <Ionicons name="chevron-forward" size={18} color={colors.secondaryText} />
                   </View>
                   <Text style={styles.trackTitle}>Track #{activeOrder.id}</Text>
@@ -169,7 +163,7 @@ export default function ProfileScreen() {
                         <Ionicons
                           name={item.icon}
                           size={18}
-                          color={item.danger ? colors.danger : colors.playportOrange}
+                          color={item.danger ? colors.danger : colors.secondaryText}
                         />
                       </View>
                       <Text style={[styles.menuLabel, item.danger && { color: colors.danger }]}>
@@ -249,21 +243,19 @@ const styles = StyleSheet.create({
   statLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 11 },
   trackCard: {
     gap: spacing.sm,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.playportOrange,
     borderColor: colors.border,
   },
   trackTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   trackTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 16 },
   trackMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
   progressTrack: {
-    height: 6,
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: colors.surfaceAlt,
     overflow: 'hidden',
     marginTop: 4,
   },
-  progressFill: { height: '100%', backgroundColor: colors.playportOrange, borderRadius: 3 },
+  progressFill: { height: '100%', backgroundColor: colors.secondaryText, borderRadius: 2 },
   section: { gap: spacing.sm },
   sectionTitle: {
     color: colors.mutedText,
@@ -285,9 +277,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radii.md,
-    backgroundColor: colors.orangeTint,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: 'rgba(255,87,34,0.18)',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },

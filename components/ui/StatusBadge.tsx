@@ -38,5 +38,5 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  text: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 0.5 },
+  text: { fontFamily: fonts.bodyMedium, fontSize: 11, letterSpacing: 0.2 },
 });

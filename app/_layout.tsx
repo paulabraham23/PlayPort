@@ -1,15 +1,12 @@
 import {
   Inter_400Regular,
   Inter_500Medium,
+  Inter_600SemiBold,
 } from '@expo-google-fonts/inter';
 import {
-  JetBrainsMono_400Regular,
-  JetBrainsMono_500Medium,
-} from '@expo-google-fonts/jetbrains-mono';
-import {
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-} from '@expo-google-fonts/space-grotesk';
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -46,10 +43,9 @@ export default function RootLayout() {
   const [loaded, error] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
-    SpaceGrotesk_500Medium,
-    SpaceGrotesk_600SemiBold,
-    JetBrainsMono_400Regular,
-    JetBrainsMono_500Medium,
+    Inter_600SemiBold,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
   });
 
   useEffect(() => {

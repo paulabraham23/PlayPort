@@ -37,8 +37,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   text: {
-    fontFamily: fonts.mono,
+    fontFamily: fonts.bodyMedium,
     fontSize: 11,
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
 });

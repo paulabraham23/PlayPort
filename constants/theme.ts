@@ -69,12 +69,13 @@ export const radii = {
 } as const;
 
 export const fonts = {
-  heading: 'SpaceGrotesk_600SemiBold',
-  headingMedium: 'SpaceGrotesk_500Medium',
+  heading: 'PlusJakartaSans_600SemiBold',
+  headingMedium: 'PlusJakartaSans_500Medium',
   body: 'Inter_400Regular',
   bodyMedium: 'Inter_500Medium',
-  mono: 'JetBrainsMono_400Regular',
-  monoMedium: 'JetBrainsMono_500Medium',
+  /** Prices / compact labels — same family as UI for a calmer corporate look */
+  mono: 'Inter_500Medium',
+  monoMedium: 'Inter_600SemiBold',
 } as const;
 
 export const layout = {

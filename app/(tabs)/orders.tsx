@@ -29,6 +29,7 @@ type TabKey = 'active' | 'past';
 
 export default function OrdersScreen() {
   const { horizontalPadding, isDesktop, gap } = useResponsive();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const orders = useAppStore((s) => s.orders);
   const [tab, setTab] = useState<TabKey>('active');
   const orderColumns = isDesktop ? 2 : 1;
@@ -42,6 +43,25 @@ export default function OrdersScreen() {
   const list = tab === 'active' ? active : past;
   const live = active.find((o) => o.status === 'out_for_delivery' || o.liveDispatch);
   const visibleList = list.filter((o) => !(tab === 'active' && live && o.id === live.id));
+
+  if (!isAuthenticated) {
+    return (
+      <Screen showCart={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
+        >
+          <Text style={styles.pageTitle}>Orders</Text>
+          <EmptyState
+            title="Log in to see orders"
+            subtitle="Your active rentals and past sessions show up here after you sign in."
+            actionLabel="Log in"
+            onAction={() => router.push({ pathname: '/(auth)/login', params: { next: '/(tabs)/orders' } })}
+          />
+        </ScrollView>
+      </Screen>
+    );
+  }
 
   return (
     <Screen showCart={false}>
@@ -163,6 +183,12 @@ function LiveDispatchCard({ order }: { order: Order }) {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.lg, paddingTop: spacing.sm },
+  pageTitle: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: 30,
+    letterSpacing: -0.4,
+  },
   titleBlock: { gap: spacing.sm },
   title: {
     color: colors.primaryText,

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -11,6 +11,7 @@ import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 import type { PaymentMethodType } from '@/types';
 
@@ -24,6 +25,7 @@ const PAY_ICONS: Record<PaymentMethodType, keyof typeof Ionicons.glyphMap> = {
 export default function PaymentScreen() {
   const { horizontalPadding } = useResponsive();
   const stickyPad = useStickyBarPadding();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const cart = useAppStore((s) => s.cart);
   const paymentMethods = useAppStore((s) => s.paymentMethods);
   const selectedPaymentMethodId = useAppStore((s) => s.selectedPaymentMethodId);
@@ -35,7 +37,14 @@ export default function PaymentScreen() {
   const [paying, setPaying] = useState(false);
   const [displayTotal, setDisplayTotal] = useState(totals.total);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      ensureLoggedIn('/checkout/payment');
+    }
+  }, [isAuthenticated]);
+
   const pay = (fail = false) => {
+    if (!ensureLoggedIn('/checkout/payment')) return;
     setPaying(true);
     setDisplayTotal(totals.total);
     clearPaymentError();
@@ -49,6 +58,20 @@ export default function PaymentScreen() {
       }
     }, 450);
   };
+
+  if (!isAuthenticated) {
+    return (
+      <Screen showHeader={false} narrow>
+        <ScreenHeader title="Payment" onBack={() => router.back()} />
+        <EmptyState
+          title="Log in to pay"
+          subtitle="Sign in to complete your rental payment."
+          actionLabel="Log in"
+          onAction={() => ensureLoggedIn('/checkout/payment')}
+        />
+      </Screen>
+    );
+  }
 
   if (!cart.length && !paymentError && !paying) {
     return (

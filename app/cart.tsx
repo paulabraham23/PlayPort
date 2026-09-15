@@ -15,6 +15,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { DURATIONS, LOCATION_LABEL, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 import type { CartItem, RentalDurationId } from '@/types';
 
@@ -250,7 +251,10 @@ export default function CartScreen() {
         <Button
           title="Proceed to Pay"
           iconRight={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
-          onPress={() => router.push('/checkout')}
+          onPress={() => {
+            if (!ensureLoggedIn('/checkout')) return;
+            router.push('/checkout');
+          }}
           style={styles.payBtn}
         />
       </StickyBottomBar>

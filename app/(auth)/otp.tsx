@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Pressable,
@@ -13,8 +13,11 @@ import { Button } from '@/components/ui/Button';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { resolveAuthNext } from '@/utils/authGate';
 
 export default function OtpScreen() {
+  const { next } = useLocalSearchParams<{ next?: string }>();
+  const returnTo = resolveAuthNext(next);
   const { horizontalPadding, formMaxWidth, isXs } = useResponsive();
   const phoneDraft = useAppStore((s) => s.phoneDraft);
   const login = useAppStore((s) => s.login);
@@ -39,9 +42,9 @@ export default function OtpScreen() {
 
   const updateDigit = (index: number, value: string) => {
     const digit = value.replace(/\D/g, '').slice(-1);
-    const next = [...otp];
-    next[index] = digit;
-    setOtp(next);
+    const nextDigits = [...otp];
+    nextDigits[index] = digit;
+    setOtp(nextDigits);
     if (digit && index < 5) {
       inputs.current[index + 1]?.focus();
     }
@@ -55,7 +58,7 @@ export default function OtpScreen() {
 
   const onVerify = () => {
     login(phoneDraft || '9876543210');
-    router.replace('/(tabs)');
+    router.replace(returnTo as never);
   };
 
   return (

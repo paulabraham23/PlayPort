@@ -16,6 +16,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 import type { RentalDurationId } from '@/types';
 
@@ -266,6 +267,7 @@ export default function ProductDetailScreen() {
           icon={<Ionicons name="game-controller" size={16} color={colors.white} />}
           onPress={() => {
             addProductToCart(product.id, durationId);
+            if (!ensureLoggedIn('/cart')) return;
             router.push('/cart');
           }}
           style={styles.bookBtn}

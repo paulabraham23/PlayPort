@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LOCATION_LABEL, HUB } from '@/data/mock';
-import { useCartCount } from '@/store/appStore';
+import { useAppStore, useCartCount } from '@/store/appStore';
 import { colors, fonts, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 
@@ -14,6 +14,7 @@ interface Props {
 
 export function AppHeader({ showLocation = true, showCart = true, rightSlot }: Props) {
   const cartCount = useCartCount();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const { horizontalPadding, contentWidth, isDesktop, isTablet } = useResponsive();
 
   return (
@@ -29,18 +30,34 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
         ]}
       >
         <View style={styles.row}>
-          <View style={styles.brand}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Go to home"
-              onPress={() => router.push('/(tabs)')}
-              style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-                styles.logoMark,
-                (pressed || hovered) && styles.pressed,
-              ]}
-            >
-              <Ionicons name="game-controller" size={14} color={colors.white} />
-            </Pressable>
+          <View style={styles.left}>
+            {!isAuthenticated ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Log in"
+                onPress={() => router.push('/(auth)/login')}
+                style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                  styles.loginBtn,
+                  (pressed || hovered) && styles.pressed,
+                ]}
+              >
+                <Ionicons name="person-outline" size={16} color={colors.primaryText} />
+                <Text style={styles.loginText}>Log in</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Go to home"
+                onPress={() => router.push('/(tabs)')}
+                style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                  styles.logoMark,
+                  (pressed || hovered) && styles.pressed,
+                ]}
+              >
+                <Ionicons name="game-controller" size={14} color={colors.white} />
+              </Pressable>
+            )}
+
             <View style={{ flexShrink: 1 }}>
               <Pressable
                 accessibilityRole="button"
@@ -113,7 +130,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
+  left: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
+  loginBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...Platform.select({
+      web: { cursor: 'pointer' as unknown as undefined },
+      default: {},
+    }),
+  },
+  loginText: {
+    color: colors.primaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+  },
   logoMark: {
     width: 34,
     height: 34,

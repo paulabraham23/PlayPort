@@ -26,6 +26,7 @@ type MenuSection = {
 
 export default function ProfileScreen() {
   const { horizontalPadding, isDesktop, gap } = useResponsive();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const user = useAppStore((s) => s.user) ?? CURRENT_USER;
   const orders = useAppStore((s) => s.orders);
   const logout = useAppStore((s) => s.logout);
@@ -33,6 +34,26 @@ export default function ProfileScreen() {
   const activeOrder = orders.find((o) =>
     ['confirmed', 'preparing', 'out_for_delivery', 'delivered', 'active', 'returning'].includes(o.status)
   );
+
+  if (!isAuthenticated) {
+    return (
+      <Screen showCart={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
+        >
+          <Text style={styles.pageTitle}>Profile</Text>
+          <Card style={styles.guestCard}>
+            <Text style={styles.guestTitle}>Browse as a guest</Text>
+            <Text style={styles.guestSub}>
+              Log in to save addresses, track rentals, and unlock zero-deposit KYC.
+            </Text>
+            <Button title="Log in" fullWidth onPress={() => router.push('/(auth)/login')} />
+          </Card>
+        </ScrollView>
+      </Screen>
+    );
+  }
 
   const sections: MenuSection[] = [
     {
@@ -188,7 +209,7 @@ export default function ProfileScreen() {
               icon={<Ionicons name="log-out-outline" size={18} color={colors.danger} />}
               onPress={() => {
                 logout();
-                router.replace('/(auth)/login');
+                router.replace('/(tabs)');
               }}
             />
           </View>
@@ -206,6 +227,9 @@ const styles = StyleSheet.create({
     fontSize: 30,
     letterSpacing: -0.4,
   },
+  guestCard: { gap: spacing.md },
+  guestTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
+  guestSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
   desktopSplit: { gap: spacing.lg },
   desktopSplitRow: { flexDirection: 'row', alignItems: 'flex-start' },
   desktopCol: { gap: spacing.lg },

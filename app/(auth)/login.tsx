@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,13 +11,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { EXPERIENCES, HUB } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { resolveAuthNext } from '@/utils/authGate';
 
 const CAROUSEL = EXPERIENCES.slice(0, 3);
 
@@ -27,10 +28,11 @@ const TRUST = [
 ];
 
 export default function LoginScreen() {
+  const { next } = useLocalSearchParams<{ next?: string }>();
+  const returnTo = resolveAuthNext(next);
   const { horizontalPadding, formMaxWidth, isTablet, isDesktop } = useResponsive();
   const phoneDraft = useAppStore((s) => s.phoneDraft);
   const setPhoneDraft = useAppStore((s) => s.setPhoneDraft);
-  const browseAsGuest = useAppStore((s) => s.browseAsGuest);
   const [localPhone, setLocalPhone] = useState(phoneDraft.replace(/\D/g, '').slice(-10) || '');
 
   const onPhoneChange = (text: string) => {
@@ -42,6 +44,11 @@ export default function LoginScreen() {
   const canGetOtp = localPhone.length === 10;
   const columnMax = formMaxWidth ?? (isTablet || isDesktop ? 520 : undefined);
   const carouselSize = isTablet || isDesktop;
+
+  const goToOtp = () => {
+    setPhoneDraft(localPhone || phoneDraft);
+    router.push({ pathname: '/(auth)/otp', params: { next: returnTo } });
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -65,13 +72,20 @@ export default function LoginScreen() {
             </View>
             <Text style={styles.brand}>PlayPort</Text>
           </View>
-          <Badge label="LIVE" left={<View style={styles.liveDot} />} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close and keep browsing"
+            onPress={() => router.replace('/(tabs)')}
+            style={styles.closeBtn}
+          >
+            <Ionicons name="close" size={20} color={colors.primaryText} />
+          </Pressable>
         </View>
 
         <View style={styles.hero}>
-          <Text style={styles.heroTitle}>Entertain tonight in 30 mins</Text>
+          <Text style={styles.heroTitle}>Log in to continue</Text>
           <Text style={styles.heroSub}>
-            Consoles, cinema kits & karaoke pods — sanitized and doorstep-ready from your nearest dark hub.
+            Browse freely anytime. Sign in when you&apos;re ready to rent, pay, or manage orders.
           </Text>
         </View>
 
@@ -119,10 +133,7 @@ export default function LoginScreen() {
             size="lg"
             disabled={!canGetOtp}
             iconRight={<Ionicons name="arrow-forward" size={18} color={colors.white} />}
-            onPress={() => {
-              setPhoneDraft(localPhone);
-              router.push('/(auth)/otp');
-            }}
+            onPress={goToOtp}
           />
         </View>
 
@@ -132,20 +143,14 @@ export default function LoginScreen() {
             variant="secondary"
             style={styles.altBtn}
             icon={<Ionicons name="logo-whatsapp" size={18} color={colors.secondaryText} />}
-            onPress={() => {
-              setPhoneDraft(localPhone || '9876543210');
-              router.push('/(auth)/otp');
-            }}
+            onPress={goToOtp}
           />
           <Button
-            title="Guest Browse"
+            title="Keep browsing"
             variant="secondary"
             style={styles.altBtn}
-            icon={<Ionicons name="compass-outline" size={18} color={colors.primaryText} />}
-            onPress={() => {
-              browseAsGuest();
-              router.replace('/(tabs)');
-            }}
+            icon={<Ionicons name="storefront-outline" size={18} color={colors.primaryText} />}
+            onPress={() => router.replace('/(tabs)')}
           />
         </View>
 
@@ -175,7 +180,8 @@ export default function LoginScreen() {
         </View>
 
         <Text style={styles.terms}>
-          By continuing you agree to PlayPort’s Terms of Service and Privacy Policy. OTP login is for demo — any 6 digits work.
+          By continuing you agree to PlayPort’s Terms of Service and Privacy Policy. OTP login is for
+          demo — any 6 digits work.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -187,6 +193,16 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxl, gap: spacing.lg, paddingTop: spacing.sm },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  closeBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   logoMark: {
     width: 36,
     height: 36,
@@ -198,7 +214,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brand: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.secondaryText },
   hero: { gap: spacing.sm },
   heroTitle: {
     color: colors.primaryText,

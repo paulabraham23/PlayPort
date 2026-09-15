@@ -14,6 +14,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { EXPERIENCES, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 
 export default function ExperienceDetailScreen() {
@@ -150,6 +151,7 @@ export default function ExperienceDetailScreen() {
           icon={<Ionicons name="flash" size={16} color={colors.white} />}
           onPress={() => {
             addExperienceToCart(experience.id);
+            if (!ensureLoggedIn('/cart')) return;
             router.push('/cart');
           }}
           style={styles.bookBtn}

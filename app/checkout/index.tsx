@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AddressCard } from '@/components/address/AddressCard';
 import { Screen } from '@/components/layout/Screen';
@@ -11,16 +12,38 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 
 export default function CheckoutScreen() {
   const { horizontalPadding } = useResponsive();
   const stickyPad = useStickyBarPadding();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const cart = useAppStore((s) => s.cart);
   const addresses = useAppStore((s) => s.addresses);
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
   const totals = useCartTotals();
   const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      ensureLoggedIn('/checkout');
+    }
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return (
+      <Screen showHeader={false} narrow>
+        <ScreenHeader title="Checkout" onBack={() => router.back()} />
+        <EmptyState
+          title="Log in to checkout"
+          subtitle="Sign in to confirm address and place your rental."
+          actionLabel="Log in"
+          onAction={() => ensureLoggedIn('/checkout')}
+        />
+      </Screen>
+    );
+  }
 
   if (!cart.length) {
     return (

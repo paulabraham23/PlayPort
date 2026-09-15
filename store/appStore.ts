@@ -11,7 +11,7 @@ import {
   RECENT_SEARCHES,
   REVIEWS,
 } from '@/data/mock';
-import { signInAsGuest, signInWithPhoneMock, signOutUser } from '@/lib/auth';
+import { signInWithPhoneMock, signOutUser } from '@/lib/auth';
 import { createOrder as createRemoteOrder } from '@/lib/firestore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { calcCartTotals, generateOrderId } from '@/utils/format';
@@ -45,7 +45,6 @@ interface AppState {
   setPhoneDraft: (phone: string) => void;
   login: (phone: string) => void;
   logout: () => void;
-  browseAsGuest: () => void;
 
   addProductToCart: (productId: string, durationId: RentalDurationId, quantity?: number) => void;
   addExperienceToCart: (experienceId: string) => void;
@@ -110,14 +109,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   logout: () => {
     void signOutUser().catch(() => {});
     set({ isAuthenticated: false, user: null, cart: [] });
-  },
-
-  browseAsGuest: () => {
-    void signInAsGuest().catch(() => {});
-    set({
-      isAuthenticated: true,
-      user: { ...CURRENT_USER, name: 'Guest Explorer', phone: 'Guest', email: 'guest@playport.app' },
-    });
   },
 
   addProductToCart: (productId, durationId, quantity = 1) => {

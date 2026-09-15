@@ -1,12 +1,6 @@
 import { Redirect } from 'expo-router';
-import { useAppStore } from '@/store/appStore';
 
+/** Always open into the shop — login is requested only for gated actions. */
 export default function Index() {
-  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-
-  if (isAuthenticated) {
-    return <Redirect href="/(tabs)" />;
-  }
-
-  return <Redirect href="/(auth)/login" />;
+  return <Redirect href="/(tabs)" />;
 }

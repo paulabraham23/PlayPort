@@ -120,10 +120,6 @@ export default function ProfileScreen() {
 
             <View style={[styles.statsRow, isDesktop && styles.statsRowDesktop]}>
               <View style={styles.stat}>
-                <Text style={styles.statValue}>{user.sessionsCount}</Text>
-                <Text style={styles.statLabel}>Sessions</Text>
-              </View>
-              <View style={styles.stat}>
                 <Text style={styles.statValue}>₹0</Text>
                 <Text style={styles.statLabel}>Deposit</Text>
               </View>

@@ -11,10 +11,18 @@ import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 
 export default function ExploreScreen() {
-  const { horizontalPadding, productColumns, gap, isDesktop, isMobile } = useResponsive();
+  const { horizontalPadding, productColumns, gap } = useResponsive();
   const addProductToCart = useAppStore((s) => s.addProductToCart);
+  const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
+  const cart = useAppStore((s) => s.cart);
   const catalogProducts = useCatalogStore((s) => s.products);
   const products = catalogProducts.length ? catalogProducts : PRODUCTS;
+  const gridCols = Math.max(2, productColumns);
+
+  const qtyFor = (productId: string) =>
+    cart.filter((c) => c.productId === productId).reduce((sum, c) => sum + c.quantity, 0);
+  const cartItemIdFor = (productId: string) =>
+    cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
 
   return (
     <Screen>
@@ -23,52 +31,50 @@ export default function ExploreScreen() {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
       >
         <View style={styles.header}>
-          <Text style={styles.kicker}>AVAILABLE NOW</Text>
-          <Text style={[styles.title, isDesktop && styles.titleLg]}>Explore</Text>
-          <Text style={styles.subtitle}>Rent what we have ready at the hub tonight</Text>
+          <Text style={styles.title}>All kits</Text>
+          <Text style={styles.subtitle}>{products.length} available at your hub</Text>
         </View>
 
         <SearchBar
           value=""
           onChangeText={() => {}}
-          placeholder="Search kits..."
+          placeholder="Search kits…"
           onPress={() => router.push('/search')}
         />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>All kits</Text>
-          <ResponsiveGrid columns={productColumns} gap={gap}>
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                compact={isMobile && productColumns === 1}
-                onPress={() => router.push(`/product/${product.id}`)}
-                onRent={() => {
-                  addProductToCart(product.id, '12h');
-                  router.push('/cart');
-                }}
-              />
-            ))}
-          </ResponsiveGrid>
-        </View>
+        <ResponsiveGrid columns={gridCols} gap={gap}>
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              quantityInCart={qtyFor(product.id)}
+              onPress={() => router.push(`/product/${product.id}`)}
+              onAdd={() => addProductToCart(product.id, '12h')}
+              onIncrement={() => addProductToCart(product.id, '12h')}
+              onDecrement={() => {
+                const id = cartItemIdFor(product.id);
+                const qty = qtyFor(product.id);
+                if (id) updateCartQuantity(id, qty - 1);
+              }}
+            />
+          ))}
+        </ResponsiveGrid>
       </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingBottom: spacing.xxxl, gap: spacing.xxl, paddingTop: spacing.sm },
-  header: { gap: 6, maxWidth: 640 },
-  kicker: {
-    color: colors.mutedText,
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    letterSpacing: 1.2,
+  scroll: { paddingBottom: spacing.huge, gap: spacing.xl, paddingTop: spacing.sm },
+  header: { gap: 4 },
+  title: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: 22,
   },
-  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 32, lineHeight: 38 },
-  titleLg: { fontSize: 40, lineHeight: 46 },
-  subtitle: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
-  section: { gap: spacing.md },
-  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
+  subtitle: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: 14,
+  },
 });

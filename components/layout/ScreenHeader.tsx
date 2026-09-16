@@ -47,14 +47,14 @@ const styles = StyleSheet.create({
   back: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   backSpacer: { width: 40, height: 40 },
   center: { flex: 1, paddingHorizontal: spacing.sm, minWidth: 0 },
-  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
+  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
   subtitle: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
   right: { minWidth: 40, alignItems: 'flex-end' },
 });

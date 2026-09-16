@@ -150,7 +150,7 @@ export default function SearchDiscoveryScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Popular Searches Right Now</Text>
-            <Text style={styles.monoLabel}>LIVE PULSE</Text>
+            <Text style={styles.monoLabel}>Tonight</Text>
           </View>
           <View style={styles.popularList}>
             {POPULAR_SEARCHES.map((item, index) => {
@@ -205,7 +205,7 @@ export default function SearchDiscoveryScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.infoTitle}>Instant 30-45m Dropoff</Text>
             <Text style={styles.infoSub}>
-              Indiranagar & Koramangala hubs. Sanitized & 100% charged gear ready to play.
+              Local hubs. Sanitized & 100% charged gear ready to play.
             </Text>
           </View>
         </View>

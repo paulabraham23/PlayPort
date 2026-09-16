@@ -6,9 +6,9 @@ import { colors, fonts, layout } from '@/constants/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-function TabIcon({ name, color, focused }: { name: IconName; color: string; focused: boolean }) {
+function TabIcon({ name, color }: { name: IconName; color: string; focused: boolean }) {
   return (
-    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+    <View style={styles.iconWrap}>
       <Ionicons name={name} size={22} color={color} />
     </View>
   );
@@ -41,11 +41,7 @@ export default function TabsLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              name={focused ? 'home' : 'home-outline'}
-              color={String(color)}
-              focused={focused}
-            />
+            <TabIcon name={focused ? 'home' : 'home-outline'} color={String(color)} focused={focused} />
           ),
         }}
       />
@@ -67,11 +63,7 @@ export default function TabsLayout() {
         options={{
           title: 'Orders',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              name={focused ? 'cube' : 'cube-outline'}
-              color={String(color)}
-              focused={focused}
-            />
+            <TabIcon name={focused ? 'cube' : 'cube-outline'} color={String(color)} focused={focused} />
           ),
         }}
       />
@@ -96,7 +88,7 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: 6,
   },
   tabBarWeb: {
@@ -105,7 +97,6 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: fonts.bodyMedium,
     fontSize: 11,
-    letterSpacing: 0.2,
   },
   item: {
     gap: 2,
@@ -113,8 +104,5 @@ const styles = StyleSheet.create({
   iconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconWrapActive: {
-    transform: [{ scale: 1.05 }],
   },
 });

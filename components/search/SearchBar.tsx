@@ -12,14 +12,13 @@ interface Props {
   showBack?: boolean;
   onBack?: () => void;
   autoFocus?: boolean;
-  /** When set, renders a non-editable pressable search chrome (avoids nested buttons). */
   onPress?: () => void;
 }
 
 export function SearchBar({
   value,
   onChangeText,
-  placeholder = "Search 'PS5', 'karaoke', 'projector'...",
+  placeholder = 'Search “PS5” or “projector”',
   onSubmit,
   onClear,
   onFilterPress,
@@ -37,16 +36,11 @@ export function SearchBar({
         style={styles.row}
       >
         <View style={styles.inputWrap}>
-          <Ionicons name="search" size={18} color={colors.secondaryText} />
+          <Ionicons name="search" size={18} color={colors.mutedText} />
           <Text style={styles.placeholder} numberOfLines={1}>
             {value || placeholder}
           </Text>
         </View>
-        {onFilterPress ? (
-          <View style={styles.sideBtn}>
-            <Ionicons name="options-outline" size={18} color={colors.primaryText} />
-          </View>
-        ) : null}
       </Pressable>
     );
   }
@@ -59,7 +53,7 @@ export function SearchBar({
         </Pressable>
       ) : null}
       <View style={styles.inputWrap}>
-        <Ionicons name="search" size={18} color={colors.secondaryText} />
+        <Ionicons name="search" size={18} color={colors.mutedText} />
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -92,12 +86,12 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     minHeight: 48,
   },
   input: {

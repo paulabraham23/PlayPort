@@ -10,7 +10,6 @@ interface Props {
   showCart?: boolean;
   headerRight?: React.ReactNode;
   edges?: ('top' | 'right' | 'bottom' | 'left')[];
-  /** Constrain body to a narrower reading/form width (auth, checkout). */
   narrow?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
 }
@@ -40,11 +39,10 @@ export function Screen({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.baseBlack },
+  safe: { flex: 1, backgroundColor: colors.page },
   center: { flex: 1, width: '100%', alignItems: 'center' },
   body: { flex: 1 },
   desktopBody: {
-    // Keep sticky bars / absolute children relative to content shell
     position: 'relative',
   },
 });

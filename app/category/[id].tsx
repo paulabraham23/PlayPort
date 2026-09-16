@@ -15,11 +15,18 @@ export default function CategoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { horizontalPadding, productColumns, experienceColumns, gap } = useResponsive();
   const addProductToCart = useAppStore((s) => s.addProductToCart);
+  const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
+  const cart = useAppStore((s) => s.cart);
   const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
 
   const category = CATEGORIES.find((c) => c.id === id);
   const products = PRODUCTS.filter((p) => p.categoryId === id);
   const experiences = EXPERIENCES.filter((e) => e.categoryId === id);
+
+  const qtyFor = (productId: string) =>
+    cart.filter((c) => c.productId === productId).reduce((sum, c) => sum + c.quantity, 0);
+  const cartItemIdFor = (productId: string) =>
+    cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
 
   if (!category) {
     return (
@@ -57,10 +64,14 @@ export default function CategoryScreen() {
                   key={product.id}
                   product={product}
                   compact={productColumns === 1}
+                  quantityInCart={qtyFor(product.id)}
                   onPress={() => router.push(`/product/${product.id}`)}
-                  onRent={() => {
-                    addProductToCart(product.id, '12h');
-                    router.push('/cart');
+                  onAdd={() => addProductToCart(product.id, '12h')}
+                  onIncrement={() => addProductToCart(product.id, '12h')}
+                  onDecrement={() => {
+                    const cartId = cartItemIdFor(product.id);
+                    const qty = qtyFor(product.id);
+                    if (cartId) updateCartQuantity(cartId, qty - 1);
                   }}
                 />
               ))}

@@ -14,8 +14,8 @@ export function Card({ children, style, padded = true }: Props) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     overflow: 'hidden',
   },

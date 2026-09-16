@@ -20,10 +20,14 @@ export default function OtpScreen() {
   const returnTo = resolveAuthNext(next);
   const { horizontalPadding, formMaxWidth, isXs } = useResponsive();
   const phoneDraft = useAppStore((s) => s.phoneDraft);
+  const otpMode = useAppStore((s) => s.otpMode);
   const login = useAppStore((s) => s.login);
+  const requestOtp = useAppStore((s) => s.requestOtp);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(0);
   const [seconds, setSeconds] = useState(30);
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputs = useRef<(TextInput | null)[]>([]);
 
   const phoneDisplay = phoneDraft
@@ -37,7 +41,7 @@ export default function OtpScreen() {
   }, [seconds]);
 
   const code = otp.join('');
-  const canVerify = code.length === 6;
+  const canVerify = code.length === 6 && !verifying;
   const columnMax = formMaxWidth;
 
   const updateDigit = (index: number, value: string) => {
@@ -56,9 +60,17 @@ export default function OtpScreen() {
     }
   };
 
-  const onVerify = () => {
-    login(phoneDraft || '9876543210');
-    router.replace(returnTo as never);
+  const onVerify = async () => {
+    setVerifying(true);
+    setError(null);
+    try {
+      await login(code);
+      router.replace(returnTo as never);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Invalid OTP');
+    } finally {
+      setVerifying(false);
+    }
   };
 
   return (
@@ -122,13 +134,15 @@ export default function OtpScreen() {
         </View>
 
         <Button
-          title="Verify & Continue"
+          title={verifying ? 'Verifying…' : 'Verify & Continue'}
           fullWidth
           size="lg"
           disabled={!canVerify}
-          onPress={onVerify}
+          onPress={() => void onVerify()}
           icon={<Ionicons name="checkmark-circle" size={18} color={colors.white} />}
         />
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <View style={styles.resendRow}>
           {seconds > 0 ? (
@@ -140,6 +154,7 @@ export default function OtpScreen() {
                 setSeconds(30);
                 setOtp(['', '', '', '', '', '']);
                 inputs.current[0]?.focus();
+                void requestOtp(phoneDraft);
               }}
             >
               <Text style={styles.resendLink}>Resend OTP</Text>
@@ -151,14 +166,18 @@ export default function OtpScreen() {
           <Text style={styles.changeNumber}>Change mobile number</Text>
         </Pressable>
 
-        <Text style={styles.hint}>Demo tip: enter any 6 digits to continue.</Text>
+        <Text style={styles.hint}>
+          {otpMode === 'mock'
+            ? 'Dev mode: enter any 6 digits to continue.'
+            : 'Enter the code sent to your phone.'}
+        </Text>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.baseBlack },
+  safe: { flex: 1, backgroundColor: colors.page },
   wrap: { flex: 1, paddingTop: spacing.md, gap: spacing.lg },
   back: {
     width: 44,
@@ -234,5 +253,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 'auto',
     marginBottom: spacing.xl,
+  },
+  error: {
+    color: colors.badgeRed,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    textAlign: 'center',
   },
 });

@@ -43,20 +43,20 @@ export default function PaymentScreen() {
     }
   }, [isAuthenticated]);
 
-  const pay = (fail = false) => {
+  const pay = async (fail = false) => {
     if (!ensureLoggedIn('/checkout/payment')) return;
     setPaying(true);
     setDisplayTotal(totals.total);
     clearPaymentError();
-    // Simulate brief gateway latency for demo polish
-    setTimeout(() => {
-      const result = placeOrder(fail);
-      setPaying(false);
+    try {
+      const result = await placeOrder(fail);
       if (result.ok && result.orderId) {
         router.replace({ pathname: '/checkout/confirmation', params: { id: result.orderId } });
         return;
       }
-    }, 450);
+    } finally {
+      setPaying(false);
+    }
   };
 
   if (!isAuthenticated) {

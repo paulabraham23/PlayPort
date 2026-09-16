@@ -100,7 +100,7 @@ export default function AddAddressScreen() {
 
           <Field label="Address line 1" value={line1} onChangeText={setLine1} placeholder="Flat / Building" />
           <Field label="Address line 2" value={line2} onChangeText={setLine2} placeholder="Street (optional)" />
-          <Field label="Area" value={area} onChangeText={setArea} placeholder="Indiranagar" />
+          <Field label="Area" value={area} onChangeText={setArea} placeholder="Banjara Hills" />
           <Field label="City" value={city} onChangeText={setCity} placeholder="Bengaluru" />
           <Field
             label="Pincode"

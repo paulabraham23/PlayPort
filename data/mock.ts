@@ -14,13 +14,17 @@ import type {
 } from '@/types';
 
 export const HUB: HubInfo = {
-  name: 'Indiranagar Dark Hub',
-  sector: 'ACTIVE SECTOR • Dark Store #04',
+  id: 'hyd-central',
+  name: 'PlayPort Central Hub',
+  city: 'Hyderabad',
+  state: 'Telangana',
+  active: true,
+  sector: 'ACTIVE SECTOR • Dark Store #01',
   etaMinutes: 30,
   statusLabel: '30-45m dropoff active • Express gear dispatch',
 };
 
-export const LOCATION_LABEL = 'Indiranagar, 100ft Rd';
+export const LOCATION_LABEL = `${HUB.city}`;
 
 export const DURATIONS: RentalDuration[] = [
   { id: '6h', label: '6 Hours', hours: 6, description: 'Quick match or party slot' },
@@ -199,7 +203,8 @@ export const CURRENT_USER: User = {
   avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
   kycVerified: true,
   sessionsCount: 4,
-  homeHub: 'Indiranagar',
+  homeHub: 'Hyderabad',
+  homeHubId: 'hyd-central',
 };
 
 export const ADDRESSES: Address[] = [
@@ -208,10 +213,10 @@ export const ADDRESSES: Address[] = [
     label: 'Home',
     type: 'home',
     line1: 'Flat 402, Skyline Heights',
-    line2: '100ft Rd',
-    area: 'Indiranagar',
-    city: 'Bengaluru',
-    pincode: '560038',
+    line2: 'Road No. 12',
+    area: 'Banjara Hills',
+    city: 'Hyderabad',
+    pincode: '500034',
     contactName: 'Rahul',
     phone: '9876543210',
     instructions: 'Leave at door if not answering',
@@ -224,10 +229,10 @@ export const ADDRESSES: Address[] = [
     label: 'Office / Studio',
     type: 'work',
     line1: '3rd Floor, Creator Loft',
-    line2: '12th Main Rd, HAL 2nd Stage',
-    area: 'Indiranagar',
-    city: 'Bengaluru',
-    pincode: '560008',
+    line2: 'HITEC City',
+    area: 'Madhapur',
+    city: 'Hyderabad',
+    pincode: '500081',
     contactName: 'Rahul',
     phone: '9876543210',
     instructions: 'Reception handover',
@@ -239,11 +244,11 @@ export const ADDRESSES: Address[] = [
     id: 'addr-villa',
     label: 'Weekend Villa',
     type: 'other',
-    line1: 'Villa 14, Palm Meadows',
+    line1: 'Villa 14, Palm Grove',
     line2: '',
-    area: 'Whitefield',
-    city: 'Bengaluru',
-    pincode: '560066',
+    area: 'Gachibowli',
+    city: 'Hyderabad',
+    pincode: '500032',
     contactName: 'Rahul',
     phone: '9876543210',
     instructions: 'Friend\'s place — call on arrival',

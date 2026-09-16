@@ -33,7 +33,10 @@ export default function LoginScreen() {
   const { horizontalPadding, formMaxWidth, isTablet, isDesktop } = useResponsive();
   const phoneDraft = useAppStore((s) => s.phoneDraft);
   const setPhoneDraft = useAppStore((s) => s.setPhoneDraft);
+  const requestOtp = useAppStore((s) => s.requestOtp);
   const [localPhone, setLocalPhone] = useState(phoneDraft.replace(/\D/g, '').slice(-10) || '');
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const onPhoneChange = (text: string) => {
     const digits = text.replace(/\D/g, '').slice(0, 10);
@@ -41,13 +44,22 @@ export default function LoginScreen() {
     setPhoneDraft(digits);
   };
 
-  const canGetOtp = localPhone.length === 10;
+  const canGetOtp = localPhone.length === 10 && !sending;
   const columnMax = formMaxWidth ?? (isTablet || isDesktop ? 520 : undefined);
   const carouselSize = isTablet || isDesktop;
 
-  const goToOtp = () => {
+  const goToOtp = async () => {
     setPhoneDraft(localPhone || phoneDraft);
-    router.push({ pathname: '/(auth)/otp', params: { next: returnTo } });
+    setSending(true);
+    setSendError(null);
+    try {
+      await requestOtp(localPhone || phoneDraft);
+      router.push({ pathname: '/(auth)/otp', params: { next: returnTo } });
+    } catch (e) {
+      setSendError(e instanceof Error ? e.message : 'Could not send OTP');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -68,7 +80,7 @@ export default function LoginScreen() {
         <View style={styles.topRow}>
           <View style={styles.brandRow}>
             <View style={styles.logoMark}>
-              <Ionicons name="game-controller" size={16} color={colors.white} />
+              <Text style={styles.logoLetter}>P</Text>
             </View>
             <Text style={styles.brand}>PlayPort</Text>
           </View>
@@ -128,13 +140,14 @@ export default function LoginScreen() {
             />
           </View>
           <Button
-            title="Get OTP"
+            title={sending ? 'Sending…' : 'Get OTP'}
             fullWidth
             size="lg"
             disabled={!canGetOtp}
             iconRight={<Ionicons name="arrow-forward" size={18} color={colors.white} />}
-            onPress={goToOtp}
+            onPress={() => void goToOtp()}
           />
+          {sendError ? <Text style={styles.sendError}>{sendError}</Text> : null}
         </View>
 
         <View style={styles.altRow}>
@@ -143,7 +156,7 @@ export default function LoginScreen() {
             variant="secondary"
             style={styles.altBtn}
             icon={<Ionicons name="logo-whatsapp" size={18} color={colors.secondaryText} />}
-            onPress={goToOtp}
+            onPress={() => void goToOtp()}
           />
           <Button
             title="Keep browsing"
@@ -180,8 +193,8 @@ export default function LoginScreen() {
         </View>
 
         <Text style={styles.terms}>
-          By continuing you agree to PlayPort’s Terms of Service and Privacy Policy. OTP login is for
-          demo — any 6 digits work.
+          By continuing you agree to PlayPort’s Terms of Service and Privacy Policy. We send a
+          one-time code to verify your mobile number.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -189,7 +202,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.baseBlack },
+  safe: { flex: 1, backgroundColor: colors.page },
   scroll: { paddingBottom: spacing.xxl, gap: spacing.lg, paddingTop: spacing.sm },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -206,14 +219,17 @@ const styles = StyleSheet.create({
   logoMark: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.black,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: 10,
+    backgroundColor: colors.playportOrange,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brand: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22 },
+  logoLetter: {
+    color: colors.white,
+    fontFamily: fonts.heading,
+    fontSize: 18,
+  },
+  brand: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22, letterSpacing: -0.3 },
   hero: { gap: spacing.sm },
   heroTitle: {
     color: colors.primaryText,
@@ -337,5 +353,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     textAlign: 'center',
+  },
+  sendError: {
+    color: colors.badgeRed,
+    fontFamily: fonts.body,
+    fontSize: 13,
   },
 });

@@ -135,7 +135,7 @@ function LiveDispatchCard({ order }: { order: Order }) {
   return (
     <Card style={styles.liveCard} padded>
       <View style={styles.liveTop}>
-        <Badge label="LIVE DISPATCH" left={<View style={styles.pulse} />} />
+        <Badge label="In progress" left={<View style={styles.pulse} />} />
         <Text style={styles.liveId}>#{order.id}</Text>
       </View>
       <View style={styles.liveRow}>

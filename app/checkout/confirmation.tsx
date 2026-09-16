@@ -70,7 +70,7 @@ export default function ConfirmationScreen() {
           </View>
           <Text style={styles.heroTitle}>Dropoff Confirmed</Text>
           <Text style={styles.heroSub}>
-            Your entertainment gear is being packed and pre-tested at our Indiranagar Dark Hub.
+            Your entertainment gear is being packed and pre-tested at our local Dark Hub.
           </Text>
           <View style={styles.orderPill}>
             <Text style={styles.orderPillText}>

@@ -23,6 +23,8 @@ export default function SearchResultsScreen() {
   const { horizontalPadding, productColumns, gap } = useResponsive();
   const pushRecentSearch = useAppStore((s) => s.pushRecentSearch);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
+  const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
+  const cart = useAppStore((s) => s.cart);
 
   const results = useMemo(() => searchProducts(query, PRODUCTS), [query]);
   const isProjectorSearch = /projector|movie|cinema|lifelong/i.test(query);
@@ -31,8 +33,12 @@ export default function SearchResultsScreen() {
       ? PRODUCTS.find((p) => p.id === 'lifelong-projector') ?? results[0]
       : results[0];
   const listProducts = results.filter((p) => p.id !== featured?.id);
-  const addon = undefined;
   const setupsReady = results.length || 0;
+
+  const qtyFor = (productId: string) =>
+    cart.filter((c) => c.productId === productId).reduce((sum, c) => sum + c.quantity, 0);
+  const cartItemIdFor = (productId: string) =>
+    cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
 
   const submit = (value: string) => {
     const trimmed = value.trim();
@@ -133,12 +139,8 @@ export default function SearchResultsScreen() {
                     ) : null}
                   </View>
                   <Button
-                    title="Rent Now"
-                    icon={<Ionicons name="flash" size={16} color={colors.white} />}
-                    onPress={() => {
-                      addProductToCart(featured.id, '12h');
-                      router.push('/cart');
-                    }}
+                    title="Add to cart"
+                    onPress={() => addProductToCart(featured.id, '12h')}
                   />
                 </View>
               </View>
@@ -150,38 +152,18 @@ export default function SearchResultsScreen() {
                   key={product.id}
                   product={product}
                   compact={productColumns === 1}
+                  quantityInCart={qtyFor(product.id)}
                   onPress={() => router.push(`/product/${product.id}`)}
-                  onRent={() => {
-                    addProductToCart(product.id, '12h');
-                    router.push('/cart');
+                  onAdd={() => addProductToCart(product.id, '12h')}
+                  onIncrement={() => addProductToCart(product.id, '12h')}
+                  onDecrement={() => {
+                    const cartId = cartItemIdFor(product.id);
+                    const qty = qtyFor(product.id);
+                    if (cartId) updateCartQuantity(cartId, qty - 1);
                   }}
                 />
               ))}
             </ResponsiveGrid>
-
-            {addon ? (
-              <View style={styles.addon}>
-                <Image source={{ uri: addon.images[0] }} style={styles.addonImage} contentFit="cover" />
-                <View style={{ flex: 1 }}>
-                  <Badge label="ADD-ON" />
-                  <Text style={styles.addonTitle} numberOfLines={1}>
-                    {addon.shortName}
-                  </Text>
-                  <Text style={styles.addonPrice}>
-                    {formatINR(addon.priceByDuration['24h'])} / day
-                  </Text>
-                </View>
-                <Button
-                  title="+ Add"
-                  size="sm"
-                  variant="secondary"
-                  onPress={() => {
-                    addProductToCart(addon.id, '12h');
-                    router.push('/cart');
-                  }}
-                />
-              </View>
-            ) : null}
 
             {isProjectorSearch ? (
               <View style={styles.included}>

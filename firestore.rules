@@ -5,6 +5,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
     match /categories/{id} {
       allow read: if true;
       allow write: if false;
@@ -21,29 +25,60 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+
+    // Physical units — public read for availability UI; mutations via Functions only
+    match /inventory_units/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Time-window reservations — no client writes; limited read for own orders' context
+    match /inventory_reservations/{id} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Legacy aggregate inventory (if present) — read only, not SoT
     match /inventory/{id} {
       allow read: if true;
       allow write: if false;
     }
 
+    match /payments/{id} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /reviews/{id} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.rating is number
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update, delete: if false;
+    }
+
     match /users/{userId} {
-      allow read, write: if signedIn() && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
 
       match /addresses/{addressId} {
-        allow read, write: if signedIn() && request.auth.uid == userId;
+        allow read, write: if isOwner(userId);
       }
 
       match /cart/{itemId} {
-        allow read, write: if signedIn() && request.auth.uid == userId;
+        allow read, write: if isOwner(userId);
+      }
+
+      match /notifications/{notificationId} {
+        allow read, update: if isOwner(userId);
+        allow create, delete: if false;
       }
     }
 
     match /orders/{orderId} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
       allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow update: if signedIn() && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == resource.data.userId;
-      allow delete: if false;
+      allow create, update, delete: if false;
     }
   }
 }

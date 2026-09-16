@@ -39,6 +39,11 @@ yarn-error.*
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+serviceAccount.json
+*-firebase-adminsdk-*.json
+
+# Cloud Functions build
+functions/lib/
 
 # typescript
 *.tsbuildinfo

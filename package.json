@@ -4,7 +4,6 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
-    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.22",
@@ -30,6 +29,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "firebase-admin": "^13.10.0",
     "tsx": "^4.23.13",
     "typescript": "~6.0.3"
   },
@@ -41,7 +41,12 @@
     "export:web": "expo export -p web",
     "vercel-build": "expo export -p web",
     "firebase:seed": "tsx scripts/seedFirestore.ts",
-    "firebase:deploy": "npx -y firebase-tools@latest deploy --only firestore,auth --project playport-blr-2026"
+    "firebase:seed:admin": "tsx scripts/seedAdmin.ts",
+    "firebase:deploy": "npx -y firebase-tools@latest deploy --only firestore,auth --project playport-blr-2026",
+    "firebase:deploy:firestore": "npx -y firebase-tools@latest deploy --only firestore --project playport-blr-2026",
+    "firebase:deploy:functions": "npm --prefix functions run build && npx -y firebase-tools@latest deploy --only functions --project playport-blr-2026",
+    "firebase:deploy:all": "npm --prefix functions run build && npx -y firebase-tools@latest deploy --only firestore,auth,functions --project playport-blr-2026",
+    "firebase:emulators": "npm --prefix functions run build && npx -y firebase-tools@latest emulators:start --only auth,firestore,functions --project playport-blr-2026"
   },
   "private": true
 }

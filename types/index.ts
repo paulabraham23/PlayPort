@@ -23,7 +23,13 @@ export type OrderStatus =
   | 'cancelled'
   | 'refunded';
 
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+
 export type PaymentMethodType = 'upi' | 'card' | 'netbanking' | 'cod';
+
+export type InventoryUnitStatus = 'available' | 'maintenance' | 'retired';
+
+export type ReservationStatus = 'hold' | 'confirmed' | 'released' | 'completed';
 
 export interface RentalDuration {
   id: RentalDurationId;
@@ -136,10 +142,41 @@ export interface OrderItem {
   extras?: string[];
 }
 
+/** Physical asset — parent of time-window reservations. */
+export interface InventoryUnit {
+  id: string;
+  productId: string;
+  hubId: string;
+  skuLabel: string;
+  status: InventoryUnitStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Source of truth for rental availability. */
+export interface InventoryReservation {
+  id: string;
+  inventoryUnitId: string;
+  productId: string;
+  hubId: string;
+  orderId: string;
+  userId: string;
+  startAt: string;
+  endAt: string;
+  status: ReservationStatus;
+  holdExpiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Order {
   id: string;
+  userId?: string;
+  hubId?: string;
   status: OrderStatus;
+  paymentStatus?: PaymentStatus;
   createdAt: string;
+  updatedAt?: string;
   etaLabel: string;
   addressLabel: string;
   addressFull: string;
@@ -153,6 +190,23 @@ export interface Order {
   riderDistanceKm?: number;
   setupIncluded: boolean;
   liveDispatch?: boolean;
+  reservationIds?: string[];
+  startAt?: string;
+  endAt?: string;
+  holdExpiresAt?: string | null;
+  razorpayOrderId?: string;
+}
+
+export interface PaymentRecord {
+  id: string;
+  orderId: string;
+  userId: string;
+  amount: number;
+  currency: 'INR';
+  provider: 'razorpay' | 'demo';
+  providerRef: string;
+  status: PaymentStatus;
+  createdAt: string;
 }
 
 export interface Review {
@@ -160,10 +214,12 @@ export interface Review {
   productId?: string;
   experienceId?: string;
   orderId?: string;
+  userId?: string;
   userName: string;
   rating: number;
   dateLabel: string;
   text: string;
+  createdAt?: string;
 }
 
 export interface AppNotification {
@@ -171,8 +227,10 @@ export interface AppNotification {
   title: string;
   body: string;
   timeLabel: string;
-  type: 'order' | 'delivery' | 'reminder' | 'account';
+  type: 'order' | 'delivery' | 'reminder' | 'account' | 'payment';
   read: boolean;
+  createdAt?: string;
+  orderId?: string;
 }
 
 export interface User {
@@ -183,12 +241,20 @@ export interface User {
   avatar: string;
   kycVerified: boolean;
   sessionsCount: number;
+  /** Display label for UI */
   homeHub: string;
+  /** Firestore hubs/{id} reference — source for booking hub */
+  homeHubId?: string;
 }
 
+/** Generic hub — multi-city ready. No city hardcoding in business logic. */
 export interface HubInfo {
+  id: string;
   name: string;
-  sector: string;
-  etaMinutes: number;
-  statusLabel: string;
+  city: string;
+  state: string;
+  active: boolean;
+  sector?: string;
+  etaMinutes?: number;
+  statusLabel?: string;
 }

@@ -3,7 +3,8 @@ import { router } from 'expo-router';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LOCATION_LABEL, HUB } from '@/data/mock';
 import { useAppStore, useCartCount } from '@/store/appStore';
-import { colors, fonts, spacing } from '@/constants/theme';
+import { useCatalogStore } from '@/store/catalogStore';
+import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 
 interface Props {
@@ -15,7 +16,10 @@ interface Props {
 export function AppHeader({ showLocation = true, showCart = true, rightSlot }: Props) {
   const cartCount = useCartCount();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const hub = useCatalogStore((s) => s.hub);
   const { horizontalPadding, contentWidth, isDesktop, isTablet } = useResponsive();
+  const locationLabel = hub?.city ? hub.city : LOCATION_LABEL;
+  const eta = hub?.etaMinutes ?? HUB.etaMinutes;
 
   return (
     <View style={styles.outer}>
@@ -31,60 +35,40 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
       >
         <View style={styles.row}>
           <View style={styles.left}>
-            {!isAuthenticated ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Log in"
-                onPress={() => router.push('/(auth)/login')}
-                style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-                  styles.loginBtn,
-                  (pressed || hovered) && styles.pressed,
-                ]}
-              >
-                <Ionicons name="person-outline" size={16} color={colors.primaryText} />
-                <Text style={styles.loginText}>Log in</Text>
-              </Pressable>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go to home"
-                onPress={() => router.push('/(tabs)')}
-                style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-                  styles.logoMark,
-                  (pressed || hovered) && styles.pressed,
-                ]}
-              >
-                <Ionicons name="game-controller" size={14} color={colors.white} />
-              </Pressable>
-            )}
-
-            <View style={{ flexShrink: 1 }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go to home"
-                onPress={() => router.push('/(tabs)')}
-                style={styles.brandRow}
-              >
-                <Text style={[styles.brandText, isDesktop && styles.brandTextLg]}>PlayPort</Text>
-              </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Change delivery location"
+              onPress={() => router.push('/address')}
+              style={styles.locationBlock}
+            >
+              <View style={styles.etaRow}>
+                <View style={styles.etaPill}>
+                  <Text style={styles.etaPillText}>{eta} mins</Text>
+                </View>
+                {!isAuthenticated ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push('/(auth)/login')}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.loginLink}>Log in</Text>
+                  </Pressable>
+                ) : null}
+              </View>
               {showLocation ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Change delivery location"
-                  onPress={() => router.push('/address')}
-                  style={styles.locationRow}
-                >
+                <View style={styles.locationRow}>
                   <Text
                     style={[styles.locationText, (isTablet || isDesktop) && styles.locationTextWide]}
                     numberOfLines={1}
                   >
-                    {LOCATION_LABEL}
+                    Delivery to {locationLabel}
                   </Text>
-                  <Text style={styles.etaText}>{HUB.etaMinutes}m</Text>
-                  <Ionicons name="chevron-down" size={12} color={colors.secondaryText} />
-                </Pressable>
-              ) : null}
-            </View>
+                  <Ionicons name="chevron-down" size={14} color={colors.primaryText} />
+                </View>
+              ) : (
+                <Text style={[styles.brandText, isDesktop && styles.brandTextLg]}>PlayPort</Text>
+              )}
+            </Pressable>
           </View>
 
           <View style={styles.right}>
@@ -117,12 +101,14 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
 const styles = StyleSheet.create({
   outer: {
     width: '100%',
-    backgroundColor: colors.baseBlack,
+    backgroundColor: colors.surface,
     alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   wrap: {
     paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
   },
   row: {
     flexDirection: 'row',
@@ -130,68 +116,53 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  left: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
-  loginBtn: {
+  left: { flex: 1, minWidth: 0 },
+  locationBlock: { gap: 4 },
+  etaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...Platform.select({
-      web: { cursor: 'pointer' as unknown as undefined },
-      default: {},
-    }),
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  loginText: {
-    color: colors.primaryText,
+  etaPill: {
+    backgroundColor: colors.etaBg,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
+  },
+  etaPillText: {
+    color: colors.etaText,
+    fontFamily: fonts.heading,
+    fontSize: 12,
+  },
+  loginLink: {
+    color: colors.playportOrange,
     fontFamily: fonts.bodyMedium,
     fontSize: 13,
   },
-  logoMark: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.black,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      web: { cursor: 'pointer' as unknown as undefined },
-      default: {},
-    }),
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  locationText: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: 15,
+    maxWidth: 220,
+    flexShrink: 1,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  locationTextWide: { maxWidth: 360 },
   brandText: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
     fontSize: 18,
   },
   brandTextLg: { fontSize: 20 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  locationText: {
-    color: colors.secondaryText,
-    fontFamily: fonts.body,
-    fontSize: 12,
-    maxWidth: 140,
-    flexShrink: 1,
-  },
-  locationTextWide: { maxWidth: 280 },
-  etaText: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 11 },
   right: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   cartBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.surface,
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
     ...Platform.select({
       web: { cursor: 'pointer' as unknown as undefined },
       default: {},
@@ -200,12 +171,12 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   badge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 2,
+    right: 2,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.badgeRed,
+    backgroundColor: colors.playportOrange,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,

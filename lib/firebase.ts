@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { connectAuthEmulator, getAuth } from 'firebase/auth';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 
 /**
  * Firebase web config for PlayPort.
@@ -21,3 +21,15 @@ export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseC
 export const auth = getAuth(firebaseApp);
 export const db = getFirestore(firebaseApp);
 export const isFirebaseConfigured = Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
+
+/** Connect to local emulators when EXPO_PUBLIC_USE_EMULATORS=1 (no Blaze needed). */
+const useEmulators = process.env.EXPO_PUBLIC_USE_EMULATORS === '1';
+const emulatorHost =
+  process.env.EXPO_PUBLIC_EMULATOR_HOST ??
+  (typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1');
+
+if (useEmulators && !(globalThis as { __playportEmulatorsConnected?: boolean }).__playportEmulatorsConnected) {
+  connectFirestoreEmulator(db, emulatorHost, 8080);
+  connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
+  (globalThis as { __playportEmulatorsConnected?: boolean }).__playportEmulatorsConnected = true;
+}

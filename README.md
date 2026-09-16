@@ -37,4 +37,4 @@ utils/         Formatters & search
 
 ## Design
 
-Dark theme with PlayPort Orange (`#D4552A`). Typography: Plus Jakarta Sans (headings), Inter (UI / prices).
+Dark quick-commerce UI with PlayPort Orange (`#E85D04`). Typography: Inter only.

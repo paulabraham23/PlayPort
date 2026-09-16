@@ -66,7 +66,7 @@ export default function CancelOrderScreen() {
   const onConfirm = () => {
     if (!canConfirm || !id) return;
     const finalReason = reason === 'Other' ? otherText.trim() : reason!;
-    cancelOrder(id, finalReason);
+    void cancelOrder(id, finalReason);
     setDone(true);
   };
 

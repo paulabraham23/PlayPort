@@ -1,21 +1,30 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
+  limit,
+  onSnapshot,
   orderBy,
   query,
   setDoc,
   where,
   type DocumentData,
+  type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type {
+  Address,
+  AppNotification,
+  CartItem,
   Category,
   Experience,
   HubInfo,
+  InventoryUnit,
   Order,
   Product,
+  Review,
   User,
 } from '@/types';
 
@@ -50,15 +59,30 @@ export async function fetchExperience(id: string): Promise<Experience | null> {
   return { id: snap.id, ...snap.data() } as Experience;
 }
 
-export async function fetchHub(id = 'indiranagar'): Promise<HubInfo | null> {
-  const snap = await getDoc(doc(db, 'hubs', id));
-  if (!snap.exists()) return null;
-  return snap.data() as HubInfo;
+export async function fetchActiveHubs(): Promise<HubInfo[]> {
+  const snap = await getDocs(query(collection(db, 'hubs'), where('active', '==', true)));
+  return mapDocs<HubInfo>(snap);
 }
 
-export async function fetchInventoryForHub(hubId = 'indiranagar') {
-  const snap = await getDocs(query(collection(db, 'inventory'), where('hubId', '==', hubId)));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+export async function fetchHub(id: string): Promise<HubInfo | null> {
+  const snap = await getDoc(doc(db, 'hubs', id));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as HubInfo;
+}
+
+/** Prefer explicit id, else first active hub from Firestore. */
+export async function resolveDefaultHub(preferredId?: string | null): Promise<HubInfo | null> {
+  if (preferredId) {
+    const hub = await fetchHub(preferredId);
+    if (hub?.active !== false) return hub;
+  }
+  const active = await fetchActiveHubs();
+  return active[0] ?? null;
+}
+
+export async function fetchInventoryUnitsForHub(hubId: string): Promise<InventoryUnit[]> {
+  const snap = await getDocs(query(collection(db, 'inventory_units'), where('hubId', '==', hubId)));
+  return mapDocs<InventoryUnit>(snap);
 }
 
 export async function upsertUserProfile(userId: string, data: Partial<User> & DocumentData) {
@@ -72,6 +96,12 @@ export async function upsertUserProfile(userId: string, data: Partial<User> & Do
   );
 }
 
+export async function fetchUserProfile(userId: string): Promise<User | null> {
+  const snap = await getDoc(doc(db, 'users', userId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as User;
+}
+
 export async function fetchUserOrders(userId: string): Promise<Order[]> {
   const snap = await getDocs(
     query(collection(db, 'orders'), where('userId', '==', userId), orderBy('createdAt', 'desc'))
@@ -79,9 +109,107 @@ export async function fetchUserOrders(userId: string): Promise<Order[]> {
   return mapDocs<Order>(snap);
 }
 
-export async function createOrder(orderId: string, data: Order & { userId: string }) {
-  await setDoc(doc(db, 'orders', orderId), {
-    ...data,
-    createdAt: data.createdAt ?? new Date().toISOString(),
+export function watchUserOrders(userId: string, cb: (orders: Order[]) => void): Unsubscribe {
+  const q = query(collection(db, 'orders'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snap) => {
+    cb(mapDocs<Order>(snap as never));
   });
+}
+
+export async function fetchUserCart(userId: string): Promise<CartItem[]> {
+  const snap = await getDocs(collection(db, 'users', userId, 'cart'));
+  return mapDocs<CartItem>(snap);
+}
+
+export async function upsertCartItem(userId: string, item: CartItem) {
+  await setDoc(doc(db, 'users', userId, 'cart', item.id), item, { merge: true });
+}
+
+export async function deleteCartItem(userId: string, itemId: string) {
+  await deleteDoc(doc(db, 'users', userId, 'cart', itemId));
+}
+
+export async function clearUserCart(userId: string) {
+  const snap = await getDocs(collection(db, 'users', userId, 'cart'));
+  await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+}
+
+export async function replaceUserCart(userId: string, items: CartItem[]) {
+  await clearUserCart(userId);
+  await Promise.all(items.map((item) => upsertCartItem(userId, item)));
+}
+
+export async function fetchUserAddresses(userId: string): Promise<Address[]> {
+  const snap = await getDocs(collection(db, 'users', userId, 'addresses'));
+  return mapDocs<Address>(snap);
+}
+
+export async function upsertAddress(userId: string, address: Address) {
+  await setDoc(doc(db, 'users', userId, 'addresses', address.id), address, { merge: true });
+}
+
+export async function deleteAddressDoc(userId: string, addressId: string) {
+  await deleteDoc(doc(db, 'users', userId, 'addresses', addressId));
+}
+
+export async function fetchUserNotifications(userId: string): Promise<AppNotification[]> {
+  const snap = await getDocs(
+    query(collection(db, 'users', userId, 'notifications'), orderBy('createdAt', 'desc'), limit(50))
+  );
+  return mapDocs<AppNotification>(snap);
+}
+
+export function watchUserNotifications(
+  userId: string,
+  cb: (items: AppNotification[]) => void
+): Unsubscribe {
+  const q = query(
+    collection(db, 'users', userId, 'notifications'),
+    orderBy('createdAt', 'desc'),
+    limit(50)
+  );
+  return onSnapshot(q, (snap) => {
+    cb(
+      snap.docs.map((d) => {
+        const data = d.data() as AppNotification;
+        return {
+          ...data,
+          id: d.id,
+          timeLabel: data.timeLabel ?? relativeTime(data.createdAt),
+        };
+      })
+    );
+  });
+}
+
+export async function markNotificationReadRemote(userId: string, id: string) {
+  await setDoc(doc(db, 'users', userId, 'notifications', id), { read: true }, { merge: true });
+}
+
+export async function markAllNotificationsReadRemote(userId: string) {
+  const snap = await getDocs(collection(db, 'users', userId, 'notifications'));
+  await Promise.all(snap.docs.map((d) => setDoc(d.ref, { read: true }, { merge: true })));
+}
+
+function relativeTime(iso?: string) {
+  if (!iso) return 'Just now';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+export async function fetchReviews(productId?: string): Promise<Review[]> {
+  const q = productId
+    ? query(collection(db, 'reviews'), where('productId', '==', productId), orderBy('createdAt', 'desc'))
+    : query(collection(db, 'reviews'), orderBy('createdAt', 'desc'), limit(40));
+  const snap = await getDocs(q);
+  return mapDocs<Review>(snap);
+}
+
+export async function createReviewDoc(review: Review & { userId: string; createdAt: string }) {
+  await setDoc(doc(db, 'reviews', review.id), review);
 }

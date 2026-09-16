@@ -14,11 +14,11 @@ export default function Root({ children }: { children: ReactNode }) {
         <meta name="theme-color" content="#0F0F10" />
         <meta
           name="description"
-          content="PlayPort — quick commerce for entertainment. Consoles, cinema kits, karaoke and more delivered in 30 mins."
+          content="PlayPort — entertainment kits delivered fast. Consoles, cinema, VR and more."
         />
         <ScrollViewStyleReset />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
         <style dangerouslySetInnerHTML={{ __html: globalCss }} />
@@ -35,6 +35,8 @@ html, body, #root {
   width: 100%;
   overflow-x: hidden;
   touch-action: manipulation;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color-scheme: dark;
 }
 * {
   -webkit-tap-highlight-color: transparent;
@@ -47,19 +49,16 @@ img, video {
 [role="button"], [role="tab"], button, a {
   cursor: pointer;
 }
-[role="tab"]:hover {
-  opacity: 0.9;
-}
 input, textarea {
   outline: none;
-  font-size: 16px; /* prevents iOS zoom on focus */
+  font-size: 16px;
 }
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-  ::-webkit-scrollbar-thumb {
-  background: #2C2C31;
+::-webkit-scrollbar-thumb {
+  background: #3A3A40;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-track {

@@ -16,6 +16,7 @@ const TYPE_ICON: Record<AppNotification['type'], keyof typeof Ionicons.glyphMap>
   delivery: 'bicycle-outline',
   reminder: 'alarm-outline',
   account: 'shield-checkmark-outline',
+  payment: 'card-outline',
 };
 
 export default function NotificationsScreen() {

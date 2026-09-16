@@ -43,10 +43,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
-    backgroundColor: Platform.OS === 'web' ? 'rgba(26,26,31,0.96)' : colors.surface,
+    backgroundColor: colors.surface,
     alignItems: 'center',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.35)',
+      } as object,
+      default: {},
+    }),
   },
   bar: {
     width: '100%',

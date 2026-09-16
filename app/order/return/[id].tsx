@@ -116,7 +116,7 @@ export default function ReturnOrderScreen() {
           fullWidth
           icon={<Ionicons name="checkmark" size={18} color={colors.white} />}
           onPress={() => {
-            if (id) completeReturn(id);
+            if (id) void completeReturn(id);
             setDone(true);
           }}
         />

@@ -11,7 +11,7 @@ export default function Root({ children }: { children: ReactNode }) {
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no, viewport-fit=cover"
         />
-        <meta name="theme-color" content="#0F0F10" />
+        <meta name="theme-color" content="#0A0A0B" />
         <meta
           name="description"
           content="PlayPort — entertainment kits delivered fast. Consoles, cinema, VR and more."
@@ -30,13 +30,14 @@ export default function Root({ children }: { children: ReactNode }) {
 
 const globalCss = `
 html, body, #root {
-  background-color: #0F0F10;
+  background-color: #0A0A0B;
   min-height: 100%;
   width: 100%;
   overflow-x: hidden;
   touch-action: manipulation;
   font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color-scheme: dark;
+  scroll-behavior: smooth;
 }
 * {
   -webkit-tap-highlight-color: transparent;
@@ -48,10 +49,15 @@ img, video {
 }
 [role="button"], [role="tab"], button, a {
   cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease;
 }
 input, textarea {
   outline: none;
   font-size: 16px;
+}
+::selection {
+  background: rgba(249, 115, 22, 0.35);
+  color: #fff;
 }
 ::-webkit-scrollbar {
   width: 8px;
@@ -64,9 +70,12 @@ input, textarea {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-@media (min-width: 1024px) {
-  body {
-    background: #0F0F10;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 `;

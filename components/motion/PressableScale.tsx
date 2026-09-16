@@ -15,7 +15,6 @@ interface Props {
   onPress?: () => void;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
-  /** Scale when pressed (default 0.97) */
   scaleTo?: number;
   accessibilityRole?: 'button' | 'link' | 'none';
   accessibilityLabel?: string;
@@ -23,34 +22,37 @@ interface Props {
 }
 
 /**
- * Soft spring press — the main “feel” primitive for tappable UI.
+ * Deeper tactile press — scale + slight lift + opacity.
  */
 export function PressableScale({
   children,
   onPress,
   disabled,
   style,
-  scaleTo = 0.97,
+  scaleTo = 0.96,
   accessibilityRole = 'button',
   accessibilityLabel,
   hitSlop,
 }: Props) {
   const scale = useSharedValue(1);
+  const y = useSharedValue(0);
   const opacity = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.value }, { translateY: y.value }],
     opacity: opacity.value,
   }));
 
   const pressIn = () => {
-    scale.value = withSpring(scaleTo, { damping: 16, stiffness: 420 });
-    opacity.value = withTiming(0.92, { duration: 80 });
+    scale.value = withSpring(scaleTo, { damping: 15, stiffness: 480, mass: 0.6 });
+    y.value = withTiming(1.5, { duration: 70 });
+    opacity.value = withTiming(0.9, { duration: 70 });
   };
 
   const pressOut = () => {
-    scale.value = withSpring(1, { damping: 14, stiffness: 280 });
-    opacity.value = withTiming(1, { duration: 120 });
+    scale.value = withSpring(1, { damping: 12, stiffness: 260, mass: 0.7 });
+    y.value = withSpring(0, { damping: 14, stiffness: 280 });
+    opacity.value = withTiming(1, { duration: 140 });
   };
 
   return (
@@ -65,14 +67,16 @@ export function PressableScale({
       onHoverIn={
         Platform.OS === 'web'
           ? () => {
-              scale.value = withSpring(1.02, { damping: 18, stiffness: 320 });
+              scale.value = withSpring(1.025, { damping: 16, stiffness: 300 });
+              y.value = withTiming(-2, { duration: 140 });
             }
           : undefined
       }
       onHoverOut={
         Platform.OS === 'web'
           ? () => {
-              scale.value = withSpring(1, { damping: 16, stiffness: 280 });
+              scale.value = withSpring(1, { damping: 14, stiffness: 260 });
+              y.value = withSpring(0, { damping: 14, stiffness: 260 });
             }
           : undefined
       }

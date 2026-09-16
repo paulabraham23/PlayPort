@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { PressableScale } from '@/components/motion/PressableScale';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 
 interface Props {
@@ -29,7 +30,12 @@ export function SearchBar({
 }: Props) {
   if (onPress) {
     return (
-      <Pressable accessibilityRole="button" accessibilityLabel="Open search" onPress={onPress} style={styles.row}>
+      <PressableScale
+        accessibilityLabel="Open search"
+        onPress={onPress}
+        scaleTo={0.98}
+        style={styles.row}
+      >
         <View style={styles.inputWrap}>
           <View style={styles.searchIcon}>
             <Ionicons name="search" size={18} color={colors.playportOrange} />
@@ -38,16 +44,16 @@ export function SearchBar({
             {value || placeholder}
           </Text>
         </View>
-      </Pressable>
+      </PressableScale>
     );
   }
 
   return (
     <View style={styles.row}>
       {showBack ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} style={styles.sideBtn}>
+        <PressableScale accessibilityLabel="Go back" onPress={onBack} scaleTo={0.92} style={styles.sideBtn}>
           <Ionicons name="arrow-back" size={18} color={colors.primaryText} />
-        </Pressable>
+        </PressableScale>
       ) : null}
       <View style={styles.inputWrap}>
         <View style={styles.searchIcon}>
@@ -71,16 +77,16 @@ export function SearchBar({
         ) : null}
       </View>
       {onFilterPress ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Filters" onPress={onFilterPress} style={styles.sideBtn}>
+        <PressableScale accessibilityLabel="Filters" onPress={onFilterPress} scaleTo={0.92} style={styles.sideBtn}>
           <Ionicons name="options-outline" size={18} color={colors.primaryText} />
-        </Pressable>
+        </PressableScale>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' },
   inputWrap: {
     flex: 1,
     flexDirection: 'row',

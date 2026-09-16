@@ -16,6 +16,7 @@ import { CATEGORIES, HUB, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
+import { useFeelStore } from '@/store/feelStore';
 
 const SHORTCUTS = [
   { id: 'gaming', label: 'Consoles', icon: 'game-controller-outline' as const },
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   const addProductToCart = useAppStore((s) => s.addProductToCart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
   const cart = useAppStore((s) => s.cart);
+  const showToast = useFeelStore((s) => s.showToast);
   const catalogProducts = useCatalogStore((s) => s.products);
   const catalogCategories = useCatalogStore((s) => s.categories);
   const hub = useCatalogStore((s) => s.hub);
@@ -44,14 +46,19 @@ export default function HomeScreen() {
   const cartItemIdFor = (productId: string) =>
     cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
 
+  const addKit = (product: (typeof products)[0]) => {
+    addProductToCart(product.id, '12h');
+    showToast(`Added ${product.shortName}`);
+  };
+
   const renderProductCard = (product: (typeof products)[0], index: number) => (
     <EnterUp key={product.id} index={index} style={{ width: '100%' }}>
       <ProductCard
         product={product}
         quantityInCart={qtyFor(product.id)}
         onPress={() => router.push(`/product/${product.id}`)}
-        onAdd={() => addProductToCart(product.id, '12h')}
-        onIncrement={() => addProductToCart(product.id, '12h')}
+        onAdd={() => addKit(product)}
+        onIncrement={() => addKit(product)}
         onDecrement={() => {
           const id = cartItemIdFor(product.id);
           const qty = qtyFor(product.id);

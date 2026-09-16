@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Animated, { BounceIn, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableScale } from '@/components/motion/PressableScale';
 import { PulseOnChange } from '@/components/motion/Pulse';
+import { ValuePop } from '@/components/motion/ValuePop';
 import { colors, fonts, layout, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { useCartCount, useCartTotals } from '@/store/appStore';
 import { formatINR } from '@/utils/format';
@@ -25,14 +26,14 @@ export function FloatingCartBar({ bottomOffset = layout.tabBarHeight + 8 }: Prop
   return (
     <View pointerEvents="box-none" style={[styles.outer, { bottom }]}>
       <Animated.View
-        entering={SlideInDown.springify().damping(16).stiffness(170)}
+        entering={BounceIn.springify().damping(14).stiffness(180)}
         exiting={SlideOutDown.duration(180)}
         style={styles.barShell}
       >
         <PressableScale
           accessibilityLabel={`View cart, ${cartCount} items, ${formatINR(totals.total)}`}
           onPress={() => router.push('/cart')}
-          scaleTo={0.98}
+          scaleTo={0.97}
           style={styles.bar}
         >
           <View style={styles.left}>
@@ -45,7 +46,9 @@ export function FloatingCartBar({ bottomOffset = layout.tabBarHeight + 8 }: Prop
               <Text style={styles.label}>
                 {cartCount} {cartCount === 1 ? 'item' : 'items'} in cart
               </Text>
-              <Text style={styles.total}>{formatINR(totals.total)}</Text>
+              <ValuePop value={totals.total}>
+                <Text style={styles.total}>{formatINR(totals.total)}</Text>
+              </ValuePop>
             </View>
           </View>
           <View style={styles.cta}>

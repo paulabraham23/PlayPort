@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
+import { EnterUp } from '@/components/motion/Enter';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 
 const ITEMS = [
@@ -12,13 +13,15 @@ const ITEMS = [
 export function TrustStrip() {
   return (
     <View style={styles.wrap}>
-      {ITEMS.map((item) => (
-        <View key={item.label} style={styles.item}>
-          <View style={styles.iconWrap}>
-            <Ionicons name={item.icon} size={16} color={colors.playportOrange} />
+      {ITEMS.map((item, index) => (
+        <EnterUp key={item.label} index={index}>
+          <View style={styles.item}>
+            <View style={styles.iconWrap}>
+              <Ionicons name={item.icon} size={16} color={colors.playportOrange} />
+            </View>
+            <Text style={styles.label}>{item.label}</Text>
           </View>
-          <Text style={styles.label}>{item.label}</Text>
-        </View>
+        </EnterUp>
       ))}
     </View>
   );

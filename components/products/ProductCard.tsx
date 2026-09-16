@@ -1,8 +1,16 @@
+import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Platform, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  FadeIn,
+  ZoomIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { PressableScale } from '@/components/motion/PressableScale';
+import { ValuePop } from '@/components/motion/ValuePop';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
 import type { Product, RentalDurationId } from '@/types';
@@ -37,23 +45,25 @@ function CartAction({
   if (quantity > 0) {
     return (
       <Animated.View
-        entering={ZoomIn.springify().damping(14).stiffness(260)}
+        entering={ZoomIn.springify().damping(12).stiffness(280)}
         style={[styles.qtyWrap, floating && styles.qtyWrapFloating]}
       >
         <PressableScale
           accessibilityLabel={`Remove one ${productName}`}
           onPress={onDecrement}
-          scaleTo={0.9}
+          scaleTo={0.88}
           hitSlop={6}
           style={styles.qtyBtn}
         >
           <Text style={styles.qtyBtnText}>−</Text>
         </PressableScale>
-        <Text style={styles.qtyValue}>{quantity}</Text>
+        <ValuePop value={quantity} style={styles.qtyValueWrap}>
+          <Text style={styles.qtyValue}>{quantity}</Text>
+        </ValuePop>
         <PressableScale
           accessibilityLabel={`Add one ${productName}`}
           onPress={onIncrement}
-          scaleTo={0.9}
+          scaleTo={0.88}
           hitSlop={6}
           style={styles.qtyBtn}
         >
@@ -67,7 +77,7 @@ function CartAction({
     <PressableScale
       accessibilityLabel={`Add ${productName} to cart`}
       onPress={onAdd}
-      scaleTo={0.92}
+      scaleTo={0.9}
       style={[styles.addBtn, floating && styles.addBtnFloating]}
     >
       <Text style={styles.addBtnText}>ADD</Text>
@@ -83,6 +93,32 @@ function RatingRow({ rating, count }: { rating: number; count: number }) {
         {rating.toFixed(1)} · {count}+
       </Text>
     </View>
+  );
+}
+
+function ZoomImage({ uri, style }: { uri: string; style: object }) {
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    // subtle idle “alive” drift
+    const loop = () => {
+      scale.value = withTiming(1.04, { duration: 6000 }, () => {
+        scale.value = withTiming(1, { duration: 6000 });
+      });
+    };
+    loop();
+    const id = setInterval(loop, 12000);
+    return () => clearInterval(id);
+  }, [scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={[StyleSheet.absoluteFill, animatedStyle]}>
+      <Image source={{ uri }} style={style} contentFit="cover" />
+    </Animated.View>
   );
 }
 
@@ -136,10 +172,10 @@ export function ProductCard({
   }
 
   return (
-    <Animated.View entering={FadeIn.duration(280)} style={styles.card}>
+    <Animated.View entering={FadeIn.duration(320)} style={styles.card}>
       <PressableScale accessibilityLabel={product.name} onPress={onPress} scaleTo={0.985}>
         <View style={styles.imageWrap}>
-          <Image source={{ uri: product.images[0] }} style={styles.image} contentFit="cover" />
+          <ZoomImage uri={product.images[0]} style={styles.image} />
           <View style={styles.etaBadge}>
             <Ionicons name="flash" size={10} color={colors.etaText} />
             <Text style={styles.etaBadgeText}>{product.etaMinutes} min</Text>
@@ -189,8 +225,10 @@ const styles = StyleSheet.create({
   imageWrap: {
     backgroundColor: colors.surfaceAlt,
     position: 'relative',
+    overflow: 'hidden',
+    aspectRatio: 1.05,
   },
-  image: { width: '100%', aspectRatio: 1.05 },
+  image: { width: '100%', height: '100%' },
   etaBadge: {
     position: 'absolute',
     top: 10,
@@ -310,8 +348,8 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 18,
   },
+  qtyValueWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   qtyValue: {
-    flex: 1,
     textAlign: 'center',
     color: colors.playportOrange,
     fontFamily: fonts.heading,

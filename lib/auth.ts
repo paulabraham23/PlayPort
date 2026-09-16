@@ -10,6 +10,7 @@ import {
 import { Platform } from 'react-native';
 import { auth } from '@/lib/firebase';
 import { fetchUserProfile, upsertUserProfile } from '@/lib/firestore';
+import { HUB } from '@/data/mock';
 import type { User } from '@/types';
 
 let phoneConfirmation: ConfirmationResult | null = null;
@@ -27,8 +28,8 @@ function profileFromAuth(firebaseUser: FirebaseUser, phone?: string): User {
       `https://api.dicebear.com/7.x/avataaars/png?seed=${firebaseUser.uid}`,
     kycVerified: Boolean(firebaseUser.phoneNumber || digits),
     sessionsCount: 0,
-    homeHub: '',
-    homeHubId: undefined,
+    homeHub: HUB.city,
+    homeHubId: HUB.id,
   };
 }
 
@@ -127,7 +128,8 @@ export async function signInAsGuest() {
     avatar: '',
     kycVerified: false,
     sessionsCount: 0,
-    homeHub: '',
+    homeHub: HUB.city,
+    homeHubId: HUB.id,
   });
   return cred.user;
 }

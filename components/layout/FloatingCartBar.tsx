@@ -14,14 +14,14 @@ interface Props {
   bottomOffset?: number;
 }
 
-export function FloatingCartBar({ bottomOffset = layout.tabBarHeight + 8 }: Props) {
+export function FloatingCartBar({ bottomOffset = layout.tabBarHeight + 16 }: Props) {
   const insets = useSafeAreaInsets();
   const cartCount = useCartCount();
   const totals = useCartTotals();
 
   if (!cartCount) return null;
 
-  const bottom = bottomOffset + Math.max(insets.bottom > 0 ? 0 : 4, 0);
+  const bottom = bottomOffset + (Platform.OS === 'web' ? 8 : Math.max(insets.bottom * 0.25, 4));
 
   return (
     <View pointerEvents="box-none" style={[styles.outer, { bottom }]}>
@@ -42,8 +42,8 @@ export function FloatingCartBar({ bottomOffset = layout.tabBarHeight + 8 }: Prop
                 <Text style={styles.countText}>{cartCount > 9 ? '9+' : cartCount}</Text>
               </View>
             </PulseOnChange>
-            <View>
-              <Text style={styles.label}>
+            <View style={styles.meta}>
+              <Text style={styles.label} numberOfLines={1}>
                 {cartCount} {cartCount === 1 ? 'item' : 'items'} in cart
               </Text>
               <ValuePop value={totals.total}>
@@ -91,17 +91,18 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  left: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  left: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 },
+  meta: { flex: 1, minWidth: 0 },
   countBadge: {
     width: 36,
     height: 36,
     borderRadius: radii.sm,
-    backgroundColor: colors.orangeTintStrong,
+    backgroundColor: colors.playportOrange,
     alignItems: 'center',
     justifyContent: 'center',
   },
   countText: {
-    color: colors.playportOrange,
+    color: colors.white,
     fontFamily: fonts.heading,
     fontSize: typeScale.bodyLg,
   },
@@ -123,6 +124,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: radii.full,
+    flexShrink: 0,
     ...shadows.glow,
   },
   ctaText: {

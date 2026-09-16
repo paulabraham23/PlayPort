@@ -180,16 +180,6 @@ export function ProductCard({
             <Ionicons name="flash" size={10} color={colors.etaText} />
             <Text style={styles.etaBadgeText}>{product.etaMinutes} min</Text>
           </View>
-          <View style={styles.floatingAction}>
-            <CartAction
-              quantity={quantityInCart}
-              productName={product.shortName}
-              onAdd={handleAdd}
-              onIncrement={onIncrement ?? handleAdd}
-              onDecrement={onDecrement}
-              floating
-            />
-          </View>
         </View>
         <View style={styles.body}>
           <RatingRow rating={product.rating} count={product.reviewCount} />
@@ -200,13 +190,19 @@ export function ProductCard({
         </View>
       </PressableScale>
       <View style={styles.footer}>
-        <View>
+        <View style={styles.priceCol}>
           <Text style={styles.price}>{formatINR(price)}</Text>
           {product.compareAtPrice ? (
             <Text style={styles.mrp}>{formatINR(product.compareAtPrice)}</Text>
           ) : null}
         </View>
-        {product.badge ? <Text style={styles.badge}>{product.badge}</Text> : null}
+        <CartAction
+          quantity={quantityInCart}
+          productName={product.shortName}
+          onAdd={handleAdd}
+          onIncrement={onIncrement ?? handleAdd}
+          onDecrement={onDecrement}
+        />
       </View>
     </Animated.View>
   );
@@ -251,10 +247,10 @@ const styles = StyleSheet.create({
   floatingAction: {
     position: 'absolute',
     right: 10,
-    bottom: -16,
+    bottom: 10,
     zIndex: 2,
   },
-  body: { paddingHorizontal: spacing.md, paddingTop: spacing.lg, gap: 4 },
+  body: { paddingHorizontal: spacing.md, paddingTop: spacing.md, gap: 4 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   ratingText: {
     color: colors.secondaryText,
@@ -275,11 +271,13 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
     paddingTop: spacing.sm,
+    gap: 8,
   },
+  priceCol: { flex: 1, minWidth: 0 },
   price: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
@@ -303,13 +301,13 @@ const styles = StyleSheet.create({
   addBtn: {
     borderWidth: 1.5,
     borderColor: colors.playportOrange,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: colors.orangeTint,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: radii.sm,
-    minWidth: 68,
+    minWidth: 72,
     alignItems: 'center',
-    ...shadows.soft,
+    justifyContent: 'center',
   },
   addBtnFloating: {
     backgroundColor: colors.surfaceRaised,
@@ -329,16 +327,16 @@ const styles = StyleSheet.create({
     borderColor: colors.playportOrange,
     backgroundColor: colors.orangeTint,
     borderRadius: radii.sm,
-    minWidth: 92,
-    height: 34,
+    minWidth: 96,
+    height: 36,
   },
   qtyWrapFloating: {
     backgroundColor: colors.surfaceRaised,
     ...shadows.glow,
   },
   qtyBtn: {
-    width: 30,
-    height: 34,
+    width: 32,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },

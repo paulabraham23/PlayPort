@@ -67,7 +67,14 @@ export default function OtpScreen() {
       await login(code);
       router.replace(returnTo as never);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Invalid OTP');
+      const raw = e instanceof Error ? e.message : 'Invalid OTP';
+      const friendly =
+        /unsupported field value|undefined|setDoc/i.test(raw)
+          ? 'Couldn’t finish sign-in. Please try again.'
+          : /invalid|code|otp|credential/i.test(raw)
+            ? 'That code doesn’t look right. Try again.'
+            : raw;
+      setError(friendly);
     } finally {
       setVerifying(false);
     }

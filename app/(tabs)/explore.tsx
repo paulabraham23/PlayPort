@@ -41,7 +41,7 @@ export default function ExploreScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scroll,
-          { paddingHorizontal: horizontalPadding, paddingBottom: spacing.huge + 72 },
+          { paddingHorizontal: horizontalPadding, paddingBottom: spacing.huge + 120 },
         ]}
       >
         <EnterUp index={0}>

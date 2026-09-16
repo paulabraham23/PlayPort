@@ -42,7 +42,7 @@ export function Screen({
         <View style={[styles.body, { maxWidth, width: '100%' }, isDesktop && styles.desktopBody, contentStyle]}>
           {children}
         </View>
-        {showFloatingCart ? <FloatingCartBar bottomOffset={layout.tabBarHeight + 12} /> : null}
+        {showFloatingCart ? <FloatingCartBar bottomOffset={layout.tabBarHeight + 16} /> : null}
       </View>
     </SafeAreaView>
   );

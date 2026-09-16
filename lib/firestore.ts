@@ -86,10 +86,14 @@ export async function fetchInventoryUnitsForHub(hubId: string): Promise<Inventor
 }
 
 export async function upsertUserProfile(userId: string, data: Partial<User> & DocumentData) {
+  const cleaned: DocumentData = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) cleaned[key] = value;
+  }
   await setDoc(
     doc(db, 'users', userId),
     {
-      ...data,
+      ...cleaned,
       updatedAt: new Date().toISOString(),
     },
     { merge: true }

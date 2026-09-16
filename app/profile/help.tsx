@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   },
   topicTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
   topicSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
-  faqBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  faqBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSubtle },
   faqHead: {
     flexDirection: 'row',
     alignItems: 'center',

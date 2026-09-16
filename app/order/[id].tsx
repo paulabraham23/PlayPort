@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     left: '55%',
     right: '-45%',
     height: 2,
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderSubtle,
   },
   timelineLineDone: { backgroundColor: colors.playportOrange },
   progressTrack: {

@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, radii } from '@/constants/theme';
+import { colors, fonts, radii, typeScale } from '@/constants/theme';
 
 interface Props {
   value: number;
@@ -16,6 +16,7 @@ export function QuantitySelector({ value, onChange, min = 1, max = 5 }: Props) {
         accessibilityLabel="Decrease quantity"
         onPress={() => onChange(Math.max(min, value - 1))}
         style={styles.btn}
+        hitSlop={4}
       >
         <Text style={styles.btnText}>−</Text>
       </Pressable>
@@ -25,6 +26,7 @@ export function QuantitySelector({ value, onChange, min = 1, max = 5 }: Props) {
         accessibilityLabel="Increase quantity"
         onPress={() => onChange(Math.min(max, value + 1))}
         style={styles.btn}
+        hitSlop={4}
       >
         <Text style={styles.btnText}>+</Text>
       </Pressable>
@@ -36,12 +38,20 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radii.full,
-    paddingHorizontal: 4,
-    gap: 8,
+    borderWidth: 1.5,
+    borderColor: colors.playportOrange,
+    backgroundColor: colors.orangeTint,
+    borderRadius: radii.sm,
+    minWidth: 96,
+    height: 34,
   },
-  btn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  btnText: { color: colors.primaryText, fontSize: 18, fontFamily: fonts.bodyMedium },
-  value: { color: colors.primaryText, fontFamily: fonts.monoMedium, minWidth: 16, textAlign: 'center' },
+  btn: { width: 32, height: 34, alignItems: 'center', justifyContent: 'center' },
+  btnText: { color: colors.playportOrange, fontSize: 17, fontFamily: fonts.heading, lineHeight: 18 },
+  value: {
+    flex: 1,
+    color: colors.playportOrange,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.body,
+    textAlign: 'center',
+  },
 });

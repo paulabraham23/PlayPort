@@ -10,7 +10,7 @@ import { SearchBar } from '@/components/search/SearchBar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
@@ -66,7 +66,7 @@ export default function SearchResultsScreen() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
           <View style={[styles.filterChip, styles.filterActive]}>
-            <Ionicons name="checkmark" size={14} color={colors.secondaryText} />
+            <Ionicons name="checkmark" size={14} color={colors.playportOrange} />
             <Text style={styles.filterActiveText}>Filters (1)</Text>
           </View>
           <View style={styles.filterChip}>
@@ -84,11 +84,10 @@ export default function SearchResultsScreen() {
             <Text style={styles.hubStatus}>{setupsReady} setups ready in your hub</Text>
           </View>
           <View style={styles.dropBadge}>
-            <Ionicons name="flash" size={11} color={colors.secondaryText} />
+            <Ionicons name="flash" size={11} color={colors.etaText} />
             <Text style={styles.dropBadgeText}>30-35M DROPOFF</Text>
           </View>
         </View>
-
         {!results.length ? (
           <EmptyState
             icon="search-outline"
@@ -190,38 +189,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  filterActive: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTintStrong },
-  filterText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
-  filterActiveText: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  filterActive: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTint },
+  filterText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.body },
+  filterActiveText: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   statusLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.secondaryText },
-  hubStatus: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, flex: 1 },
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
+  hubStatus: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.body, flex: 1 },
   dropBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.etaBg,
     borderRadius: radii.full,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  dropBadgeText: { color: colors.secondaryText, fontFamily: fonts.monoMedium, fontSize: 10 },
+  dropBadgeText: { color: colors.etaText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption },
   featured: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: 10,
     overflow: 'hidden',
+    ...shadows.soft,
   },
   featuredBadges: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
   featuredMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
@@ -234,34 +234,57 @@ const styles = StyleSheet.create({
   },
   featuredImage: { width: '100%', height: '100%' },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  featuredTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
-  featuredDesc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
-  featuredFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, flexWrap: 'wrap', gap: 8 },
-  featuredPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 18 },
-  strike: { color: colors.mutedText, textDecorationLine: 'line-through', fontFamily: fonts.mono, fontSize: 12 },
+  featuredTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
+  featuredDesc: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.body,
+    lineHeight: 19,
+  },
+  featuredFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  featuredPrice: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
+  strike: {
+    color: colors.mutedText,
+    textDecorationLine: 'line-through',
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+  },
   addon: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
   },
   addonImage: { width: 56, height: 56, borderRadius: radii.sm },
-  addonTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14, marginTop: 4 },
-  addonPrice: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 12, marginTop: 2 },
+  addonTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body, marginTop: 4 },
+  addonPrice: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, marginTop: 2 },
   included: {
     flexDirection: 'row',
     gap: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     alignItems: 'flex-start',
   },
-  includedTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 14 },
-  includedSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 4, lineHeight: 17 },
+  includedTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.body },
+  includedSub: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    marginTop: 4,
+    lineHeight: 17,
+  },
 });

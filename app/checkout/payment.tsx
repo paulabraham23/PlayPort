@@ -8,7 +8,7 @@ import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/Sticky
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
 import { ensureLoggedIn } from '@/utils/authGate';
@@ -93,7 +93,7 @@ export default function PaymentScreen() {
     <Screen showHeader={false} edges={['top']} narrow>
       <ScreenHeader
         title="Checkout"
-        subtitle="STEP 2 OF 2"
+        subtitle="Step 2 of 2 · Payment"
         onBack={() => router.back()}
         right={
           <View style={styles.stepRight}>
@@ -198,23 +198,33 @@ export default function PaymentScreen() {
 const styles = StyleSheet.create({
   scroll: { gap: spacing.lg, paddingTop: spacing.sm },
   stepRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  stepMono: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
+  stepMono: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.6,
+  },
   stepDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.playportOrange },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
-  secure: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
+  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
+  secure: {
+    color: colors.success,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.6,
+  },
   methods: { gap: 10 },
   method: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
   },
-  methodSelected: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTintStrong },
+  methodSelected: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTint },
   radio: {
     width: 20,
     height: 20,
@@ -228,20 +238,31 @@ const styles = StyleSheet.create({
   radioOn: { borderColor: colors.playportOrange },
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.playportOrange },
   methodTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  methodLabel: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
-  methodSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 4, lineHeight: 17 },
-  methodMeta: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 11, marginTop: 6 },
+  methodLabel: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg },
+  methodSub: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    marginTop: 4,
+    lineHeight: 17,
+  },
+  methodMeta: {
+    color: colors.mutedText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    marginTop: 6,
+  },
   summary: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: 4,
   },
-  summaryTitle: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
-  summaryTotal: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 28 },
-  summaryNote: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 12 },
+  summaryTitle: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.body },
+  summaryTotal: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.display },
+  summaryNote: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.small },
   stickyBar: { flexDirection: 'column', alignItems: 'stretch' },
   stickyCol: { width: '100%' },
 });

@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
 import type { Order } from '@/types';
 
@@ -41,11 +41,11 @@ export function OrderCard({ order, onPress, onTrack, onRentAgain }: Props) {
       <View style={styles.actions}>
         {isActive ? (
           <>
-            <Button title="View Details" variant="secondary" size="sm" onPress={onPress} style={{ flex: 1 }} />
-            <Button title="Track Order" size="sm" onPress={onTrack ?? onPress} style={{ flex: 1 }} />
+            <Button title="Details" variant="secondary" size="sm" onPress={onPress} style={{ flex: 1 }} />
+            <Button title="Track" size="sm" onPress={onTrack ?? onPress} style={{ flex: 1 }} />
           </>
         ) : (
-          <Button title="Rent Again" variant="secondary" size="sm" onPress={onRentAgain ?? onPress} fullWidth />
+          <Button title="Rent again" variant="secondary" size="sm" onPress={onRentAgain ?? onPress} fullWidth />
         )}
       </View>
     </View>
@@ -54,24 +54,25 @@ export function OrderCard({ order, onPress, onTrack, onRentAgain }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: spacing.md,
+    ...shadows.soft,
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  id: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 12 },
+  id: { color: colors.mutedText, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
   row: { flexDirection: 'row', gap: 12, marginTop: spacing.xs },
   image: {
-    width: 64,
-    height: 64,
-    borderRadius: radii.sm,
+    width: 72,
+    height: 72,
+    borderRadius: radii.md,
     backgroundColor: colors.surfaceAlt,
   },
-  name: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
-  meta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
-  price: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 15 },
+  name: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg },
+  meta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small },
+  price: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.title, marginTop: 2 },
   actions: { flexDirection: 'row', gap: 8, marginTop: spacing.xs },
 });

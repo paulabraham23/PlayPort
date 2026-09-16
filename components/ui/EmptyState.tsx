@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
-import { colors, fonts, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 
 interface Props {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -20,7 +20,7 @@ export function EmptyState({ icon = 'file-tray-outline', title, subtitle, action
       <Text style={styles.title}>{title}</Text>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       {actionLabel && onAction ? (
-        <Button title={actionLabel} onPress={onAction} style={{ marginTop: spacing.lg }} />
+        <Button title={actionLabel} onPress={onAction} style={{ marginTop: spacing.lg, minWidth: 160 }} />
       ) : null}
     </View>
   );
@@ -47,30 +47,34 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.xxxl,
+    paddingVertical: spacing.huge,
     paddingHorizontal: spacing.xl,
   },
   iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.surfaceAlt,
+    width: 64,
+    height: 64,
+    borderRadius: radii.xl,
+    backgroundColor: colors.orangeTint,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   title: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: 18,
+    fontSize: typeScale.headline,
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   subtitle: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
-    fontSize: 14,
+    fontSize: typeScale.body,
     textAlign: 'center',
     marginTop: 8,
-    lineHeight: 20,
+    lineHeight: 21,
+    maxWidth: 320,
   },
 });

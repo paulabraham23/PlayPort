@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { DURATIONS } from '@/data/mock';
 import { formatINR } from '@/utils/format';
 import type { Product, RentalDurationId } from '@/types';
@@ -15,7 +15,7 @@ const ICONS: Record<RentalDurationId, keyof typeof Ionicons.glyphMap> = {
   '6h': 'time-outline',
   '12h': 'moon-outline',
   '24h': 'sunny-outline',
-  weekend: 'game-controller-outline',
+  weekend: 'calendar-outline',
 };
 
 export function DurationSelector({ product, value, onChange }: Props) {
@@ -33,17 +33,20 @@ export function DurationSelector({ product, value, onChange }: Props) {
           >
             {d.popular ? (
               <View style={styles.popular}>
-                <Ionicons name="flame" size={10} color={colors.white} />
-                <Text style={styles.popularText}>POPULAR</Text>
+                <Text style={styles.popularText}>Popular</Text>
               </View>
             ) : null}
-            <Ionicons
-              name={ICONS[d.id]}
-              size={18}
-              color={selected ? colors.playportOrange : colors.secondaryText}
-            />
+            <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
+              <Ionicons
+                name={ICONS[d.id]}
+                size={18}
+                color={selected ? colors.playportOrange : colors.secondaryText}
+              />
+            </View>
             <Text style={styles.label}>{d.label}</Text>
-            <Text style={styles.price}>{formatINR(product.priceByDuration[d.id])} flat</Text>
+            <Text style={[styles.price, selected && styles.priceSelected]}>
+              {formatINR(product.priceByDuration[d.id])}
+            </Text>
             <Text style={styles.desc}>{d.description}</Text>
           </Pressable>
         );
@@ -58,31 +61,44 @@ const styles = StyleSheet.create({
     width: '48%',
     flexGrow: 1,
     minWidth: 140,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
     gap: 6,
   },
   selected: {
     borderColor: colors.playportOrange,
-    backgroundColor: colors.orangeTintStrong,
+    backgroundColor: colors.orangeTint,
+    ...shadows.glow,
   },
   popular: {
     position: 'absolute',
     top: 8,
     right: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
     backgroundColor: colors.playportOrange,
     borderRadius: radii.full,
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  popularText: { color: colors.white, fontSize: 9, fontFamily: fonts.monoMedium, letterSpacing: 0.4 },
-  label: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14, marginTop: 4 },
-  price: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 15 },
-  desc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 11 },
+  popularText: {
+    color: colors.white,
+    fontSize: 9,
+    fontFamily: fonts.bodyMedium,
+    letterSpacing: 0.3,
+  },
+  iconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapSelected: { backgroundColor: colors.orangeTintStrong },
+  label: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body, marginTop: 2 },
+  price: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.title },
+  priceSelected: { color: colors.playportOrange },
+  desc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.caption, lineHeight: 15 },
 });

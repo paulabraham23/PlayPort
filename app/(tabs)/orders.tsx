@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { formatINR } from '@/utils/format';
@@ -51,7 +51,10 @@ export default function OrdersScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
         >
-          <Text style={styles.pageTitle}>Orders</Text>
+          <View style={styles.titleBlock}>
+            <Text style={styles.eyebrow}>Activity</Text>
+            <Text style={styles.pageTitle}>Orders</Text>
+          </View>
           <EmptyState
             title="Log in to see orders"
             subtitle="Your active rentals and past sessions show up here after you sign in."
@@ -70,7 +73,8 @@ export default function OrdersScreen() {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
       >
         <View style={styles.titleBlock}>
-          <Text style={styles.title}>My Orders</Text>
+          <Text style={styles.eyebrow}>Activity</Text>
+          <Text style={styles.title}>Orders</Text>
           <Text style={styles.subtitle}>Track live dispatch and past rentals</Text>
           <Badge label={`${orders.length} total`} color={colors.secondaryText} />
         </View>
@@ -97,7 +101,7 @@ export default function OrdersScreen() {
         {tab === 'active' && live ? <LiveDispatchCard order={live} /> : null}
 
         {tab === 'past' && past.length > 0 ? (
-          <Text style={styles.sectionHeader}>Past Orders</Text>
+          <Text style={styles.sectionLabel}>Past Orders</Text>
         ) : null}
 
         {list.length === 0 ? (
@@ -133,9 +137,14 @@ export default function OrdersScreen() {
 function LiveDispatchCard({ order }: { order: Order }) {
   const first = order.items[0];
   return (
-    <Card style={styles.liveCard} padded>
+    <Card style={styles.liveCard} padded elevated>
       <View style={styles.liveTop}>
-        <Badge label="In progress" left={<View style={styles.pulse} />} />
+        <Badge
+          label="In progress"
+          color={colors.success}
+          backgroundColor={colors.successBg}
+          left={<View style={styles.pulse} />}
+        />
         <Text style={styles.liveId}>#{order.id}</Text>
       </View>
       <View style={styles.liveRow}>
@@ -183,31 +192,38 @@ function LiveDispatchCard({ order }: { order: Order }) {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.lg, paddingTop: spacing.sm },
+  titleBlock: { gap: spacing.sm },
+  eyebrow: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
   pageTitle: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: 30,
+    fontSize: typeScale.display,
     letterSpacing: -0.4,
   },
-  titleBlock: { gap: spacing.sm },
   title: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: 30,
+    fontSize: typeScale.display,
     letterSpacing: -0.4,
   },
   subtitle: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
-    fontSize: 14,
+    fontSize: typeScale.body,
     lineHeight: 20,
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: 4,
   },
   tab: {
@@ -216,24 +232,23 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     alignItems: 'center',
   },
-  tabActive: { backgroundColor: colors.surfaceAlt },
-  tabText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
-  tabTextActive: { color: colors.primaryText },
-  sectionHeader: {
+  tabActive: { backgroundColor: colors.orangeTint },
+  tabText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  tabTextActive: { color: colors.playportOrange },
+  sectionLabel: {
     color: colors.mutedText,
-    fontFamily: fonts.mono,
-    fontSize: 11,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginBottom: -spacing.sm,
   },
   liveCard: {
-    borderColor: colors.border,
     gap: spacing.lg,
   },
   liveTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.secondaryText },
-  liveId: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 12 },
+  pulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
+  liveId: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
   liveRow: { flexDirection: 'row', gap: 12 },
   liveImage: {
     width: 76,
@@ -241,9 +256,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     backgroundColor: colors.surfaceAlt,
   },
-  liveName: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
-  liveMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
-  livePrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 15 },
+  liveName: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg },
+  liveMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small },
+  livePrice: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.bodyLg },
   progressBlock: { gap: spacing.sm },
   progressLabels: {
     flexDirection: 'row',
@@ -253,12 +268,12 @@ const styles = StyleSheet.create({
   progressLabel: {
     color: colors.secondaryText,
     fontFamily: fonts.bodyMedium,
-    fontSize: 12,
+    fontSize: typeScale.small,
   },
   progressPercent: {
-    color: colors.secondaryText,
-    fontFamily: fonts.monoMedium,
-    fontSize: 12,
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.small,
   },
   progressTrack: {
     height: 4,
@@ -268,7 +283,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.secondaryText,
+    backgroundColor: colors.playportOrange,
     borderRadius: 2,
   },
   liveActions: { flexDirection: 'row', gap: 8 },

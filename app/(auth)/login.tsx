@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { HUB, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
@@ -82,7 +82,10 @@ export default function LoginScreen() {
             <View style={styles.logoMark}>
               <Text style={styles.logoLetter}>P</Text>
             </View>
-            <Text style={styles.brand}>PlayPort</Text>
+            <Text style={styles.brand}>
+              <Text style={styles.brandPlay}>Play</Text>
+              <Text style={styles.brandPort}>Port</Text>
+            </Text>
           </View>
           <Pressable
             accessibilityRole="button"
@@ -212,9 +215,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
   },
   logoMark: {
     width: 36,
@@ -229,18 +232,20 @@ const styles = StyleSheet.create({
     fontFamily: fonts.heading,
     fontSize: 18,
   },
-  brand: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22, letterSpacing: -0.3 },
+  brand: { fontFamily: fonts.heading, fontSize: typeScale.headline, letterSpacing: -0.3 },
+  brandPlay: { color: colors.primaryText },
+  brandPort: { color: colors.playportOrange },
   hero: { gap: spacing.sm },
   heroTitle: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: 30,
+    fontSize: typeScale.display,
     lineHeight: 36,
   },
   heroSub: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
-    fontSize: 14,
+    fontSize: typeScale.body,
     lineHeight: 21,
   },
   carousel: { gap: 12, paddingRight: 8 },
@@ -249,8 +254,8 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: radii.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     justifyContent: 'flex-end',
     padding: spacing.md,
   },
@@ -273,48 +278,48 @@ const styles = StyleSheet.create({
   },
   carouselTag: {
     color: colors.playportOrange,
-    fontFamily: fonts.mono,
-    fontSize: 10,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
     marginBottom: 4,
     zIndex: 1,
   },
   carouselTitle: {
     color: colors.primaryText,
-    fontFamily: fonts.headingMedium,
-    fontSize: 14,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.body,
     zIndex: 1,
   },
   form: { gap: spacing.md },
-  label: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  label: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     overflow: 'hidden',
   },
   prefix: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
-    borderRightWidth: 1,
-    borderRightColor: colors.border,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: colors.borderSubtle,
     backgroundColor: colors.surfaceAlt,
   },
-  prefixText: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 15 },
+  prefixText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg },
   phoneInput: {
     flex: 1,
     color: colors.primaryText,
     fontFamily: fonts.body,
-    fontSize: 16,
+    fontSize: typeScale.title,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     outlineStyle: 'none' as unknown as undefined,
   },
   altRow: { flexDirection: 'row', gap: 10 },
   altBtn: { flex: 1 },
-  hubCard: { backgroundColor: colors.surfaceAlt },
+  hubCard: { backgroundColor: colors.surfaceRaised },
   hubRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   hubIcon: {
     width: 44,
@@ -324,39 +329,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  hubName: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 15 },
-  hubMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
+  hubName: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.bodyLg },
+  hubMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, marginTop: 2 },
   hubEta: { alignItems: 'center' },
-  hubEtaValue: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 22 },
-  hubEtaUnit: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 10 },
+  hubEtaValue: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
+  hubEtaUnit: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption },
   trustRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   trustItem: {
     flex: 1,
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xs,
   },
   trustLabel: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
-    fontSize: 11,
+    fontSize: typeScale.caption,
     textAlign: 'center',
   },
   terms: {
     color: colors.mutedText,
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: typeScale.small,
     lineHeight: 18,
     textAlign: 'center',
   },
   sendError: {
     color: colors.badgeRed,
     fontFamily: fonts.body,
-    fontSize: 13,
+    fontSize: typeScale.body,
   },
 });

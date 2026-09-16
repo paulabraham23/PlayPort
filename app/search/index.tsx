@@ -6,7 +6,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { SearchBar } from '@/components/search/SearchBar';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import {
   CATEGORIES,
   HUB,
@@ -68,7 +69,7 @@ export default function SearchDiscoveryScreen() {
             <Text style={styles.flashStatus}>HUB ACTIVE</Text>
           </View>
           <View style={styles.expressRow}>
-            <Ionicons name="flash" size={12} color={colors.secondaryText} />
+            <Ionicons name="flash" size={12} color={colors.etaText} />
             <Text style={styles.express}>{HUB.etaMinutes}–45m express</Text>
           </View>
         </View>
@@ -76,7 +77,7 @@ export default function SearchDiscoveryScreen() {
         {recentSearches.length > 0 ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent Searches</Text>
+              <SectionHeader eyebrow="History" title="Recent searches" />
               <Pressable onPress={clearRecentSearches} accessibilityRole="button">
                 <Text style={styles.clearAll}>Clear all</Text>
               </Pressable>
@@ -98,10 +99,7 @@ export default function SearchDiscoveryScreen() {
         ) : null}
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Trending Vibes</Text>
-            <Text style={styles.monoLabel}>PARTY MODES</Text>
-          </View>
+          <SectionHeader eyebrow="Tonight" title="Trending vibes" />
           <View style={[styles.vibeRow, isDesktop && styles.vibeRowDesktop]}>
             {TRENDING_VIBES.map((vibe) => (
               <Pressable
@@ -120,8 +118,8 @@ export default function SearchDiscoveryScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Categories</Text>
-            <Text style={styles.monoAccent}>{setupsReady} SETUPS READY</Text>
+            <SectionHeader eyebrow="Browse" title="Quick categories" />
+            <Text style={styles.monoAccent}>{setupsReady} ready</Text>
           </View>
           <ResponsiveGrid columns={quickCols} gap={gap}>
             {quickCategories.map((cat) => {
@@ -134,7 +132,7 @@ export default function SearchDiscoveryScreen() {
                   style={styles.catCard}
                 >
                   <View style={styles.catTop}>
-                    <Ionicons name={meta.icon} size={20} color={colors.secondaryText} />
+                    <Ionicons name={meta.icon} size={20} color={colors.playportOrange} />
                     <View style={styles.etaPill}>
                       <Text style={styles.etaText}>{cat.etaMinutes}m</Text>
                     </View>
@@ -148,10 +146,7 @@ export default function SearchDiscoveryScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Popular Searches Right Now</Text>
-            <Text style={styles.monoLabel}>Tonight</Text>
-          </View>
+          <SectionHeader eyebrow="Popular" title="Searches right now" />
           <View style={styles.popularList}>
             {POPULAR_SEARCHES.map((item, index) => {
               const product = PRODUCTS.find((p) => p.id === item.id);
@@ -181,16 +176,15 @@ export default function SearchDiscoveryScreen() {
                   </View>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Add ${item.label}`}
+                    accessibilityLabel={`Add ${item.label} to cart`}
                     onPress={() => {
                       if (product) {
                         addProductToCart(product.id, '12h');
-                        router.push('/cart');
                       }
                     }}
                     style={styles.addBtn}
                   >
-                    <Ionicons name="add" size={20} color={colors.primaryText} />
+                    <Text style={styles.addBtnText}>ADD</Text>
                   </Pressable>
                 </Pressable>
               );
@@ -200,7 +194,7 @@ export default function SearchDiscoveryScreen() {
 
         <View style={styles.infoCard}>
           <View style={styles.infoIcon}>
-            <Ionicons name="flash" size={22} color={colors.secondaryText} />
+            <Ionicons name="flash" size={22} color={colors.etaText} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoTitle}>Instant 30-45m Dropoff</Text>
@@ -218,121 +212,132 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: spacing.sm, paddingBottom: spacing.xxxl, gap: spacing.xxl },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   statusLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.secondaryText },
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
   flashStatus: {
-    color: colors.secondaryText,
-    fontFamily: fonts.mono,
-    fontSize: 11,
+    color: colors.success,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
     letterSpacing: 0.6,
   },
   expressRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  express: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
+  express: { color: colors.etaText, fontFamily: fonts.body, fontSize: typeScale.small },
   section: { gap: spacing.md },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     gap: 12,
   },
-  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18, flexShrink: 1 },
-  clearAll: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
-  monoLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
-  monoAccent: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
+  clearAll: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.body, marginBottom: 4 },
+  monoAccent: {
+    color: colors.mutedText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.6,
+    marginBottom: 4,
+  },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  chipText: { color: colors.primaryText, fontFamily: fonts.body, fontSize: 13 },
+  chipText: { color: colors.primaryText, fontFamily: fonts.body, fontSize: typeScale.body },
   vibeRow: { flexDirection: 'row', gap: 10 },
   vibeRowDesktop: { maxWidth: 720 },
   vibeCard: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
     gap: 4,
+    ...shadows.soft,
   },
   vibeEmoji: { fontSize: 22, marginBottom: 4 },
-  vibeTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
-  vibeSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
+  vibeTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  vibeSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small },
   catCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
     gap: 6,
   },
   catTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   etaPill: {
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.etaBg,
     borderRadius: radii.full,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  etaText: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 10 },
-  catTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 15, marginTop: 4 },
-  catSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
+  etaText: { color: colors.etaText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption },
+  catTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.bodyLg, marginTop: 4 },
+  catSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small },
   popularList: { gap: 10 },
   popularRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
   },
   rank: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.orangeTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rankText: { color: colors.secondaryText, fontFamily: fonts.monoMedium, fontSize: 11 },
+  rankText: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption },
   popularImage: { width: 48, height: 48, borderRadius: radii.sm },
   popularBody: { flex: 1, gap: 2 },
-  popularTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
-  popularPrice: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 12 },
+  popularTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  popularPrice: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small },
   dropPill: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.etaBg,
     borderRadius: radii.full,
     paddingHorizontal: 8,
     paddingVertical: 2,
     marginTop: 2,
   },
-  dropText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 10 },
+  dropText: { color: colors.etaText, fontFamily: fonts.body, fontSize: typeScale.caption },
   addBtn: {
-    width: 36,
-    height: 36,
+    paddingHorizontal: 12,
+    height: 32,
     borderRadius: radii.sm,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.orangeTint,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.playportOrange,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  addBtnText: {
+    color: colors.playportOrange,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.5,
   },
   infoCard: {
     flexDirection: 'row',
     gap: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     alignItems: 'center',
   },
@@ -340,10 +345,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.etaBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  infoTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 15 },
-  infoSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 4, lineHeight: 17 },
+  infoTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.bodyLg },
+  infoSub: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    marginTop: 4,
+    lineHeight: 17,
+  },
 });

@@ -12,7 +12,8 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
@@ -42,7 +43,9 @@ export default function ProductDetailScreen() {
   const [durationId, setDurationId] = useState<RentalDurationId>('12h');
   const [wishlisted, setWishlisted] = useState(false);
   const reviews = useAppStore((s) => s.reviews);
+  const cart = useAppStore((s) => s.cart);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
+  const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
 
   const product = PRODUCTS.find((p) => p.id === id);
   const productReviews = useMemo(
@@ -56,6 +59,11 @@ export default function ProductDetailScreen() {
       ).slice(0, 4),
     [product]
   );
+
+  const qtyFor = (productId: string) =>
+    cart.filter((c) => c.productId === productId).reduce((sum, c) => sum + c.quantity, 0);
+  const cartItemIdFor = (productId: string) =>
+    cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
 
   if (!product) {
     return (
@@ -81,9 +89,9 @@ export default function ProductDetailScreen() {
       <View style={styles.heroTop}>
         <Badge
           label={`DELIVERED IN ${product.etaMinutes} MINS`}
-          color={colors.playportOrange}
-          backgroundColor="rgba(0,0,0,0.65)"
-          left={<Ionicons name="flash" size={12} color={colors.playportOrange} />}
+          color={colors.etaText}
+          backgroundColor={colors.etaBg}
+          left={<Ionicons name="flash" size={12} color={colors.etaText} />}
         />
         <Pressable
           accessibilityRole="button"
@@ -100,7 +108,7 @@ export default function ProductDetailScreen() {
       </View>
       <View style={styles.heroBottom}>
         <View style={styles.sanitizePill}>
-          <Ionicons name="checkmark-circle" size={14} color={colors.secondaryText} />
+          <Ionicons name="checkmark-circle" size={14} color={colors.success} />
           <Text style={styles.sanitizeText}>{product.badge ?? 'Sanitized Pro Kit'}</Text>
           <Text style={styles.ratingText}>
             ★ {product.rating} ({product.reviewCount}+)
@@ -150,23 +158,17 @@ export default function ProductDetailScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Ionicons name="time-outline" size={16} color={colors.playportOrange} />
-              <Text style={styles.sectionTitle}>Select Rental Duration</Text>
-            </View>
-            <Text style={styles.freeSetup}>FREE SETUP INCLUDED</Text>
+          <View style={styles.sectionTop}>
+            <SectionHeader eyebrow="Duration" title="Select rental duration" />
+            <Text style={styles.metaLabel}>FREE SETUP</Text>
           </View>
           <DurationSelector product={product} value={durationId} onChange={setDurationId} />
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Ionicons name="briefcase-outline" size={16} color={colors.playportOrange} />
-              <Text style={styles.sectionTitle}>What&apos;s in the Transit Case</Text>
-            </View>
-            <Text style={styles.monoMeta}>{product.includes.length} Items</Text>
+          <View style={styles.sectionTop}>
+            <SectionHeader eyebrow="Includes" title="What's in the transit case" />
+            <Text style={styles.metaLabel}>{product.includes.length} items</Text>
           </View>
           <View style={styles.includesList}>
             {product.includes.map((item) => (
@@ -187,10 +189,7 @@ export default function ProductDetailScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Ionicons name="flash" size={16} color={colors.playportOrange} />
-            <Text style={styles.sectionTitle}>Instant Flow Guarantee</Text>
-          </View>
+          <SectionHeader eyebrow="Promise" title="Instant flow guarantee" />
           <View style={styles.flowList}>
             {FLOW_STEPS.map((step, index) => (
               <View key={step.title} style={styles.flowRow}>
@@ -207,12 +206,9 @@ export default function ProductDetailScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.playportOrange} />
-              <Text style={styles.sectionTitle}>Gamer Verified</Text>
-            </View>
-            <Text style={styles.monoMeta}>{product.rating.toFixed(1)} / 5.0 RATING</Text>
+          <View style={styles.sectionTop}>
+            <SectionHeader eyebrow="Reviews" title="Verified by renters" />
+            <Text style={styles.metaLabel}>{product.rating.toFixed(1)} / 5</Text>
           </View>
           <View style={styles.ratingCard}>
             <Text style={styles.bigRating}>{product.rating.toFixed(2)}</Text>
@@ -236,17 +232,24 @@ export default function ProductDetailScreen() {
 
         {related.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Related in {product.categoryId.replace('-', ' ')}</Text>
+            <SectionHeader
+              eyebrow="More like this"
+              title={`Related in ${product.categoryId.replace(/-/g, ' ')}`}
+            />
             <ResponsiveGrid columns={productColumns} gap={gap}>
               {related.map((item) => (
                 <ProductCard
                   key={item.id}
                   product={item}
                   compact={productColumns === 1}
+                  quantityInCart={qtyFor(item.id)}
                   onPress={() => router.push(`/product/${item.id}`)}
-                  onRent={() => {
-                    addProductToCart(item.id, '12h');
-                    router.push('/cart');
+                  onAdd={() => addProductToCart(item.id, '12h')}
+                  onIncrement={() => addProductToCart(item.id, '12h')}
+                  onDecrement={() => {
+                    const cartId = cartItemIdFor(item.id);
+                    const qty = qtyFor(item.id);
+                    if (cartId) updateCartQuantity(cartId, qty - 1);
                   }}
                 />
               ))}
@@ -257,14 +260,14 @@ export default function ProductDetailScreen() {
 
       <StickyBottomBar>
         <View style={{ flex: 1, minWidth: 140 }}>
-          <Text style={styles.selectedLabel}>Selected Plan</Text>
+          <Text style={styles.selectedLabel}>Selected plan</Text>
           <Text style={styles.selectedPrice}>
             {formatINR(price)} / {durationLabel}
           </Text>
         </View>
         <Button
-          title="Book Now"
-          icon={<Ionicons name="game-controller" size={16} color={colors.white} />}
+          title="Add to cart"
+          icon={<Ionicons name="bag-add-outline" size={16} color={colors.white} />}
           onPress={() => {
             addProductToCart(product.id, durationId);
             if (!ensureLoggedIn('/cart')) return;
@@ -278,7 +281,7 @@ export default function ProductDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { gap: spacing.lg, paddingTop: spacing.sm },
+  scroll: { gap: spacing.xl, paddingTop: spacing.sm },
   topBlock: { gap: spacing.lg },
   topBlockSplit: {
     flexDirection: 'row',
@@ -289,21 +292,22 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     overflow: 'hidden',
     width: '100%',
-    aspectRatio: 1.1,
+    aspectRatio: 1,
     backgroundColor: colors.surfaceAlt,
+    ...shadows.soft,
   },
   heroSplit: {
     flex: 1,
     width: undefined,
     aspectRatio: 1,
-    minHeight: 320,
+    minHeight: 360,
   },
   heroImage: { ...StyleSheet.absoluteFill },
   heroTop: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    right: 12,
+    top: 14,
+    left: 14,
+    right: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -316,7 +320,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroBottom: { position: 'absolute', left: 12, right: 12, bottom: 12 },
+  heroBottom: { position: 'absolute', left: 14, right: 14, bottom: 14 },
   sanitizePill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -324,12 +328,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(0,0,0,0.7)',
     borderRadius: radii.full,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     flexWrap: 'wrap',
   },
-  sanitizeText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 12 },
-  ratingText: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 11 },
+  sanitizeText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
+  ratingText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption },
   summary: { gap: spacing.md },
   summarySplit: {
     flex: 1,
@@ -337,39 +341,76 @@ const styles = StyleSheet.create({
     minWidth: 280,
   },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 22, lineHeight: 28 },
-  titleLg: { fontSize: 28, lineHeight: 34 },
-  desc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14, lineHeight: 21 },
+  title: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.headline,
+    lineHeight: 28,
+    letterSpacing: -0.3,
+  },
+  titleLg: { fontSize: typeScale.display, lineHeight: 34 },
+  desc: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.body,
+    lineHeight: 21,
+  },
   pricePreview: { gap: 4, marginTop: spacing.sm },
-  pricePreviewLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.5 },
-  pricePreviewValue: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 20 },
+  pricePreviewLabel: {
+    color: colors.mutedText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  pricePreviewValue: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.headline,
+  },
   section: { gap: spacing.md },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 16 },
-  freeSetup: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.5 },
-  monoMeta: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
+  sectionTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  metaLabel: {
+    color: colors.mutedText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    flexShrink: 0,
+  },
   includesList: { gap: 10 },
   includeRow: {
     flexDirection: 'row',
     gap: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
   },
   includeIcon: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: radii.sm,
     backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   includeTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  includeTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
-  includeDetail: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 4, lineHeight: 17 },
+  includeTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  includeDetail: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    marginTop: 4,
+    lineHeight: 17,
+  },
   flowList: { gap: 14 },
   flowRow: { flexDirection: 'row', gap: 12 },
   flowNum: {
@@ -380,36 +421,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  flowNumText: { color: colors.playportOrange, fontFamily: fonts.monoMedium, fontSize: 12 },
-  flowTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
-  flowBody: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 4, lineHeight: 17 },
+  flowNumText: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
+  flowTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  flowBody: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    marginTop: 4,
+    lineHeight: 17,
+  },
   ratingCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     alignItems: 'flex-start',
     gap: 4,
+    ...shadows.soft,
   },
-  bigRating: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 32 },
-  stars: { color: colors.secondaryText, fontSize: 14 },
-  reviewCount: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
+  bigRating: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.hero },
+  stars: { color: colors.warning, fontSize: 14 },
+  reviewCount: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small },
   reviewCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: 6,
   },
   reviewHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  reviewer: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
-  reviewDate: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 12 },
-  reviewStars: { color: colors.secondaryText, fontSize: 12 },
-  reviewText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
-  noReviews: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
-  selectedLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
-  selectedPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 16, marginTop: 2 },
+  reviewer: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  reviewDate: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.small },
+  reviewStars: { color: colors.warning, fontSize: 12 },
+  reviewText: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.body,
+    lineHeight: 19,
+  },
+  noReviews: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.body },
+  selectedLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small },
+  selectedPrice: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.title,
+    marginTop: 2,
+  },
   bookBtn: { minWidth: 140 },
 });

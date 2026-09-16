@@ -70,10 +70,15 @@ const styles = StyleSheet.create({
   wrap: { gap: 10 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   label: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14 },
-  value: { color: colors.primaryText, fontFamily: fonts.mono, fontSize: 14 },
+  value: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
   strong: { fontFamily: fonts.heading, fontSize: 18, color: colors.primaryText },
   valueWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  strike: { color: colors.mutedText, textDecorationLine: 'line-through', fontFamily: fonts.mono, fontSize: 12 },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
+  strike: {
+    color: colors.mutedText,
+    textDecorationLine: 'line-through',
+    fontFamily: fonts.body,
+    fontSize: 12,
+  },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSubtle, marginVertical: 4 },
   note: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
 });

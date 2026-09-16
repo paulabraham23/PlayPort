@@ -49,10 +49,10 @@ export function ExperienceCard({ experience, onPress, onBook }: Props) {
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     overflow: 'hidden',
   },
   topRow: {

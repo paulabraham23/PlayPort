@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   markAll: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
   list: { gap: spacing.sm },
   card: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
-  unread: { borderColor: colors.border },
+  unread: { borderColor: colors.borderSubtle },
   icon: {
     width: 40,
     height: 40,

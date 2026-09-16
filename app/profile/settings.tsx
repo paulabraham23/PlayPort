@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  toggleBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  toggleBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSubtle },
   toggle: {
     width: 48,
     height: 28,

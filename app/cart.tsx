@@ -11,7 +11,7 @@ import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { DURATIONS, LOCATION_LABEL, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
@@ -84,7 +84,7 @@ export default function CartScreen() {
   const itemsColumn = (
     <>
       <View style={styles.promise}>
-        <Ionicons name="flash" size={18} color={colors.playportOrange} />
+        <Ionicons name="flash" size={18} color={colors.etaText} />
         <View style={{ flex: 1 }}>
           <Text style={styles.promiseTitle}>30–35 Min Express Drop</Text>
           <Text style={styles.promiseSub}>
@@ -217,8 +217,8 @@ export default function CartScreen() {
   return (
     <Screen showHeader={false} edges={['top']}>
       <ScreenHeader
-        title="My Entertainment Cart"
-        subtitle={`${totals.count} PREMIUM ITEM${totals.count === 1 ? '' : 'S'}`}
+        title="Cart"
+        subtitle={`${totals.count} item${totals.count === 1 ? '' : 's'}`}
         onBack={() => router.back()}
       />
       <ScrollView
@@ -313,90 +313,91 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.etaBg,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(74,222,128,0.25)',
     padding: spacing.lg,
   },
-  promiseTitle: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 14 },
-  promiseSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
+  promiseTitle: { color: colors.etaText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  promiseSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, marginTop: 2 },
   list: { gap: spacing.md },
   itemCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
+    ...shadows.soft,
   },
   itemTop: { flexDirection: 'row', gap: 12 },
   itemImage: { width: 72, height: 72, borderRadius: radii.sm },
   itemBody: { flex: 1, gap: 4 },
   itemHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  itemTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14, flex: 1 },
-  category: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.5 },
+  itemTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body, flex: 1 },
+  category: { color: colors.mutedText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption, letterSpacing: 0.5 },
   durationRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  durationText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, flex: 1 },
-  edit: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 12 },
+  durationText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, flex: 1 },
+  edit: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
-  itemPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 16 },
-  note: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 11, marginTop: 4 },
+  itemPrice: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.title },
+  note: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.caption, marginTop: 4 },
   section: { gap: spacing.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
-  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 17 },
+  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.title },
   upsellRow: { gap: 10 },
   upsellCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
     gap: 6,
   },
   upsellCardMobile: { width: 160 },
   upsellImage: { width: '100%', height: 80, borderRadius: radii.sm },
-  upsellPrice: { color: colors.playportOrange, fontFamily: fonts.monoMedium, fontSize: 12 },
-  upsellTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
-  upsellSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 11, marginBottom: 4 },
+  upsellPrice: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
+  upsellTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  upsellSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.caption, marginBottom: 4 },
   doorBadge: {
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.orangeTint,
     borderRadius: radii.full,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  doorText: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 9, letterSpacing: 0.5 },
+  doorText: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 9, letterSpacing: 0.5 },
   scheduleCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: 12,
   },
   scheduleRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   dot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
-  scheduleLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.5 },
-  scheduleTime: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15, marginTop: 2 },
-  scheduleSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
-  scheduleDivider: { height: 1, backgroundColor: colors.border },
+  scheduleLabel: { color: colors.mutedText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption, letterSpacing: 0.5 },
+  scheduleTime: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg, marginTop: 2 },
+  scheduleSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, marginTop: 2 },
+  scheduleDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSubtle },
   pill: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radii.full,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  pillText: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 10 },
+  pillText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption },
   guarantee: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 4 },
-  guaranteeText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, flex: 1, lineHeight: 17 },
+  guaranteeText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, flex: 1, lineHeight: 17 },
   billCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
   },
-  finalLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
-  finalPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 15, marginTop: 2 },
+  finalLabel: { color: colors.mutedText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption, letterSpacing: 0.6 },
+  finalPrice: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.bodyLg, marginTop: 2 },
   payBtn: { minWidth: 150 },
   modalOverlay: {
     flex: 1,
@@ -404,21 +405,21 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     padding: spacing.xl,
     gap: 10,
   },
-  modalTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18, marginBottom: 4 },
+  modalTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline, marginBottom: 4 },
   durationOption: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radii.md,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
   },
   durationSelected: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTintStrong },
-  durationOptionText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
-  durationOptionDesc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
+  durationOptionText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  durationOptionDesc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, marginTop: 2 },
 });

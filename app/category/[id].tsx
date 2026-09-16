@@ -6,7 +6,8 @@ import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { ExperienceCard } from '@/components/products/ExperienceCard';
 import { ProductCard } from '@/components/products/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, fonts, spacing } from '@/constants/theme';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { colors, fonts, spacing, typeScale } from '@/constants/theme';
 import { CATEGORIES, EXPERIENCES, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
@@ -57,7 +58,7 @@ export default function CategoryScreen() {
 
         {products.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Kits & Gear</Text>
+            <SectionHeader eyebrow="Gear" title="Kits & Gear" />
             <ResponsiveGrid columns={productColumns} gap={gap}>
               {products.map((product) => (
                 <ProductCard
@@ -81,7 +82,7 @@ export default function CategoryScreen() {
 
         {experiences.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Experiences</Text>
+            <SectionHeader eyebrow="Curated" title="Experiences" />
             <ResponsiveGrid columns={experienceColumns} gap={gap}>
               {experiences.map((experience) => (
                 <ExperienceCard
@@ -113,7 +114,11 @@ export default function CategoryScreen() {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.xl, paddingTop: spacing.sm },
-  intro: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
+  intro: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.body,
+    lineHeight: 20,
+  },
   section: { gap: spacing.md },
-  sectionTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
 });

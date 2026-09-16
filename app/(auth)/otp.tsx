@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { resolveAuthNext } from '@/utils/authGate';
@@ -94,6 +94,11 @@ export default function OtpScreen() {
         >
           <Ionicons name="arrow-back" size={20} color={colors.primaryText} />
         </Pressable>
+
+        <View style={styles.brandRow}>
+          <Text style={styles.brandPlay}>Play</Text>
+          <Text style={styles.brandPort}>Port</Text>
+        </View>
 
         <View style={styles.iconWrap}>
           <Ionicons name="lock-closed" size={28} color={colors.playportOrange} />
@@ -183,11 +188,24 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
+  },
+  brandRow: { flexDirection: 'row', alignItems: 'center' },
+  brandPlay: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.headline,
+    letterSpacing: -0.3,
+  },
+  brandPort: {
+    color: colors.playportOrange,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.headline,
+    letterSpacing: -0.3,
   },
   iconWrap: {
     width: 64,
@@ -196,17 +214,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.orangeTint,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
   },
-  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 28 },
+  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.display },
   subtitle: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
-    fontSize: 15,
+    fontSize: typeScale.bodyLg,
     lineHeight: 22,
     marginTop: -4,
   },
-  phone: { color: colors.primaryText, fontFamily: fonts.monoMedium },
+  phone: { color: colors.primaryText, fontFamily: fonts.bodyMedium },
   otpRow: { flexDirection: 'row', gap: 10, justifyContent: 'space-between', width: '100%' },
   otpRowXs: { gap: 6 },
   otpBox: {
@@ -217,12 +235,12 @@ const styles = StyleSheet.create({
     maxWidth: 58,
     minWidth: 40,
     minHeight: 48,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     color: colors.primaryText,
-    fontFamily: fonts.monoMedium,
+    fontFamily: fonts.heading,
     fontSize: 24,
     textAlign: 'center',
     outlineStyle: 'none' as unknown as undefined,
@@ -237,19 +255,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.orangeTint,
   },
   resendRow: { alignItems: 'center', marginTop: spacing.sm },
-  resendMuted: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 14 },
-  resendLink: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 15 },
+  resendMuted: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.body },
+  resendLink: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg },
   changeNumber: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
-    fontSize: 14,
+    fontSize: typeScale.body,
     textAlign: 'center',
     textDecorationLine: 'underline',
   },
   hint: {
     color: colors.mutedText,
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: typeScale.small,
     textAlign: 'center',
     marginTop: 'auto',
     marginBottom: spacing.xl,
@@ -257,7 +275,7 @@ const styles = StyleSheet.create({
   error: {
     color: colors.badgeRed,
     fontFamily: fonts.body,
-    fontSize: 13,
+    fontSize: typeScale.body,
     textAlign: 'center',
   },
 });

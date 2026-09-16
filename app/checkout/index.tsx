@@ -9,7 +9,7 @@ import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/Sticky
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
 import { ensureLoggedIn } from '@/utils/authGate';
@@ -65,7 +65,7 @@ export default function CheckoutScreen() {
     <Screen showHeader={false} edges={['top']} narrow>
       <ScreenHeader
         title="Checkout"
-        subtitle="STEP 1 OF 2"
+        subtitle="Step 1 of 2 · Review"
         onBack={() => router.back()}
         right={
           <View style={styles.stepRight}>
@@ -166,41 +166,68 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
   scroll: { gap: spacing.lg, paddingTop: spacing.sm },
   stepRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  stepMono: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
+  stepMono: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.6,
+  },
   stepDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.playportOrange },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: 10,
   },
-  cardTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 16 },
+  cardTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.title },
   timingRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   timingHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  timingLabel: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
-  timingValue: { color: colors.primaryText, fontFamily: fonts.body, fontSize: 14, marginTop: 4 },
-  divider: { height: 1, backgroundColor: colors.border },
+  timingLabel: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  timingValue: { color: colors.primaryText, fontFamily: fonts.body, fontSize: typeScale.body, marginTop: 4 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSubtle },
   returnBox: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.orangeTint,
     borderRadius: radii.sm,
     paddingHorizontal: 10,
     paddingVertical: 6,
     marginTop: 8,
   },
-  returnText: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.5 },
+  returnText: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.5,
+  },
   trustHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  trustBody: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
+  trustBody: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.body, lineHeight: 19 },
   summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemCount: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 12 },
-  itemNames: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 18 },
-  summaryTotal: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 28, marginTop: 4 },
-  taxNote: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6 },
+  itemCount: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.small },
+  itemNames: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.body, lineHeight: 18 },
+  summaryTotal: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.display, marginTop: 4 },
+  taxNote: {
+    color: colors.mutedText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.6,
+  },
   encryptRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 4 },
-  encryptText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, flex: 1, lineHeight: 17 },
-  stickyPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 20 },
-  stickyMeta: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 10, marginTop: 2, letterSpacing: 0.5 },
+  encryptText: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    flex: 1,
+    lineHeight: 17,
+  },
+  stickyPrice: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
+  stickyMeta: {
+    color: colors.mutedText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
   cta: { minWidth: 180 },
 });

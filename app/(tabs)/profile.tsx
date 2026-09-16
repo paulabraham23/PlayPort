@@ -6,7 +6,7 @@ import { Screen } from '@/components/layout/Screen';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { CURRENT_USER } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
@@ -42,8 +42,11 @@ export default function ProfileScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
         >
-          <Text style={styles.pageTitle}>Profile</Text>
-          <Card style={styles.guestCard}>
+          <View style={styles.titleBlock}>
+            <Text style={styles.eyebrow}>Account</Text>
+            <Text style={styles.pageTitle}>Profile</Text>
+          </View>
+          <Card style={styles.guestCard} elevated>
             <Text style={styles.guestTitle}>Browse as a guest</Text>
             <Text style={styles.guestSub}>
               Log in to save addresses, track rentals, and unlock zero-deposit KYC.
@@ -98,13 +101,20 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
       >
-        <Text style={styles.pageTitle}>Profile</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.eyebrow}>Account</Text>
+          <Text style={styles.pageTitle}>Profile</Text>
+        </View>
 
         <View style={[styles.desktopSplit, isDesktop && styles.desktopSplitRow, isDesktop && { gap }]}>
           <View style={[styles.desktopCol, isDesktop && styles.desktopColLeft]}>
-            <Card style={styles.userCard}>
+            <Card style={styles.userCard} elevated>
               <View style={styles.userRow}>
-                <Image source={{ uri: user.avatar }} style={styles.avatar} contentFit="cover" />
+                <Image
+                  source={{ uri: user.avatar }}
+                  style={[styles.avatar, user.kycVerified && styles.avatarKyc]}
+                  contentFit="cover"
+                />
                 <View style={styles.userMeta}>
                   <Text style={styles.userName}>{user.name}</Text>
                   <Text style={styles.userPhone}>{user.phone}</Text>
@@ -112,7 +122,9 @@ export default function ProfileScreen() {
                 {user.kycVerified ? (
                   <Badge
                     label="KYC"
-                    left={<Ionicons name="checkmark-circle" size={12} color={colors.secondaryText} />}
+                    color={colors.playportOrange}
+                    backgroundColor={colors.orangeTint}
+                    left={<Ionicons name="checkmark-circle" size={12} color={colors.playportOrange} />}
                   />
                 ) : null}
               </View>
@@ -136,9 +148,13 @@ export default function ProfileScreen() {
                 accessibilityRole="button"
                 onPress={() => router.push(`/order/track/${activeOrder.id}`)}
               >
-                <Card style={styles.trackCard}>
+                <Card style={styles.trackCard} elevated>
                   <View style={styles.trackTop}>
-                    <Badge label="ACTIVE ORDER" />
+                    <Badge
+                      label="ACTIVE ORDER"
+                      color={colors.playportOrange}
+                      backgroundColor={colors.orangeTint}
+                    />
                     <Ionicons name="chevron-forward" size={18} color={colors.secondaryText} />
                   </View>
                   <Text style={styles.trackTitle}>Track #{activeOrder.id}</Text>
@@ -174,7 +190,7 @@ export default function ProfileScreen() {
                       <View
                         style={[
                           styles.menuIcon,
-                          item.danger && { backgroundColor: 'rgba(239,68,68,0.12)' },
+                          item.danger && { backgroundColor: colors.dangerBg },
                         ]}
                       >
                         <Ionicons
@@ -217,15 +233,28 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.lg, paddingTop: spacing.sm },
+  titleBlock: { gap: 2 },
+  eyebrow: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
   pageTitle: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: 30,
+    fontSize: typeScale.display,
     letterSpacing: -0.4,
   },
   guestCard: { gap: spacing.md },
-  guestTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
-  guestSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
+  guestTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
+  guestSub: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.body,
+    lineHeight: 20,
+  },
   desktopSplit: { gap: spacing.lg },
   desktopSplitRow: { flexDirection: 'row', alignItems: 'flex-start' },
   desktopCol: { gap: spacing.lg },
@@ -238,20 +267,21 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     backgroundColor: colors.surfaceAlt,
   },
+  avatarKyc: { borderColor: colors.playportOrange },
   userMeta: { flex: 1, gap: 4 },
-  userName: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
-  userPhone: { color: colors.secondaryText, fontFamily: fonts.mono, fontSize: 13 },
+  userName: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
+  userPhone: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
   statsRow: { flexDirection: 'row', gap: 10 },
   statsRowDesktop: { gap: 14 },
   stat: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
@@ -259,15 +289,14 @@ const styles = StyleSheet.create({
     minHeight: 72,
     gap: 4,
   },
-  statValue: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 16 },
-  statLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 11 },
+  statValue: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.title },
+  statLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.caption },
   trackCard: {
     gap: spacing.sm,
-    borderColor: colors.border,
   },
   trackTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  trackTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 16 },
-  trackMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
+  trackTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.title },
+  trackMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.body },
   progressTrack: {
     height: 4,
     borderRadius: 2,
@@ -275,12 +304,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 4,
   },
-  progressFill: { height: '100%', backgroundColor: colors.secondaryText, borderRadius: 2 },
+  progressFill: { height: '100%', backgroundColor: colors.playportOrange, borderRadius: 2 },
   section: { gap: spacing.sm },
   sectionTitle: {
     color: colors.mutedText,
-    fontFamily: fonts.mono,
-    fontSize: 11,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
@@ -292,17 +321,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  menuBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  menuBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderSubtle },
   menuIcon: {
     width: 40,
     height: 40,
     borderRadius: radii.md,
     backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuLabel: { flex: 1, color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
+  menuLabel: { flex: 1, color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg },
   logout: { marginTop: spacing.xl },
 });

@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,31 +13,22 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
-import { HUB, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { resolveAuthNext } from '@/utils/authGate';
 
-const CAROUSEL = PRODUCTS.slice(0, 3);
-
-const TRUST = [
-  { icon: 'shield-checkmark-outline' as const, label: 'Sanitized kits' },
-  { icon: 'flash-outline' as const, label: '30-min drop' },
-  { icon: 'lock-closed-outline' as const, label: 'Zero deposit KYC' },
-];
-
 export default function LoginScreen() {
   const { next } = useLocalSearchParams<{ next?: string }>();
   const returnTo = resolveAuthNext(next);
-  const { horizontalPadding, formMaxWidth, isTablet, isDesktop } = useResponsive();
+  const { horizontalPadding, formMaxWidth } = useResponsive();
   const phoneDraft = useAppStore((s) => s.phoneDraft);
   const setPhoneDraft = useAppStore((s) => s.setPhoneDraft);
   const requestOtp = useAppStore((s) => s.requestOtp);
   const [localPhone, setLocalPhone] = useState(phoneDraft.replace(/\D/g, '').slice(-10) || '');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
 
   const onPhoneChange = (text: string) => {
     const digits = text.replace(/\D/g, '').slice(0, 10);
@@ -45,8 +37,7 @@ export default function LoginScreen() {
   };
 
   const canGetOtp = localPhone.length === 10 && !sending;
-  const columnMax = formMaxWidth ?? (isTablet || isDesktop ? 520 : undefined);
-  const carouselSize = isTablet || isDesktop;
+  const columnMax = formMaxWidth ?? 440;
 
   const goToOtp = async () => {
     setPhoneDraft(localPhone || phoneDraft);
@@ -64,151 +55,123 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          {
-            paddingHorizontal: horizontalPadding,
-            maxWidth: columnMax,
-            alignSelf: 'center',
-            width: '100%',
-          },
-        ]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.topRow}>
-          <View style={styles.brandRow}>
-            <View style={styles.logoMark}>
-              <Text style={styles.logoLetter}>P</Text>
-            </View>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scroll,
+            {
+              paddingHorizontal: horizontalPadding,
+              maxWidth: columnMax,
+              alignSelf: 'center',
+              width: '100%',
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.topRow}>
             <Text style={styles.brand}>
               <Text style={styles.brandPlay}>Play</Text>
               <Text style={styles.brandPort}>Port</Text>
             </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close and keep browsing"
+              onPress={() => router.replace('/(tabs)')}
+              style={styles.closeBtn}
+            >
+              <Ionicons name="close" size={20} color={colors.secondaryText} />
+            </Pressable>
           </View>
+
+          <View style={styles.hero}>
+            <Text style={styles.eyebrow}>Account</Text>
+            <Text style={styles.heroTitle}>Sign in to continue</Text>
+            <Text style={styles.heroSub}>
+              Use your mobile number to save addresses, track rentals, and checkout.
+            </Text>
+          </View>
+
+          <View style={styles.form}>
+            <Text style={styles.label}>Mobile number</Text>
+            <View style={[styles.phoneRow, focused && styles.phoneRowFocused]}>
+              <Text style={styles.prefixText}>+91</Text>
+              <View style={styles.divider} />
+              <TextInput
+                value={localPhone}
+                onChangeText={onPhoneChange}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder="98765 43210"
+                placeholderTextColor={colors.mutedText}
+                keyboardType="phone-pad"
+                maxLength={10}
+                style={styles.phoneInput}
+                accessibilityLabel="Mobile number"
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (canGetOtp) void goToOtp();
+                }}
+              />
+            </View>
+
+            <Button
+              title={sending ? 'Sending…' : 'Continue'}
+              fullWidth
+              size="lg"
+              disabled={!canGetOtp}
+              iconRight={<Ionicons name="arrow-forward" size={18} color={colors.white} />}
+              onPress={() => void goToOtp()}
+            />
+            {sendError ? <Text style={styles.sendError}>{sendError}</Text> : null}
+          </View>
+
+          <View style={styles.trustLine}>
+            <Ionicons name="shield-checkmark-outline" size={14} color={colors.mutedText} />
+            <Text style={styles.trustText}>Secure OTP · Zero deposit KYC · 30-min delivery</Text>
+          </View>
+
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Close and keep browsing"
             onPress={() => router.replace('/(tabs)')}
-            style={styles.closeBtn}
+            style={styles.browseLink}
           >
-            <Ionicons name="close" size={20} color={colors.primaryText} />
+            <Text style={styles.browseText}>Continue browsing as guest</Text>
           </Pressable>
-        </View>
 
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>Log in to continue</Text>
-          <Text style={styles.heroSub}>
-            Browse freely anytime. Sign in when you&apos;re ready to rent, pay, or manage orders.
+          <Text style={styles.terms}>
+            By continuing, you agree to PlayPort’s Terms of Service and Privacy Policy.
           </Text>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.carousel}
-        >
-          {CAROUSEL.map((item) => (
-            <View
-              key={item.id}
-              style={[styles.carouselCard, carouselSize && styles.carouselCardLg]}
-            >
-              <Image source={{ uri: item.images[0] }} style={styles.carouselImage} contentFit="cover" />
-              <View style={styles.carouselOverlay} />
-              <View style={styles.carouselFade} />
-              <Text style={styles.carouselTag}>{item.tags[0] ?? 'KIT'}</Text>
-              <Text style={styles.carouselTitle} numberOfLines={2}>
-                {item.shortName}
-              </Text>
-            </View>
-          ))}
         </ScrollView>
-
-        <View style={styles.form}>
-          <Text style={styles.label}>Mobile number</Text>
-          <View style={styles.phoneRow}>
-            <View style={styles.prefix}>
-              <Text style={styles.prefixText}>+91</Text>
-            </View>
-            <TextInput
-              value={localPhone}
-              onChangeText={onPhoneChange}
-              placeholder="98765 43210"
-              placeholderTextColor={colors.mutedText}
-              keyboardType="phone-pad"
-              maxLength={10}
-              style={styles.phoneInput}
-              accessibilityLabel="Mobile number"
-            />
-          </View>
-          <Button
-            title={sending ? 'Sending…' : 'Get OTP'}
-            fullWidth
-            size="lg"
-            disabled={!canGetOtp}
-            iconRight={<Ionicons name="arrow-forward" size={18} color={colors.white} />}
-            onPress={() => void goToOtp()}
-          />
-          {sendError ? <Text style={styles.sendError}>{sendError}</Text> : null}
-        </View>
-
-        <View style={styles.altRow}>
-          <Button
-            title="WhatsApp"
-            variant="secondary"
-            style={styles.altBtn}
-            icon={<Ionicons name="logo-whatsapp" size={18} color={colors.secondaryText} />}
-            onPress={() => void goToOtp()}
-          />
-          <Button
-            title="Keep browsing"
-            variant="secondary"
-            style={styles.altBtn}
-            icon={<Ionicons name="storefront-outline" size={18} color={colors.primaryText} />}
-            onPress={() => router.replace('/(tabs)')}
-          />
-        </View>
-
-        <Card style={styles.hubCard}>
-          <View style={styles.hubRow}>
-            <View style={styles.hubIcon}>
-              <Ionicons name="locate" size={20} color={colors.playportOrange} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.hubName}>{HUB.name.replace(' Dark Hub', ' Hub')}</Text>
-              <Text style={styles.hubMeta}>{HUB.statusLabel}</Text>
-            </View>
-            <View style={styles.hubEta}>
-              <Text style={styles.hubEtaValue}>{HUB.etaMinutes}</Text>
-              <Text style={styles.hubEtaUnit}>MINS</Text>
-            </View>
-          </View>
-        </Card>
-
-        <View style={styles.trustRow}>
-          {TRUST.map((item) => (
-            <View key={item.label} style={styles.trustItem}>
-              <Ionicons name={item.icon} size={16} color={colors.playportOrange} />
-              <Text style={styles.trustLabel}>{item.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        <Text style={styles.terms}>
-          By continuing you agree to PlayPort’s Terms of Service and Privacy Policy. We send a
-          one-time code to verify your mobile number.
-        </Text>
-      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.page },
-  scroll: { paddingBottom: spacing.xxl, gap: spacing.lg, paddingTop: spacing.sm },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  flex: { flex: 1 },
+  scroll: {
+    flexGrow: 1,
+    paddingBottom: spacing.xxxl,
+    paddingTop: spacing.md,
+    gap: spacing.xxl,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  brand: {
+    fontFamily: fonts.heading,
+    fontSize: typeScale.headline,
+    letterSpacing: -0.4,
+  },
+  brandPlay: { color: colors.primaryText },
+  brandPort: { color: colors.playportOrange },
   closeBtn: {
     width: 40,
     height: 40,
@@ -219,149 +182,100 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
   },
-  logoMark: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.playportOrange,
-    alignItems: 'center',
-    justifyContent: 'center',
+  hero: { gap: spacing.sm, marginTop: spacing.lg },
+  eyebrow: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  logoLetter: {
-    color: colors.white,
-    fontFamily: fonts.heading,
-    fontSize: 18,
-  },
-  brand: { fontFamily: fonts.heading, fontSize: typeScale.headline, letterSpacing: -0.3 },
-  brandPlay: { color: colors.primaryText },
-  brandPort: { color: colors.playportOrange },
-  hero: { gap: spacing.sm },
   heroTitle: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: typeScale.display,
-    lineHeight: 36,
+    fontSize: 32,
+    lineHeight: 38,
+    letterSpacing: -0.6,
   },
   heroSub: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
-    fontSize: typeScale.body,
-    lineHeight: 21,
-  },
-  carousel: { gap: 12, paddingRight: 8 },
-  carouselCard: {
-    width: 148,
-    height: 160,
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderSubtle,
-    justifyContent: 'flex-end',
-    padding: spacing.md,
-  },
-  carouselCardLg: {
-    width: 180,
-    height: 196,
-  },
-  carouselImage: { ...StyleSheet.absoluteFill },
-  carouselOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  carouselFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '70%',
-    backgroundColor: 'rgba(0,0,0,0.72)',
-  },
-  carouselTag: {
-    color: colors.playportOrange,
-    fontFamily: fonts.bodyMedium,
-    fontSize: typeScale.caption,
-    marginBottom: 4,
-    zIndex: 1,
-  },
-  carouselTitle: {
-    color: colors.primaryText,
-    fontFamily: fonts.heading,
-    fontSize: typeScale.body,
-    zIndex: 1,
+    fontSize: typeScale.bodyLg,
+    lineHeight: 22,
+    maxWidth: 340,
   },
   form: { gap: spacing.md },
-  label: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  label: {
+    color: colors.secondaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.small,
+  },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceRaised,
-    borderRadius: radii.full,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
     borderColor: colors.borderSubtle,
-    overflow: 'hidden',
-  },
-  prefix: {
+    minHeight: 56,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: colors.borderSubtle,
-    backgroundColor: colors.surfaceAlt,
+    gap: 12,
   },
-  prefixText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg },
+  phoneRowFocused: {
+    borderColor: colors.playportOrange,
+    backgroundColor: colors.orangeTint,
+  },
+  prefixText: {
+    color: colors.primaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.bodyLg,
+  },
+  divider: {
+    width: StyleSheet.hairlineWidth,
+    height: 22,
+    backgroundColor: colors.border,
+  },
   phoneInput: {
     flex: 1,
     color: colors.primaryText,
     fontFamily: fonts.body,
     fontSize: typeScale.title,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    outlineStyle: 'none' as unknown as undefined,
-  },
-  altRow: { flexDirection: 'row', gap: 10 },
-  altBtn: { flex: 1 },
-  hubCard: { backgroundColor: colors.surfaceRaised },
-  hubRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  hubIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.orangeTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hubName: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.bodyLg },
-  hubMeta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, marginTop: 2 },
-  hubEta: { alignItems: 'center' },
-  hubEtaValue: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
-  hubEtaUnit: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption },
-  trustRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  trustItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radii.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderSubtle,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xs,
-  },
-  trustLabel: {
-    color: colors.secondaryText,
-    fontFamily: fonts.body,
-    fontSize: typeScale.caption,
-    textAlign: 'center',
-  },
-  terms: {
-    color: colors.mutedText,
-    fontFamily: fonts.body,
-    fontSize: typeScale.small,
-    lineHeight: 18,
-    textAlign: 'center',
+    outlineStyle: 'none' as unknown as undefined,
+    letterSpacing: 0.5,
   },
   sendError: {
     color: colors.badgeRed,
     fontFamily: fonts.body,
     fontSize: typeScale.body,
+  },
+  trustLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  trustText: {
+    color: colors.mutedText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+  },
+  browseLink: {
+    alignSelf: 'center',
+    paddingVertical: spacing.sm,
+  },
+  browseText: {
+    color: colors.secondaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.body,
+    textDecorationLine: 'underline',
+  },
+  terms: {
+    color: colors.mutedText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.caption,
+    lineHeight: 17,
+    textAlign: 'center',
+    marginTop: 'auto',
   },
 });

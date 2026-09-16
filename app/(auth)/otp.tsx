@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -42,7 +44,7 @@ export default function OtpScreen() {
 
   const code = otp.join('');
   const canVerify = code.length === 6 && !verifying;
-  const columnMax = formMaxWidth;
+  const columnMax = formMaxWidth ?? 440;
 
   const updateDigit = (index: number, value: string) => {
     const digit = value.replace(/\D/g, '').slice(-1);
@@ -82,199 +84,211 @@ export default function OtpScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View
-        style={[
-          styles.wrap,
-          {
-            paddingHorizontal: horizontalPadding,
-            maxWidth: columnMax,
-            alignSelf: 'center',
-            width: '100%',
-          },
-        ]}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          onPress={() => router.back()}
-          style={styles.back}
+        <View
+          style={[
+            styles.wrap,
+            {
+              paddingHorizontal: horizontalPadding,
+              maxWidth: columnMax,
+              alignSelf: 'center',
+              width: '100%',
+            },
+          ]}
         >
-          <Ionicons name="arrow-back" size={20} color={colors.primaryText} />
-        </Pressable>
-
-        <View style={styles.brandRow}>
-          <Text style={styles.brandPlay}>Play</Text>
-          <Text style={styles.brandPort}>Port</Text>
-        </View>
-
-        <View style={styles.iconWrap}>
-          <Ionicons name="lock-closed" size={28} color={colors.playportOrange} />
-        </View>
-
-        <Text style={styles.title}>Verify OTP</Text>
-        <Text style={styles.subtitle}>
-          Enter the 6-digit code sent to{'\n'}
-          <Text style={styles.phone}>{phoneDisplay}</Text>
-        </Text>
-
-        <View style={[styles.otpRow, isXs && styles.otpRowXs]}>
-          {otp.map((digit, index) => {
-            const active = focusedIndex === index || !!digit;
-            return (
-              <TextInput
-                key={index}
-                ref={(ref) => {
-                  inputs.current[index] = ref;
-                }}
-                value={digit}
-                onChangeText={(v) => updateDigit(index, v)}
-                onKeyPress={({ nativeEvent }) => onKeyPress(index, nativeEvent.key)}
-                onFocus={() => setFocusedIndex(index)}
-                onBlur={() => setFocusedIndex((prev) => (prev === index ? null : prev))}
-                keyboardType="number-pad"
-                maxLength={1}
-                selectTextOnFocus
-                style={[
-                  styles.otpBox,
-                  isXs && styles.otpBoxXs,
-                  active ? styles.otpBoxActive : null,
-                ]}
-                accessibilityLabel={`OTP digit ${index + 1}`}
-              />
-            );
-          })}
-        </View>
-
-        <Button
-          title={verifying ? 'Verifying…' : 'Verify & Continue'}
-          fullWidth
-          size="lg"
-          disabled={!canVerify}
-          onPress={() => void onVerify()}
-          icon={<Ionicons name="checkmark-circle" size={18} color={colors.white} />}
-        />
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <View style={styles.resendRow}>
-          {seconds > 0 ? (
-            <Text style={styles.resendMuted}>Resend code in {seconds}s</Text>
-          ) : (
+          <View style={styles.topRow}>
             <Pressable
               accessibilityRole="button"
-              onPress={() => {
-                setSeconds(30);
-                setOtp(['', '', '', '', '', '']);
-                inputs.current[0]?.focus();
-                void requestOtp(phoneDraft);
-              }}
+              accessibilityLabel="Go back"
+              onPress={() => router.back()}
+              style={styles.back}
             >
-              <Text style={styles.resendLink}>Resend OTP</Text>
+              <Ionicons name="arrow-back" size={20} color={colors.secondaryText} />
             </Pressable>
-          )}
+            <Text style={styles.brand}>
+              <Text style={styles.brandPlay}>Play</Text>
+              <Text style={styles.brandPort}>Port</Text>
+            </Text>
+            <View style={styles.backSpacer} />
+          </View>
+
+          <View style={styles.hero}>
+            <Text style={styles.eyebrow}>Verification</Text>
+            <Text style={styles.title}>Enter OTP</Text>
+            <Text style={styles.subtitle}>
+              We sent a 6-digit code to{'\n'}
+              <Text style={styles.phone}>{phoneDisplay}</Text>
+            </Text>
+          </View>
+
+          <View style={[styles.otpRow, isXs && styles.otpRowXs]}>
+            {otp.map((digit, index) => {
+              const active = focusedIndex === index || !!digit;
+              return (
+                <TextInput
+                  key={index}
+                  ref={(ref) => {
+                    inputs.current[index] = ref;
+                  }}
+                  value={digit}
+                  onChangeText={(v) => updateDigit(index, v)}
+                  onKeyPress={({ nativeEvent }) => onKeyPress(index, nativeEvent.key)}
+                  onFocus={() => setFocusedIndex(index)}
+                  onBlur={() => setFocusedIndex((prev) => (prev === index ? null : prev))}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  selectTextOnFocus
+                  style={[
+                    styles.otpBox,
+                    isXs && styles.otpBoxXs,
+                    active ? styles.otpBoxActive : null,
+                  ]}
+                  accessibilityLabel={`OTP digit ${index + 1}`}
+                />
+              );
+            })}
+          </View>
+
+          <Button
+            title={verifying ? 'Verifying…' : 'Verify & continue'}
+            fullWidth
+            size="lg"
+            disabled={!canVerify}
+            onPress={() => void onVerify()}
+          />
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <View style={styles.footerLinks}>
+            {seconds > 0 ? (
+              <Text style={styles.resendMuted}>Resend code in {seconds}s</Text>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setSeconds(30);
+                  setOtp(['', '', '', '', '', '']);
+                  inputs.current[0]?.focus();
+                  void requestOtp(phoneDraft);
+                }}
+              >
+                <Text style={styles.resendLink}>Resend OTP</Text>
+              </Pressable>
+            )}
+            <Pressable accessibilityRole="button" onPress={() => router.replace('/(auth)/login')}>
+              <Text style={styles.changeNumber}>Change number</Text>
+            </Pressable>
+          </View>
+
+          {otpMode === 'mock' ? (
+            <Text style={styles.hint}>Dev mode: enter any 6 digits to continue.</Text>
+          ) : null}
         </View>
-
-        <Pressable accessibilityRole="button" onPress={() => router.replace('/(auth)/login')}>
-          <Text style={styles.changeNumber}>Change mobile number</Text>
-        </Pressable>
-
-        <Text style={styles.hint}>
-          {otpMode === 'mock'
-            ? 'Dev mode: enter any 6 digits to continue.'
-            : 'Enter the code sent to your phone.'}
-        </Text>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.page },
-  wrap: { flex: 1, paddingTop: spacing.md, gap: spacing.lg },
+  flex: { flex: 1 },
+  wrap: { flex: 1, paddingTop: spacing.md, gap: spacing.xxl },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   back: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center' },
-  brandPlay: {
+  backSpacer: { width: 40, height: 40 },
+  brand: {
+    fontFamily: fonts.heading,
+    fontSize: typeScale.title,
+    letterSpacing: -0.3,
+  },
+  brandPlay: { color: colors.primaryText },
+  brandPort: { color: colors.playportOrange },
+  hero: { gap: spacing.sm },
+  eyebrow: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  title: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: typeScale.headline,
-    letterSpacing: -0.3,
+    fontSize: 32,
+    letterSpacing: -0.6,
   },
-  brandPort: {
-    color: colors.playportOrange,
-    fontFamily: fonts.heading,
-    fontSize: typeScale.headline,
-    letterSpacing: -0.3,
-  },
-  iconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.orangeTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-  },
-  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.display },
   subtitle: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
     fontSize: typeScale.bodyLg,
     lineHeight: 22,
-    marginTop: -4,
   },
   phone: { color: colors.primaryText, fontFamily: fonts.bodyMedium },
-  otpRow: { flexDirection: 'row', gap: 10, justifyContent: 'space-between', width: '100%' },
+  otpRow: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+    width: '100%',
+  },
   otpRowXs: { gap: 6 },
   otpBox: {
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 0,
     aspectRatio: 1,
-    maxWidth: 58,
+    maxWidth: 56,
     minWidth: 40,
     minHeight: 48,
     backgroundColor: colors.surfaceRaised,
-    borderRadius: radii.lg,
+    borderRadius: radii.md,
     borderWidth: 1.5,
     borderColor: colors.borderSubtle,
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: 24,
+    fontSize: 22,
     textAlign: 'center',
     outlineStyle: 'none' as unknown as undefined,
   },
   otpBoxXs: {
-    maxWidth: 48,
+    maxWidth: 46,
     minHeight: 44,
-    fontSize: 20,
+    fontSize: 18,
   },
   otpBoxActive: {
     borderColor: colors.playportOrange,
     backgroundColor: colors.orangeTint,
   },
-  resendRow: { alignItems: 'center', marginTop: spacing.sm },
+  footerLinks: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
   resendMuted: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.body },
   resendLink: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg },
   changeNumber: {
     color: colors.secondaryText,
-    fontFamily: fonts.body,
+    fontFamily: fonts.bodyMedium,
     fontSize: typeScale.body,
-    textAlign: 'center',
-    textDecorationLine: 'underline',
   },
   hint: {
     color: colors.mutedText,
     fontFamily: fonts.body,
-    fontSize: typeScale.small,
+    fontSize: typeScale.caption,
     textAlign: 'center',
     marginTop: 'auto',
     marginBottom: spacing.xl,
@@ -284,5 +298,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: typeScale.body,
     textAlign: 'center',
+    marginTop: -spacing.md,
   },
 });

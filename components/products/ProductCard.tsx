@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
+import { PressableScale } from '@/components/motion/PressableScale';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
 import type { Product, RentalDurationId } from '@/types';
@@ -34,39 +36,42 @@ function CartAction({
 }) {
   if (quantity > 0) {
     return (
-      <View style={[styles.qtyWrap, floating && styles.qtyWrapFloating]}>
-        <Pressable
-          accessibilityRole="button"
+      <Animated.View
+        entering={ZoomIn.springify().damping(14).stiffness(260)}
+        style={[styles.qtyWrap, floating && styles.qtyWrapFloating]}
+      >
+        <PressableScale
           accessibilityLabel={`Remove one ${productName}`}
           onPress={onDecrement}
-          style={styles.qtyBtn}
+          scaleTo={0.9}
           hitSlop={6}
+          style={styles.qtyBtn}
         >
           <Text style={styles.qtyBtnText}>−</Text>
-        </Pressable>
+        </PressableScale>
         <Text style={styles.qtyValue}>{quantity}</Text>
-        <Pressable
-          accessibilityRole="button"
+        <PressableScale
           accessibilityLabel={`Add one ${productName}`}
           onPress={onIncrement}
-          style={styles.qtyBtn}
+          scaleTo={0.9}
           hitSlop={6}
+          style={styles.qtyBtn}
         >
           <Text style={styles.qtyBtnText}>+</Text>
-        </Pressable>
-      </View>
+        </PressableScale>
+      </Animated.View>
     );
   }
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityLabel={`Add ${productName} to cart`}
       onPress={onAdd}
+      scaleTo={0.92}
       style={[styles.addBtn, floating && styles.addBtnFloating]}
     >
       <Text style={styles.addBtnText}>ADD</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -97,14 +102,7 @@ export function ProductCard({
 
   if (compact) {
     return (
-      <Pressable
-        accessibilityRole="button"
-        onPress={onPress}
-        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-          styles.compact,
-          (pressed || hovered) && styles.cardPressed,
-        ]}
-      >
+      <PressableScale onPress={onPress} scaleTo={0.98} style={styles.compact}>
         <View style={styles.compactImageWrap}>
           <Image source={{ uri: product.images[0] }} style={styles.compactImage} contentFit="cover" />
           <View style={styles.compactEta}>
@@ -133,20 +131,13 @@ export function ProductCard({
             />
           </View>
         </View>
-      </Pressable>
+      </PressableScale>
     );
   }
 
   return (
-    <View style={styles.card}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={product.name}
-        onPress={onPress}
-        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-          (pressed || hovered) && styles.cardPressed,
-        ]}
-      >
+    <Animated.View entering={FadeIn.duration(280)} style={styles.card}>
+      <PressableScale accessibilityLabel={product.name} onPress={onPress} scaleTo={0.985}>
         <View style={styles.imageWrap}>
           <Image source={{ uri: product.images[0] }} style={styles.image} contentFit="cover" />
           <View style={styles.etaBadge}>
@@ -171,7 +162,7 @@ export function ProductCard({
           </Text>
           <Text style={styles.unitChip}>Setup included · {durationId}</Text>
         </View>
-      </Pressable>
+      </PressableScale>
       <View style={styles.footer}>
         <View>
           <Text style={styles.price}>{formatINR(price)}</Text>
@@ -181,7 +172,7 @@ export function ProductCard({
         </View>
         {product.badge ? <Text style={styles.badge}>{product.badge}</Text> : null}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -194,12 +185,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
     overflow: 'hidden',
     ...shadows.soft,
-    ...Platform.select({
-      web: { transition: 'transform 0.15s ease' as unknown as undefined },
-      default: {},
-    }),
   },
-  cardPressed: { opacity: 0.94 },
   imageWrap: {
     backgroundColor: colors.surfaceAlt,
     position: 'relative',

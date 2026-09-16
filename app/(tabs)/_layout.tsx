@@ -1,16 +1,33 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
+import { Platform, StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, layout, radii } from '@/constants/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
 function TabIcon({ name, color, focused }: { name: IconName; color: string; focused: boolean }) {
+  const scale = useSharedValue(focused ? 1 : 0.92);
+
+  useEffect(() => {
+    scale.value = withSpring(focused ? 1 : 0.92, { damping: 14, stiffness: 260 });
+  }, [focused, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    backgroundColor: focused ? colors.orangeTint : 'transparent',
+  }));
+
   return (
-    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+    <Animated.View style={[styles.iconWrap, animatedStyle]}>
       <Ionicons name={name} size={focused ? 22 : 21} color={color} />
-    </View>
+    </Animated.View>
   );
 }
 
@@ -115,8 +132,5 @@ const styles = StyleSheet.create({
     width: 36,
     height: 28,
     borderRadius: radii.sm,
-  },
-  iconWrapActive: {
-    backgroundColor: colors.orangeTint,
   },
 });

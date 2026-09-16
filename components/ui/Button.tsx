@@ -1,6 +1,6 @@
+import { type ReactNode } from 'react';
 import {
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -8,17 +8,26 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { Pressable } from 'react-native';
 import { colors, fonts, radii, shadows, typeScale } from '@/constants/theme';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
-interface Props extends PressableProps {
+interface Props extends Omit<PressableProps, 'style'> {
   title: string;
   variant?: Variant;
   size?: Size;
-  icon?: React.ReactNode;
-  iconRight?: React.ReactNode;
+  icon?: ReactNode;
+  iconRight?: ReactNode;
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
 }
@@ -33,29 +42,59 @@ export function Button({
   style,
   disabled,
   accessibilityLabel,
+  onPressIn,
+  onPressOut,
   ...rest
 }: Props) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       disabled={disabled}
-      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+      onPressIn={(e) => {
+        if (!disabled) scale.value = withSpring(0.96, { damping: 16, stiffness: 420 });
+        onPressIn?.(e);
+      }}
+      onPressOut={(e) => {
+        scale.value = withSpring(1, { damping: 14, stiffness: 280 });
+        onPressOut?.(e);
+      }}
+      onHoverIn={
+        Platform.OS === 'web' && !disabled
+          ? () => {
+              scale.value = withTiming(1.02, { duration: 120 });
+            }
+          : undefined
+      }
+      onHoverOut={
+        Platform.OS === 'web'
+          ? () => {
+              scale.value = withSpring(1, { damping: 16, stiffness: 280 });
+            }
+          : undefined
+      }
+      style={[
         styles.base,
         styles[variant],
         styles[`size_${size}`],
         fullWidth && styles.fullWidth,
         Platform.OS === 'web' && styles.webCursor,
-        (pressed || hovered) && !disabled && (variant === 'primary' ? styles.primaryHover : styles.pressed),
         disabled && styles.disabled,
         style,
+        animatedStyle,
       ]}
       {...rest}
     >
       {icon ? <View style={styles.icon}>{icon}</View> : null}
       <Text style={[styles.text, styles[`text_${variant}`], styles[`textSize_${size}`]]}>{title}</Text>
       {iconRight ? <View style={styles.icon}>{iconRight}</View> : null}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -89,8 +128,6 @@ const styles = StyleSheet.create({
   webCursor: {
     cursor: 'pointer' as unknown as undefined,
   },
-  pressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
-  primaryHover: { backgroundColor: colors.ctaPrimaryHover },
   disabled: { opacity: 0.45 },
   icon: { marginRight: 0 },
   text: { fontFamily: fonts.bodyMedium },

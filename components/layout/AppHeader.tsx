@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { PressableScale } from '@/components/motion/PressableScale';
+import { PulseOnChange } from '@/components/motion/Pulse';
 import { LOCATION_LABEL, HUB } from '@/data/mock';
 import { useAppStore, useCartCount } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
@@ -87,22 +89,19 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
             {rightSlot}
 
             {showCart ? (
-              <Pressable
-                accessibilityRole="button"
+              <PressableScale
                 accessibilityLabel={`Cart with ${cartCount} items`}
                 onPress={() => router.push('/cart')}
-                style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-                  styles.cartBtn,
-                  (pressed || hovered) && styles.pressed,
-                ]}
+                scaleTo={0.92}
+                style={styles.cartBtn}
               >
                 <Ionicons name="bag-outline" size={20} color={colors.primaryText} />
                 {cartCount > 0 ? (
-                  <View style={styles.badge}>
+                  <PulseOnChange pulseKey={cartCount} style={styles.badge}>
                     <Text style={styles.badgeText}>{cartCount > 9 ? '9+' : cartCount}</Text>
-                  </View>
+                  </PulseOnChange>
                 ) : null}
-              </Pressable>
+              </PressableScale>
             ) : null}
           </View>
         </View>

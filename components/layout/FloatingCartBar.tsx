@@ -1,13 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PressableScale } from '@/components/motion/PressableScale';
+import { PulseOnChange } from '@/components/motion/Pulse';
 import { colors, fonts, layout, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { useCartCount, useCartTotals } from '@/store/appStore';
 import { formatINR } from '@/utils/format';
 
 interface Props {
-  /** Extra offset above tab bar */
   bottomOffset?: number;
 }
 
@@ -22,31 +24,36 @@ export function FloatingCartBar({ bottomOffset = layout.tabBarHeight + 8 }: Prop
 
   return (
     <View pointerEvents="box-none" style={[styles.outer, { bottom }]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`View cart, ${cartCount} items, ${formatINR(totals.total)}`}
-        onPress={() => router.push('/cart')}
-        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-          styles.bar,
-          (pressed || hovered) && styles.pressed,
-        ]}
+      <Animated.View
+        entering={SlideInDown.springify().damping(16).stiffness(170)}
+        exiting={SlideOutDown.duration(180)}
+        style={styles.barShell}
       >
-        <View style={styles.left}>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{cartCount > 9 ? '9+' : cartCount}</Text>
+        <PressableScale
+          accessibilityLabel={`View cart, ${cartCount} items, ${formatINR(totals.total)}`}
+          onPress={() => router.push('/cart')}
+          scaleTo={0.98}
+          style={styles.bar}
+        >
+          <View style={styles.left}>
+            <PulseOnChange pulseKey={cartCount}>
+              <View style={styles.countBadge}>
+                <Text style={styles.countText}>{cartCount > 9 ? '9+' : cartCount}</Text>
+              </View>
+            </PulseOnChange>
+            <View>
+              <Text style={styles.label}>
+                {cartCount} {cartCount === 1 ? 'item' : 'items'} in cart
+              </Text>
+              <Text style={styles.total}>{formatINR(totals.total)}</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.label}>
-              {cartCount} {cartCount === 1 ? 'item' : 'items'} in cart
-            </Text>
-            <Text style={styles.total}>{formatINR(totals.total)}</Text>
+          <View style={styles.cta}>
+            <Text style={styles.ctaText}>View cart</Text>
+            <Ionicons name="arrow-forward" size={16} color={colors.white} />
           </View>
-        </View>
-        <View style={styles.cta}>
-          <Text style={styles.ctaText}>View cart</Text>
-          <Ionicons name="arrow-forward" size={16} color={colors.white} />
-        </View>
-      </Pressable>
+        </PressableScale>
+      </Animated.View>
     </View>
   );
 }
@@ -59,9 +66,12 @@ const styles = StyleSheet.create({
     zIndex: 50,
     alignItems: 'center',
   },
-  bar: {
+  barShell: {
     width: '100%',
     maxWidth: 520,
+  },
+  bar: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -78,7 +88,6 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  pressed: { opacity: 0.94, transform: [{ scale: 0.99 }] },
   left: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   countBadge: {
     width: 36,

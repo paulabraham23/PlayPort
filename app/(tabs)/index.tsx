@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CategoryTile } from '@/components/home/CategoryTile';
 import { HeroBanner } from '@/components/home/HeroBanner';
 import { TrustStrip } from '@/components/home/TrustStrip';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
+import { EnterUp } from '@/components/motion/Enter';
+import { PressableScale } from '@/components/motion/PressableScale';
 import { ProductCard } from '@/components/products/ProductCard';
 import { SearchBar } from '@/components/search/SearchBar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -42,20 +44,21 @@ export default function HomeScreen() {
   const cartItemIdFor = (productId: string) =>
     cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
 
-  const renderProductCard = (product: (typeof products)[0]) => (
-    <ProductCard
-      key={product.id}
-      product={product}
-      quantityInCart={qtyFor(product.id)}
-      onPress={() => router.push(`/product/${product.id}`)}
-      onAdd={() => addProductToCart(product.id, '12h')}
-      onIncrement={() => addProductToCart(product.id, '12h')}
-      onDecrement={() => {
-        const id = cartItemIdFor(product.id);
-        const qty = qtyFor(product.id);
-        if (id) updateCartQuantity(id, qty - 1);
-      }}
-    />
+  const renderProductCard = (product: (typeof products)[0], index: number) => (
+    <EnterUp key={product.id} index={index} style={{ width: '100%' }}>
+      <ProductCard
+        product={product}
+        quantityInCart={qtyFor(product.id)}
+        onPress={() => router.push(`/product/${product.id}`)}
+        onAdd={() => addProductToCart(product.id, '12h')}
+        onIncrement={() => addProductToCart(product.id, '12h')}
+        onDecrement={() => {
+          const id = cartItemIdFor(product.id);
+          const qty = qtyFor(product.id);
+          if (id) updateCartQuantity(id, qty - 1);
+        }}
+      />
+    </EnterUp>
   );
 
   return (
@@ -67,32 +70,37 @@ export default function HomeScreen() {
           { paddingHorizontal: horizontalPadding, paddingBottom: spacing.huge + 72 },
         ]}
       >
-        <SearchBar value="" onChangeText={() => {}} onPress={() => router.push('/search')} />
+        <EnterUp index={0}>
+          <SearchBar value="" onChangeText={() => {}} onPress={() => router.push('/search')} />
+        </EnterUp>
 
-        <HeroBanner
-          product={featured}
-          etaMinutes={eta}
-          onPress={() => router.push('/(tabs)/explore')}
-        />
+        <EnterUp index={1}>
+          <HeroBanner
+            product={featured}
+            etaMinutes={eta}
+            onPress={() => router.push('/(tabs)/explore')}
+          />
+        </EnterUp>
 
-        <TrustStrip />
+        <EnterUp index={2}>
+          <TrustStrip />
+        </EnterUp>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {SHORTCUTS.map((chip) => (
-            <Pressable
-              key={chip.id}
-              accessibilityRole="button"
-              onPress={() => router.push(`/category/${chip.id}`)}
-              style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-                styles.chip,
-                (pressed || hovered) && styles.chipPressed,
-              ]}
-            >
-              <Ionicons name={chip.icon} size={16} color={colors.playportOrange} />
-              <Text style={styles.chipText}>{chip.label}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <EnterUp index={3}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+            {SHORTCUTS.map((chip) => (
+              <PressableScale
+                key={chip.id}
+                onPress={() => router.push(`/category/${chip.id}`)}
+                scaleTo={0.94}
+                style={styles.chip}
+              >
+                <Ionicons name={chip.icon} size={16} color={colors.playportOrange} />
+                <Text style={styles.chipText}>{chip.label}</Text>
+              </PressableScale>
+            ))}
+          </ScrollView>
+        </EnterUp>
 
         <View style={styles.section}>
           <SectionHeader
@@ -102,7 +110,7 @@ export default function HomeScreen() {
             onAction={() => router.push('/(tabs)/explore')}
           />
           <ResponsiveGrid columns={gridCols} gap={gap}>
-            {products.map(renderProductCard)}
+            {products.map((product, index) => renderProductCard(product, index))}
           </ResponsiveGrid>
         </View>
 
@@ -110,28 +118,31 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <SectionHeader eyebrow="Discover" title="Shop by vibe" />
             <ResponsiveGrid columns={Math.min(categoryColumns, 4)} gap={10}>
-              {categories.slice(0, 8).map((cat) => (
-                <CategoryTile
-                  key={cat.id}
-                  category={cat}
-                  onPress={() => router.push(`/category/${cat.id}`)}
-                />
+              {categories.slice(0, 8).map((cat, index) => (
+                <EnterUp key={cat.id} index={index}>
+                  <CategoryTile
+                    category={cat}
+                    onPress={() => router.push(`/category/${cat.id}`)}
+                  />
+                </EnterUp>
               ))}
             </ResponsiveGrid>
           </View>
         ) : null}
 
-        <View style={styles.promiseCard}>
-          <View style={styles.promiseIcon}>
-            <Ionicons name="shield-checkmark" size={22} color={colors.success} />
+        <EnterUp index={2}>
+          <View style={styles.promiseCard}>
+            <View style={styles.promiseIcon}>
+              <Ionicons name="shield-checkmark" size={22} color={colors.success} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.promiseTitle}>PlayPort Promise</Text>
+              <Text style={styles.promiseBody}>
+                Every kit is sanitized, pre-tested at the hub, and delivered with white-glove setup. No deposit for verified users.
+              </Text>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.promiseTitle}>PlayPort Promise</Text>
-            <Text style={styles.promiseBody}>
-              Every kit is sanitized, pre-tested at the hub, and delivered with white-glove setup. No deposit for verified users.
-            </Text>
-          </View>
-        </View>
+        </EnterUp>
       </ScrollView>
     </Screen>
   );
@@ -151,7 +162,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: radii.full,
   },
-  chipPressed: { backgroundColor: colors.surfaceHover },
   chipText: {
     color: colors.primaryText,
     fontFamily: fonts.bodyMedium,

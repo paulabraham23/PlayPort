@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { PressableScale } from '@/components/motion/PressableScale';
 import { colors, fonts, radii, shadows, typeScale } from '@/constants/theme';
 import type { Category } from '@/types';
 
@@ -11,14 +12,11 @@ interface Props {
 
 export function CategoryTile({ category, onPress }: Props) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityLabel={category.name}
       onPress={onPress}
-      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-        styles.tile,
-        (pressed || hovered) && styles.pressed,
-      ]}
+      scaleTo={0.96}
+      style={styles.tile}
     >
       <Image source={{ uri: category.image }} style={styles.image} contentFit="cover" />
       <View style={styles.scrim} />
@@ -31,7 +29,7 @@ export function CategoryTile({ category, onPress }: Props) {
         </Text>
         <Text style={styles.meta}>{category.setupsReady} kits</Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -43,7 +41,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     ...shadows.soft,
   },
-  pressed: { opacity: 0.92, transform: [{ scale: 0.98 }] },
   image: { ...StyleSheet.absoluteFill },
   scrim: {
     ...StyleSheet.absoluteFill,

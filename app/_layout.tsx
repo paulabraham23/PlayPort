@@ -75,19 +75,26 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={PlayPortTheme}>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.page },
+          animation: 'fade_from_bottom',
+          animationDuration: 280,
+        }}
+      >
         <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="search/index" />
+        <Stack.Screen name="(auth)" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="search/index" options={{ animation: 'fade' }} />
         <Stack.Screen name="search/results" />
-        <Stack.Screen name="product/[id]" />
-        <Stack.Screen name="experience/[id]" />
-        <Stack.Screen name="category/[id]" />
-        <Stack.Screen name="cart" />
-        <Stack.Screen name="checkout/index" />
-        <Stack.Screen name="checkout/payment" />
-        <Stack.Screen name="checkout/confirmation" />
+        <Stack.Screen name="product/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="experience/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="category/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="cart" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="checkout/index" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="checkout/payment" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="checkout/confirmation" options={{ animation: 'fade' }} />
         <Stack.Screen name="address/index" />
         <Stack.Screen name="address/add" />
         <Stack.Screen name="address/edit/[id]" />
@@ -101,7 +108,7 @@ export default function RootLayout() {
         <Stack.Screen name="profile/settings" />
         <Stack.Screen name="profile/help" />
         <Stack.Screen name="profile/reviews" />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
     </ThemeProvider>
   );

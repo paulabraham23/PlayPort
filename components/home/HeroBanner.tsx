@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { PressableScale } from '@/components/motion/PressableScale';
+import { SoftPulse } from '@/components/motion/Pulse';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import type { Product } from '@/types';
 
@@ -16,14 +18,11 @@ export function HeroBanner({ product, etaMinutes = 30, onPress }: Props) {
     'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=1200&q=80';
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityLabel="Browse tonight's kits"
       onPress={onPress}
-      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-        styles.wrap,
-        (pressed || hovered) && styles.pressed,
-      ]}
+      scaleTo={0.985}
+      style={styles.wrap}
     >
       <Image source={{ uri: imageUri }} style={styles.image} contentFit="cover" />
       <View style={styles.scrimTop} />
@@ -32,7 +31,9 @@ export function HeroBanner({ product, etaMinutes = 30, onPress }: Props) {
       <View style={styles.content}>
         <View style={styles.badgeRow}>
           <View style={styles.livePill}>
-            <View style={styles.liveDot} />
+            <SoftPulse>
+              <View style={styles.liveDot} />
+            </SoftPulse>
             <Text style={styles.liveText}>Live at your hub</Text>
           </View>
           <View style={styles.etaPill}>
@@ -50,7 +51,7 @@ export function HeroBanner({ product, etaMinutes = 30, onPress }: Props) {
           <Ionicons name="arrow-forward" size={16} color={colors.white} />
         </View>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -62,7 +63,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     ...shadows.card,
   },
-  pressed: { opacity: 0.96 },
   image: { ...StyleSheet.absoluteFill },
   scrimTop: {
     ...StyleSheet.absoluteFill,
@@ -71,8 +71,6 @@ const styles = StyleSheet.create({
   scrimBottom: {
     ...StyleSheet.absoluteFill,
     backgroundColor: 'transparent',
-    // layered gradient simulation via bottom-heavy overlay
-    borderBottomWidth: 0,
   },
   content: {
     flex: 1,

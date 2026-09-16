@@ -35,45 +35,45 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
         ]}
       >
         <View style={styles.row}>
-          <View style={styles.left}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Change delivery location"
-              onPress={() => router.push('/address')}
-              style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-                styles.locationBlock,
-                (pressed || hovered) && styles.pressed,
-              ]}
-            >
-              <View style={styles.topRow}>
-                <View style={styles.brandRow}>
-                  <Text style={styles.brandMark}>Play</Text>
-                  <Text style={styles.brandAccent}>Port</Text>
-                </View>
-                <View style={styles.etaPill}>
-                  <Ionicons name="flash" size={11} color={colors.etaText} />
-                  <Text style={styles.etaPillText}>{eta} min</Text>
-                </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Change delivery location"
+            onPress={() => router.push('/address')}
+            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+              styles.left,
+              (pressed || hovered) && styles.pressed,
+            ]}
+          >
+            <View style={styles.brandRow}>
+              <Text style={styles.brandMark}>Play</Text>
+              <Text style={styles.brandAccent}>Port</Text>
+            </View>
+            {showLocation ? (
+              <View style={styles.locationRow}>
+                <Ionicons name="location" size={12} color={colors.playportOrange} />
+                <Text
+                  style={[styles.locationText, isDesktop && styles.locationTextWide]}
+                  numberOfLines={1}
+                >
+                  Delivery to {locationLabel}
+                </Text>
+                <Ionicons name="chevron-down" size={12} color={colors.mutedText} />
               </View>
+            ) : (
+              <Text style={styles.tagline}>Entertainment on demand</Text>
+            )}
+          </Pressable>
 
-              {showLocation ? (
-                <View style={styles.locationRow}>
-                  <Ionicons name="location" size={13} color={colors.playportOrange} />
-                  <Text style={[styles.locationText, isDesktop && styles.locationTextWide]} numberOfLines={1}>
-                    {locationLabel}
-                  </Text>
-                  <Ionicons name="chevron-down" size={13} color={colors.mutedText} />
-                </View>
-              ) : (
-                <Text style={styles.tagline}>Entertainment on demand</Text>
-              )}
-            </Pressable>
-          </View>
+          <View style={styles.actions}>
+            <View style={styles.etaPill} accessibilityLabel={`Delivery in ${eta} minutes`}>
+              <Ionicons name="flash" size={12} color={colors.etaText} />
+              <Text style={styles.etaPillText}>{eta} mins</Text>
+            </View>
 
-          <View style={styles.right}>
             {!isAuthenticated ? (
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel="Log in"
                 onPress={() => router.push('/(auth)/login')}
                 style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
                   styles.loginBtn,
@@ -83,7 +83,9 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
                 <Text style={styles.loginText}>Login</Text>
               </Pressable>
             ) : null}
+
             {rightSlot}
+
             {showCart ? (
               <Pressable
                 accessibilityRole="button"
@@ -94,7 +96,7 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
                   (pressed || hovered) && styles.pressed,
                 ]}
               >
-                <Ionicons name="bag-outline" size={21} color={colors.primaryText} />
+                <Ionicons name="bag-outline" size={20} color={colors.primaryText} />
                 {cartCount > 0 ? (
                   <View style={styles.badge}>
                     <Text style={styles.badgeText}>{cartCount > 9 ? '9+' : cartCount}</Text>
@@ -126,7 +128,7 @@ const styles = StyleSheet.create({
   },
   wrap: {
     paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
     justifyContent: 'center',
   },
   row: {
@@ -135,15 +137,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  left: { flex: 1, minWidth: 0 },
-  locationBlock: { gap: 4 },
-  pressed: { opacity: 0.85 },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+  left: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+    justifyContent: 'center',
   },
+  pressed: { opacity: 0.85 },
   brandRow: { flexDirection: 'row', alignItems: 'baseline' },
   brandMark: {
     color: colors.primaryText,
@@ -157,42 +157,55 @@ const styles = StyleSheet.create({
     fontSize: typeScale.title,
     letterSpacing: -0.3,
   },
-  etaPill: {
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.etaBg,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radii.full,
+    gap: 3,
+    maxWidth: '100%',
   },
-  etaPillText: {
-    color: colors.etaText,
-    fontFamily: fonts.bodyMedium,
-    fontSize: typeScale.caption,
-  },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   locationText: {
     color: colors.secondaryText,
     fontFamily: fonts.bodyMedium,
     fontSize: typeScale.small,
-    maxWidth: 180,
+    maxWidth: 160,
     flexShrink: 1,
   },
-  locationTextWide: { maxWidth: 320 },
+  locationTextWide: { maxWidth: 280 },
   tagline: {
     color: colors.mutedText,
     fontFamily: fonts.body,
     fontSize: typeScale.small,
   },
-  right: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+    height: 40,
+  },
+  etaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 36,
+    backgroundColor: colors.etaBg,
+    paddingHorizontal: 10,
+    borderRadius: radii.full,
+  },
+  etaPillText: {
+    color: colors.etaText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.small,
+  },
   loginBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    height: 36,
+    paddingHorizontal: 14,
     borderRadius: radii.full,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
     ...Platform.select({
       web: { cursor: 'pointer' as unknown as undefined },
       default: {},
@@ -204,8 +217,8 @@ const styles = StyleSheet.create({
     fontSize: typeScale.small,
   },
   cartBtn: {
-    width: 42,
-    height: 42,
+    width: 36,
+    height: 36,
     borderRadius: radii.full,
     backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
@@ -219,17 +232,17 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    top: -3,
+    right: -3,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: colors.playportOrange,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
     borderWidth: 2,
     borderColor: colors.page,
   },
-  badgeText: { color: colors.white, fontSize: 10, fontFamily: fonts.bodyMedium },
+  badgeText: { color: colors.white, fontSize: 9, fontFamily: fonts.bodyMedium },
 });

@@ -1,11 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { ProductCard } from '@/components/products/ProductCard';
 import { SearchBar } from '@/components/search/SearchBar';
-import { colors, fonts, spacing } from '@/constants/theme';
-import { PRODUCTS } from '@/data/mock';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
+import { CATEGORIES, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
@@ -25,14 +27,17 @@ export default function ExploreScreen() {
     cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
 
   return (
-    <Screen>
+    <Screen showFloatingCart>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingHorizontal: horizontalPadding, paddingBottom: spacing.huge + 72 },
+        ]}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>All kits</Text>
-          <Text style={styles.subtitle}>{products.length} available at your hub</Text>
+        <View>
+          <SectionHeader eyebrow="Catalog" title="All kits" />
+          <Text style={styles.availability}>{products.length} kits available at your hub</Text>
         </View>
 
         <SearchBar
@@ -41,6 +46,34 @@ export default function ExploreScreen() {
           placeholder="Search kits…"
           onPress={() => router.push('/search')}
         />
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+          <Pressable style={[styles.filterChip, styles.filterActive]}>
+            <Text style={[styles.filterText, styles.filterTextActive]}>All</Text>
+          </Pressable>
+          {CATEGORIES.slice(0, 6).map((cat) => (
+            <Pressable
+              key={cat.id}
+              accessibilityRole="button"
+              onPress={() => router.push(`/category/${cat.id}`)}
+              style={styles.filterChip}
+            >
+              <Ionicons name={cat.icon as keyof typeof Ionicons.glyphMap} size={14} color={colors.secondaryText} />
+              <Text style={styles.filterText}>{cat.shortName}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <Ionicons name="flash" size={16} color={colors.etaText} />
+            <Text style={styles.statText}>30–45 min delivery</Text>
+          </View>
+          <View style={styles.stat}>
+            <Ionicons name="sparkles" size={16} color={colors.playportOrange} />
+            <Text style={styles.statText}>Sanitized & setup</Text>
+          </View>
+        </View>
 
         <ResponsiveGrid columns={gridCols} gap={gap}>
           {products.map((product) => (
@@ -65,16 +98,56 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingBottom: spacing.huge, gap: spacing.xl, paddingTop: spacing.sm },
-  header: { gap: 4 },
-  title: {
-    color: colors.primaryText,
-    fontFamily: fonts.heading,
-    fontSize: 22,
-  },
-  subtitle: {
+  scroll: { gap: spacing.xl, paddingTop: spacing.sm },
+  availability: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
-    fontSize: 14,
+    fontSize: typeScale.body,
+    marginTop: 4,
+  },
+  filters: { gap: 8 },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+  },
+  filterActive: {
+    backgroundColor: colors.orangeTintStrong,
+    borderColor: colors.playportOrange,
+  },
+  filterText: {
+    color: colors.secondaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.small,
+  },
+  filterTextActive: {
+    color: colors.playportOrange,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  stat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
+  },
+  statText: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
   },
 });

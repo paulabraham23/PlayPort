@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 
 interface Props {
   value: string;
@@ -18,7 +18,7 @@ interface Props {
 export function SearchBar({
   value,
   onChangeText,
-  placeholder = 'Search “PS5” or “projector”',
+  placeholder = 'Search PS5, projector, VR…',
   onSubmit,
   onClear,
   onFilterPress,
@@ -29,14 +29,11 @@ export function SearchBar({
 }: Props) {
   if (onPress) {
     return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Open search"
-        onPress={onPress}
-        style={styles.row}
-      >
+      <Pressable accessibilityRole="button" accessibilityLabel="Open search" onPress={onPress} style={styles.row}>
         <View style={styles.inputWrap}>
-          <Ionicons name="search" size={18} color={colors.mutedText} />
+          <View style={styles.searchIcon}>
+            <Ionicons name="search" size={18} color={colors.playportOrange} />
+          </View>
           <Text style={styles.placeholder} numberOfLines={1}>
             {value || placeholder}
           </Text>
@@ -53,7 +50,9 @@ export function SearchBar({
         </Pressable>
       ) : null}
       <View style={styles.inputWrap}>
-        <Ionicons name="search" size={18} color={colors.mutedText} />
+        <View style={styles.searchIcon}>
+          <Ionicons name="search" size={18} color={colors.playportOrange} />
+        </View>
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -87,33 +86,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.full,
     borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    minHeight: 48,
+    borderColor: colors.borderSubtle,
+    paddingHorizontal: spacing.md,
+    minHeight: 50,
+  },
+  searchIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.full,
+    backgroundColor: colors.orangeTint,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     flex: 1,
     color: colors.primaryText,
     fontFamily: fonts.body,
-    fontSize: 15,
+    fontSize: typeScale.bodyLg,
   },
   placeholder: {
     flex: 1,
     color: colors.mutedText,
     fontFamily: fonts.body,
-    fontSize: 15,
+    fontSize: typeScale.bodyLg,
   },
   sideBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
+    width: 46,
+    height: 46,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
   },
 });

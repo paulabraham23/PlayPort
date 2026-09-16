@@ -8,7 +8,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { colors, fonts, radii } from '@/constants/theme';
+import { colors, fonts, radii, shadows, typeScale } from '@/constants/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -67,26 +67,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  primary: { backgroundColor: colors.playportOrange },
+  primary: {
+    backgroundColor: colors.playportOrange,
+    ...shadows.glow,
+  },
   secondary: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
     borderColor: colors.border,
   },
   ghost: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
   },
   danger: { backgroundColor: colors.dangerBg, borderWidth: 1, borderColor: colors.danger },
-  size_sm: { paddingVertical: 8, paddingHorizontal: 12, minHeight: 36 },
-  size_md: { paddingVertical: 12, paddingHorizontal: 16, minHeight: 48 },
-  size_lg: { paddingVertical: 14, paddingHorizontal: 18, minHeight: 52 },
+  size_sm: { paddingVertical: 8, paddingHorizontal: 14, minHeight: 38, borderRadius: radii.sm },
+  size_md: { paddingVertical: 13, paddingHorizontal: 18, minHeight: 50 },
+  size_lg: { paddingVertical: 15, paddingHorizontal: 22, minHeight: 54, borderRadius: radii.lg },
   fullWidth: { width: '100%' },
   webCursor: {
     cursor: 'pointer' as unknown as undefined,
   },
-  pressed: { opacity: 0.9 },
+  pressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   primaryHover: { backgroundColor: colors.ctaPrimaryHover },
   disabled: { opacity: 0.45 },
   icon: { marginRight: 0 },
@@ -95,7 +98,7 @@ const styles = StyleSheet.create({
   text_secondary: { color: colors.primaryText },
   text_ghost: { color: colors.primaryText },
   text_danger: { color: colors.danger },
-  textSize_sm: { fontSize: 13 },
-  textSize_md: { fontSize: 15 },
-  textSize_lg: { fontSize: 16 },
+  textSize_sm: { fontSize: typeScale.small },
+  textSize_md: { fontSize: typeScale.bodyLg },
+  textSize_lg: { fontSize: typeScale.title },
 });

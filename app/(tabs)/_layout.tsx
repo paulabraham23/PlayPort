@@ -2,21 +2,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, fonts, layout } from '@/constants/theme';
+import { colors, fonts, layout, radii } from '@/constants/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-function TabIcon({ name, color }: { name: IconName; color: string; focused: boolean }) {
+function TabIcon({ name, color, focused }: { name: IconName; color: string; focused: boolean }) {
   return (
-    <View style={styles.iconWrap}>
-      <Ionicons name={name} size={22} color={color} />
+    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+      <Ionicons name={name} size={focused ? 22 : 21} color={color} />
     </View>
   );
 }
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
-  const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 8 : 0);
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 10 : 0);
 
   return (
     <Tabs
@@ -28,7 +28,7 @@ export default function TabsLayout() {
           styles.tabBar,
           {
             height: layout.tabBarHeight + bottomInset,
-            paddingBottom: bottomInset > 0 ? bottomInset : 8,
+            paddingBottom: bottomInset > 0 ? bottomInset : 10,
           },
           Platform.OS === 'web' && styles.tabBarWeb,
         ],
@@ -51,7 +51,7 @@ export default function TabsLayout() {
           title: 'Explore',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              name={focused ? 'compass' : 'compass-outline'}
+              name={focused ? 'grid' : 'grid-outline'}
               color={String(color)}
               focused={focused}
             />
@@ -63,7 +63,7 @@ export default function TabsLayout() {
         options={{
           title: 'Orders',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? 'cube' : 'cube-outline'} color={String(color)} focused={focused} />
+            <TabIcon name={focused ? 'receipt' : 'receipt-outline'} color={String(color)} focused={focused} />
           ),
         }}
       />
@@ -87,9 +87,16 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderSubtle,
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 6,
+    paddingTop: 8,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(16px)',
+        backgroundColor: 'rgba(20,20,22,0.95)',
+      } as object,
+      default: {},
+    }),
   },
   tabBarWeb: {
     width: '100%',
@@ -97,6 +104,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: fonts.bodyMedium,
     fontSize: 11,
+    marginTop: 2,
   },
   item: {
     gap: 2,
@@ -104,5 +112,11 @@ const styles = StyleSheet.create({
   iconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: 36,
+    height: 28,
+    borderRadius: radii.sm,
+  },
+  iconWrapActive: {
+    backgroundColor: colors.orangeTint,
   },
 });

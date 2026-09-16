@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, radii, shadows, spacing } from '@/constants/theme';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
 import type { Product, RentalDurationId } from '@/types';
 
@@ -8,12 +9,10 @@ interface Props {
   product: Product;
   durationId?: RentalDurationId;
   onPress?: () => void;
-  /** Add first unit to cart (Zepto/Blinkit ADD). */
   onAdd?: () => void;
   onIncrement?: () => void;
   onDecrement?: () => void;
   quantityInCart?: number;
-  /** @deprecated use onAdd */
   onRent?: () => void;
   compact?: boolean;
 }
@@ -24,16 +23,18 @@ function CartAction({
   onAdd,
   onIncrement,
   onDecrement,
+  floating,
 }: {
   quantity: number;
   productName: string;
   onAdd?: () => void;
   onIncrement?: () => void;
   onDecrement?: () => void;
+  floating?: boolean;
 }) {
   if (quantity > 0) {
     return (
-      <View style={styles.qtyWrap}>
+      <View style={[styles.qtyWrap, floating && styles.qtyWrapFloating]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Remove one ${productName}`}
@@ -62,10 +63,21 @@ function CartAction({
       accessibilityRole="button"
       accessibilityLabel={`Add ${productName} to cart`}
       onPress={onAdd}
-      style={styles.addBtn}
+      style={[styles.addBtn, floating && styles.addBtnFloating]}
     >
       <Text style={styles.addBtnText}>ADD</Text>
     </Pressable>
+  );
+}
+
+function RatingRow({ rating, count }: { rating: number; count: number }) {
+  return (
+    <View style={styles.ratingRow}>
+      <Ionicons name="star" size={11} color={colors.warning} />
+      <Text style={styles.ratingText}>
+        {rating.toFixed(1)} · {count}+
+      </Text>
+    </View>
   );
 }
 
@@ -85,16 +97,33 @@ export function ProductCard({
 
   if (compact) {
     return (
-      <Pressable accessibilityRole="button" onPress={onPress} style={styles.compact}>
-        <Image source={{ uri: product.images[0] }} style={styles.compactImage} contentFit="cover" />
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+          styles.compact,
+          (pressed || hovered) && styles.cardPressed,
+        ]}
+      >
+        <View style={styles.compactImageWrap}>
+          <Image source={{ uri: product.images[0] }} style={styles.compactImage} contentFit="cover" />
+          <View style={styles.compactEta}>
+            <Text style={styles.etaBadgeText}>{product.etaMinutes}m</Text>
+          </View>
+        </View>
         <View style={styles.compactBody}>
-          <Text style={styles.etaChip}>{product.etaMinutes} mins</Text>
+          <RatingRow rating={product.rating} count={product.reviewCount} />
           <Text style={styles.compactTitle} numberOfLines={2}>
             {product.shortName}
           </Text>
           <Text style={styles.unitChip}>1 kit · {durationId}</Text>
           <View style={styles.compactFooter}>
-            <Text style={styles.price}>{formatINR(price)}</Text>
+            <View>
+              <Text style={styles.price}>{formatINR(price)}</Text>
+              {product.compareAtPrice ? (
+                <Text style={styles.mrp}>{formatINR(product.compareAtPrice)}</Text>
+              ) : null}
+            </View>
             <CartAction
               quantity={quantityInCart}
               productName={product.shortName}
@@ -110,18 +139,37 @@ export function ProductCard({
 
   return (
     <View style={styles.card}>
-      <Pressable accessibilityRole="button" accessibilityLabel={product.name} onPress={onPress}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={product.name}
+        onPress={onPress}
+        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+          (pressed || hovered) && styles.cardPressed,
+        ]}
+      >
         <View style={styles.imageWrap}>
           <Image source={{ uri: product.images[0] }} style={styles.image} contentFit="cover" />
           <View style={styles.etaBadge}>
-            <Text style={styles.etaBadgeText}>{product.etaMinutes} mins</Text>
+            <Ionicons name="flash" size={10} color={colors.etaText} />
+            <Text style={styles.etaBadgeText}>{product.etaMinutes} min</Text>
+          </View>
+          <View style={styles.floatingAction}>
+            <CartAction
+              quantity={quantityInCart}
+              productName={product.shortName}
+              onAdd={handleAdd}
+              onIncrement={onIncrement ?? handleAdd}
+              onDecrement={onDecrement}
+              floating
+            />
           </View>
         </View>
         <View style={styles.body}>
+          <RatingRow rating={product.rating} count={product.reviewCount} />
           <Text style={styles.title} numberOfLines={2}>
             {product.shortName}
           </Text>
-          <Text style={styles.unitChip}>1 kit · {durationId}</Text>
+          <Text style={styles.unitChip}>Setup included · {durationId}</Text>
         </View>
       </Pressable>
       <View style={styles.footer}>
@@ -131,13 +179,7 @@ export function ProductCard({
             <Text style={styles.mrp}>{formatINR(product.compareAtPrice)}</Text>
           ) : null}
         </View>
-        <CartAction
-          quantity={quantityInCart}
-          productName={product.shortName}
-          onAdd={handleAdd}
-          onIncrement={onIncrement ?? handleAdd}
-          onDecrement={onDecrement}
-        />
+        {product.badge ? <Text style={styles.badge}>{product.badge}</Text> : null}
       </View>
     </View>
   );
@@ -146,49 +188,70 @@ export function ProductCard({
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     overflow: 'hidden',
     ...shadows.soft,
+    ...Platform.select({
+      web: { transition: 'transform 0.15s ease' as unknown as undefined },
+      default: {},
+    }),
   },
+  cardPressed: { opacity: 0.94 },
   imageWrap: {
     backgroundColor: colors.surfaceAlt,
     position: 'relative',
   },
-  image: { width: '100%', height: 140 },
+  image: { width: '100%', aspectRatio: 1.05 },
   etaBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: colors.etaBg,
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(10,10,11,0.72)',
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.sm,
+    paddingVertical: 4,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(74,222,128,0.25)',
   },
   etaBadgeText: {
     color: colors.etaText,
     fontFamily: fonts.bodyMedium,
-    fontSize: 11,
+    fontSize: typeScale.caption,
   },
-  body: { paddingHorizontal: spacing.md, paddingTop: spacing.md, gap: 4 },
+  floatingAction: {
+    position: 'absolute',
+    right: 10,
+    bottom: -16,
+    zIndex: 2,
+  },
+  body: { paddingHorizontal: spacing.md, paddingTop: spacing.lg, gap: 4 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  ratingText: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.caption,
+  },
   title: {
     color: colors.primaryText,
     fontFamily: fonts.bodyMedium,
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: typeScale.bodyLg,
+    lineHeight: 20,
   },
   unitChip: {
     color: colors.mutedText,
     fontFamily: fonts.body,
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: typeScale.small,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
     paddingTop: spacing.sm,
@@ -196,51 +259,69 @@ const styles = StyleSheet.create({
   price: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: 15,
+    fontSize: typeScale.title,
+    letterSpacing: -0.2,
   },
   mrp: {
     color: colors.mutedText,
     fontFamily: fonts.body,
-    fontSize: 11,
+    fontSize: typeScale.caption,
     textDecorationLine: 'line-through',
     marginTop: 1,
   },
+  badge: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.caption,
+    maxWidth: 100,
+    textAlign: 'right',
+  },
   addBtn: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.playportOrange,
-    backgroundColor: colors.orangeTint,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: radii.sm,
-    minWidth: 64,
+    minWidth: 68,
     alignItems: 'center',
+    ...shadows.soft,
+  },
+  addBtnFloating: {
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.playportOrange,
+    ...shadows.glow,
   },
   addBtnText: {
     color: colors.playportOrange,
     fontFamily: fonts.heading,
-    fontSize: 13,
-    letterSpacing: 0.6,
+    fontSize: typeScale.body,
+    letterSpacing: 0.8,
   },
   qtyWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.playportOrange,
     backgroundColor: colors.orangeTint,
     borderRadius: radii.sm,
-    minWidth: 88,
-    height: 32,
+    minWidth: 92,
+    height: 34,
+  },
+  qtyWrapFloating: {
+    backgroundColor: colors.surfaceRaised,
+    ...shadows.glow,
   },
   qtyBtn: {
-    width: 28,
-    height: 32,
+    width: 30,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
   qtyBtnText: {
     color: colors.playportOrange,
     fontFamily: fonts.heading,
-    fontSize: 16,
+    fontSize: 17,
     lineHeight: 18,
   },
   qtyValue: {
@@ -248,41 +329,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: colors.playportOrange,
     fontFamily: fonts.heading,
-    fontSize: 13,
+    fontSize: typeScale.body,
   },
   compact: {
     width: '100%',
     flexDirection: 'row',
     gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
+    ...shadows.soft,
   },
+  compactImageWrap: { position: 'relative' },
   compactImage: {
-    width: 84,
-    height: 84,
-    borderRadius: radii.sm,
+    width: 96,
+    height: 96,
+    borderRadius: radii.md,
     backgroundColor: colors.surfaceAlt,
   },
-  compactBody: { flex: 1, gap: 2 },
+  compactEta: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: 'rgba(10,10,11,0.75)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.xs,
+  },
+  compactBody: { flex: 1, gap: 3 },
   compactTitle: {
     color: colors.primaryText,
     fontFamily: fonts.bodyMedium,
-    fontSize: 14,
-    lineHeight: 19,
-  },
-  etaChip: {
-    color: colors.etaText,
-    fontFamily: fonts.bodyMedium,
-    fontSize: 11,
-    marginBottom: 2,
+    fontSize: typeScale.bodyLg,
+    lineHeight: 20,
   },
   compactFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 6,
+    marginTop: 8,
   },
 });

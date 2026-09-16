@@ -4,7 +4,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LOCATION_LABEL, HUB } from '@/data/mock';
 import { useAppStore, useCartCount } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
-import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { colors, fonts, layout, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 
 interface Props {
@@ -17,7 +17,7 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
   const cartCount = useCartCount();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const hub = useCatalogStore((s) => s.hub);
-  const { horizontalPadding, contentWidth, isDesktop, isTablet } = useResponsive();
+  const { horizontalPadding, contentWidth, isDesktop } = useResponsive();
   const locationLabel = hub?.city ? hub.city : LOCATION_LABEL;
   const eta = hub?.etaMinutes ?? HUB.etaMinutes;
 
@@ -30,6 +30,7 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
             paddingHorizontal: horizontalPadding,
             maxWidth: contentWidth,
             width: '100%',
+            minHeight: layout.headerHeight,
           },
         ]}
       >
@@ -39,39 +40,49 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
               accessibilityRole="button"
               accessibilityLabel="Change delivery location"
               onPress={() => router.push('/address')}
-              style={styles.locationBlock}
+              style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                styles.locationBlock,
+                (pressed || hovered) && styles.pressed,
+              ]}
             >
-              <View style={styles.etaRow}>
-                <View style={styles.etaPill}>
-                  <Text style={styles.etaPillText}>{eta} mins</Text>
+              <View style={styles.topRow}>
+                <View style={styles.brandRow}>
+                  <Text style={styles.brandMark}>Play</Text>
+                  <Text style={styles.brandAccent}>Port</Text>
                 </View>
-                {!isAuthenticated ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => router.push('/(auth)/login')}
-                    hitSlop={8}
-                  >
-                    <Text style={styles.loginLink}>Log in</Text>
-                  </Pressable>
-                ) : null}
+                <View style={styles.etaPill}>
+                  <Ionicons name="flash" size={11} color={colors.etaText} />
+                  <Text style={styles.etaPillText}>{eta} min</Text>
+                </View>
               </View>
+
               {showLocation ? (
                 <View style={styles.locationRow}>
-                  <Text
-                    style={[styles.locationText, (isTablet || isDesktop) && styles.locationTextWide]}
-                    numberOfLines={1}
-                  >
-                    Delivery to {locationLabel}
+                  <Ionicons name="location" size={13} color={colors.playportOrange} />
+                  <Text style={[styles.locationText, isDesktop && styles.locationTextWide]} numberOfLines={1}>
+                    {locationLabel}
                   </Text>
-                  <Ionicons name="chevron-down" size={14} color={colors.primaryText} />
+                  <Ionicons name="chevron-down" size={13} color={colors.mutedText} />
                 </View>
               ) : (
-                <Text style={[styles.brandText, isDesktop && styles.brandTextLg]}>PlayPort</Text>
+                <Text style={styles.tagline}>Entertainment on demand</Text>
               )}
             </Pressable>
           </View>
 
           <View style={styles.right}>
+            {!isAuthenticated ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/(auth)/login')}
+                style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                  styles.loginBtn,
+                  (pressed || hovered) && styles.pressed,
+                ]}
+              >
+                <Text style={styles.loginText}>Login</Text>
+              </Pressable>
+            ) : null}
             {rightSlot}
             {showCart ? (
               <Pressable
@@ -83,7 +94,7 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
                   (pressed || hovered) && styles.pressed,
                 ]}
               >
-                <Ionicons name="bag-handle-outline" size={22} color={colors.primaryText} />
+                <Ionicons name="bag-outline" size={21} color={colors.primaryText} />
                 {cartCount > 0 ? (
                   <View style={styles.badge}>
                     <Text style={styles.badgeText}>{cartCount > 9 ? '9+' : cartCount}</Text>
@@ -101,14 +112,22 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
 const styles = StyleSheet.create({
   outer: {
     width: '100%',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.page,
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.borderSubtle,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(12px)',
+        backgroundColor: 'rgba(10,10,11,0.92)',
+      } as object,
+      default: {},
+    }),
   },
   wrap: {
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
+    justifyContent: 'center',
   },
   row: {
     flexDirection: 'row',
@@ -118,49 +137,79 @@ const styles = StyleSheet.create({
   },
   left: { flex: 1, minWidth: 0 },
   locationBlock: { gap: 4 },
-  etaRow: {
+  pressed: { opacity: 0.85 },
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
   },
+  brandRow: { flexDirection: 'row', alignItems: 'baseline' },
+  brandMark: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.title,
+    letterSpacing: -0.3,
+  },
+  brandAccent: {
+    color: colors.playportOrange,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.title,
+    letterSpacing: -0.3,
+  },
   etaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: colors.etaBg,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.sm,
+    paddingVertical: 4,
+    borderRadius: radii.full,
   },
   etaPillText: {
     color: colors.etaText,
-    fontFamily: fonts.heading,
-    fontSize: 12,
-  },
-  loginLink: {
-    color: colors.playportOrange,
     fontFamily: fonts.bodyMedium,
-    fontSize: 13,
+    fontSize: typeScale.caption,
   },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   locationText: {
-    color: colors.primaryText,
-    fontFamily: fonts.heading,
-    fontSize: 15,
-    maxWidth: 220,
+    color: colors.secondaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.small,
+    maxWidth: 180,
     flexShrink: 1,
   },
-  locationTextWide: { maxWidth: 360 },
-  brandText: {
-    color: colors.primaryText,
-    fontFamily: fonts.heading,
-    fontSize: 18,
+  locationTextWide: { maxWidth: 320 },
+  tagline: {
+    color: colors.mutedText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
   },
-  brandTextLg: { fontSize: 20 },
   right: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  loginBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
+    ...Platform.select({
+      web: { cursor: 'pointer' as unknown as undefined },
+      default: {},
+    }),
+  },
+  loginText: {
+    color: colors.primaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.small,
+  },
   cartBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceAlt,
+    width: 42,
+    height: 42,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
@@ -168,18 +217,19 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  pressed: { opacity: 0.85 },
   badge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: colors.playportOrange,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: colors.page,
   },
   badgeText: { color: colors.white, fontSize: 10, fontFamily: fonts.bodyMedium },
 });

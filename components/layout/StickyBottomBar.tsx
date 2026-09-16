@@ -44,12 +44,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderSubtle,
     backgroundColor: colors.surface,
     alignItems: 'center',
     ...Platform.select({
       web: {
-        boxShadow: '0 -4px 20px rgba(0,0,0,0.35)',
+        boxShadow: '0 -8px 32px rgba(0,0,0,0.45)',
+        backdropFilter: 'blur(16px)',
+        backgroundColor: 'rgba(20,20,22,0.95)',
       } as object,
       default: {},
     }),

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, spacing } from '@/constants/theme';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 
 interface Props {
@@ -41,20 +41,35 @@ export function ScreenHeader({ title, subtitle, onBack, right }: Props) {
 }
 
 const styles = StyleSheet.create({
-  outer: { width: '100%', alignItems: 'center' },
-  wrap: { paddingVertical: spacing.sm },
+  outer: {
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: colors.page,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderSubtle,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(12px)',
+        backgroundColor: 'rgba(10,10,11,0.92)',
+      } as object,
+      default: {},
+    }),
+  },
+  wrap: { paddingVertical: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center' },
   back: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceAlt,
+    width: 42,
+    height: 42,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backSpacer: { width: 40, height: 40 },
+  backSpacer: { width: 42, height: 42 },
   center: { flex: 1, paddingHorizontal: spacing.sm, minWidth: 0 },
-  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
-  subtitle: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
-  right: { minWidth: 40, alignItems: 'flex-end' },
+  title: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.title },
+  subtitle: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, marginTop: 2 },
+  right: { minWidth: 42, alignItems: 'flex-end' },
 });

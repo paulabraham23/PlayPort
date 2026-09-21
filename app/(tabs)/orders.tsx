@@ -114,7 +114,7 @@ export default function OrdersScreen() {
                 : 'Completed rentals will show up here.'
             }
             actionLabel="Browse kits"
-            onAction={() => router.push('/(tabs)/explore')}
+            onAction={() => router.push('/(tabs)')}
           />
         ) : (
           <ResponsiveGrid columns={orderColumns} gap={gap}>
@@ -124,7 +124,7 @@ export default function OrdersScreen() {
                 order={order}
                 onPress={() => router.push(`/order/${order.id}`)}
                 onTrack={() => router.push(`/order/track/${order.id}`)}
-                onRentAgain={() => router.push('/(tabs)/explore')}
+                onRentAgain={() => router.push('/(tabs)')}
               />
             ))}
           </ResponsiveGrid>

@@ -18,7 +18,14 @@ export function formatFunctionsError(err: unknown): string {
     message.includes('NOT_FOUND') ||
     message.includes('Failed to fetch')
   ) {
-    return 'Checkout server is not live yet (Firebase Blaze upgrade pending). Browse, cart, and addresses still work — try again after Functions are deployed, or use local emulators for testing.';
+    return 'Checkout server is temporarily unreachable. Browse, cart, and addresses still work — try again in a moment.';
+  }
+  if (
+    code === 'functions/permission-denied' ||
+    message.includes('PERMISSION_DENIED') ||
+    message.includes('403')
+  ) {
+    return 'Checkout is deployed but not publicly invokable yet. An Owner needs to allow unauthenticated invoke on the Cloud Functions (one-time IAM).';
   }
   if (code === 'functions/deadline-exceeded' || message.includes('hold expired')) {
     return 'Your payment window expired. Start checkout again.';

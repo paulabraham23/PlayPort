@@ -9,43 +9,62 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    // Editor/ops fallback: email allowlist + known ops phones until claims are universal
+    function isOps() {
+      return isAdmin()
+        || (signedIn() && request.auth.token.email == 'paulabraham.net@gmail.com')
+        || (signedIn()
+          && request.auth.token.phone_number is string
+          && request.auth.token.phone_number.matches('.*9346577926$'));
+    }
+
+    function isRiderDoc() {
+      return signedIn() && exists(/databases/$(database)/documents/riders/$(request.auth.uid));
+    }
+
+    function isActiveRider() {
+      return isRiderDoc()
+        && get(/databases/$(database)/documents/riders/$(request.auth.uid)).data.active == true;
+    }
+
     match /categories/{id} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isOps();
     }
     match /products/{id} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isOps();
     }
     match /experiences/{id} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isOps();
     }
     match /hubs/{id} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isOps();
     }
 
-    // Physical units — public read for availability UI; mutations via Functions only
     match /inventory_units/{id} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isOps();
     }
 
-    // Time-window reservations — no client writes; limited read for own orders' context
     match /inventory_reservations/{id} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow write: if false;
+      allow read: if isOps() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow write: if isOps();
     }
 
-    // Legacy aggregate inventory (if present) — read only, not SoT
     match /inventory/{id} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isOps();
     }
 
     match /payments/{id} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow read: if isOps() || (signedIn() && resource.data.userId == request.auth.uid);
       allow write: if false;
     }
 
@@ -56,14 +75,14 @@ service cloud.firestore {
         && request.resource.data.rating is number
         && request.resource.data.rating >= 1
         && request.resource.data.rating <= 5;
-      allow update, delete: if false;
+      allow update, delete: if isOps();
     }
 
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if isOwner(userId) || isOps();
 
       match /addresses/{addressId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) || isOps();
       }
 
       match /cart/{itemId} {
@@ -71,14 +90,46 @@ service cloud.firestore {
       }
 
       match /notifications/{notificationId} {
-        allow read, update: if isOwner(userId);
-        allow create, delete: if false;
+        allow read, update: if isOwner(userId) || isOps();
+        allow create: if isOps() || isActiveRider();
+        allow delete: if isOps();
       }
     }
 
     match /orders/{orderId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create, update, delete: if false;
+      allow read: if isOps()
+        || isActiveRider()
+        || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isOps();
+      allow delete: if isOps();
+      allow update: if isOps()
+        || (isActiveRider() && (
+          // Claim an unassigned paid job
+          (
+            resource.data.riderId == null
+            && request.resource.data.riderId == request.auth.uid
+            && resource.data.status in ['confirmed', 'preparing']
+            && resource.data.paymentStatus == 'paid'
+          )
+          // Or update own assigned job
+          || resource.data.riderId == request.auth.uid
+        ));
+    }
+
+    match /riders/{riderId} {
+      allow read: if isOps()
+        || (signedIn() && request.auth.uid == riderId);
+      allow create, delete: if isOps();
+      allow update: if isOps()
+        || (signedIn()
+          && request.auth.uid == riderId
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['lastSeenAt', 'updatedAt', 'uid']));
+    }
+
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isOps();
     }
   }
 }

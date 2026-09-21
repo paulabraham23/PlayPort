@@ -33,6 +33,7 @@ export default function PaymentScreen() {
   const placeOrder = useAppStore((s) => s.placeOrder);
   const paymentError = useAppStore((s) => s.paymentError);
   const clearPaymentError = useAppStore((s) => s.clearPaymentError);
+  const pendingOrderId = useAppStore((s) => s.pendingOrderId);
   const totals = useCartTotals();
   const [paying, setPaying] = useState(false);
   const [displayTotal, setDisplayTotal] = useState(totals.total);
@@ -73,7 +74,7 @@ export default function PaymentScreen() {
     );
   }
 
-  if (!cart.length && !paymentError && !paying) {
+  if (!cart.length && !paymentError && !paying && !pendingOrderId) {
     return (
       <Screen showHeader={false} narrow>
         <ScreenHeader title="Payment" onBack={() => router.back()} />
@@ -81,7 +82,7 @@ export default function PaymentScreen() {
           title="Cart is empty"
           subtitle="Add gear before paying."
           actionLabel="Explore"
-          onAction={() => router.replace('/(tabs)/explore')}
+          onAction={() => router.replace('/(tabs)')}
         />
       </Screen>
     );
@@ -151,7 +152,7 @@ export default function PaymentScreen() {
         <View style={styles.summary}>
           <Text style={styles.summaryTitle}>Order total</Text>
           <Text style={styles.summaryTotal}>{formatINR(amount)}</Text>
-          <Text style={styles.summaryNote}>Taxes included · Zero deposit</Text>
+          <Text style={styles.summaryNote}>Taxes included · pay only what you see</Text>
         </View>
 
         {paymentError ? (

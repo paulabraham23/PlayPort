@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -11,14 +11,37 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { ensureLoggedIn } from '@/utils/authGate';
+import { formatFunctionsError } from '@/utils/functionsError';
 
 export default function ReturnOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { horizontalPadding } = useResponsive();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const orders = useAppStore((s) => s.orders);
   const completeReturn = useAppStore((s) => s.completeReturn);
   const order = useMemo(() => orders.find((o) => o.id === id), [orders, id]);
   const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) ensureLoggedIn(`/order/return/${id}`);
+  }, [isAuthenticated, id]);
+
+  if (!isAuthenticated) {
+    return (
+      <Screen showHeader={false} narrow>
+        <ScreenHeader title="Return" onBack={() => router.back()} />
+        <EmptyState
+          title="Log in required"
+          subtitle="Sign in to complete your return."
+          actionLabel="Log in"
+          onAction={() => ensureLoggedIn(`/order/return/${id}`)}
+        />
+      </Screen>
+    );
+  }
 
   if (!order) {
     return (
@@ -66,6 +89,20 @@ export default function ReturnOrderScreen() {
   const deadline =
     order.items[0]?.returnLabel ?? 'Scheduled pickup at end of your rental window';
 
+  const onConfirm = async () => {
+    if (!id || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await completeReturn(id);
+      setDone(true);
+    } catch (e) {
+      setError(formatFunctionsError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Screen showHeader={false} narrow>
       <ScreenHeader title="Complete Return" subtitle={`#${order.id}`} onBack={() => router.back()} />
@@ -111,14 +148,14 @@ export default function ReturnOrderScreen() {
           </View>
         </Card>
 
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
         <Button
-          title="Confirm completion"
+          title={busy ? 'Confirming…' : 'Confirm completion'}
           fullWidth
+          disabled={busy}
           icon={<Ionicons name="checkmark" size={18} color={colors.white} />}
-          onPress={() => {
-            if (id) void completeReturn(id);
-            setDone(true);
-          }}
+          onPress={() => void onConfirm()}
         />
       </ScrollView>
     </Screen>
@@ -128,12 +165,12 @@ export default function ReturnOrderScreen() {
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.lg, paddingTop: spacing.sm },
   sectionTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 18 },
-  list: { gap: spacing.md },
+  list: { gap: spacing.sm },
   item: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   image: { width: 56, height: 56, borderRadius: radii.sm },
-  name: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
+  name: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
   meta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
-  badge: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 11 },
+  badge: { color: colors.playportOrange, fontFamily: fonts.body, fontSize: 11 },
   instructions: { gap: spacing.sm },
   instrHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   instrTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 15 },
@@ -143,26 +180,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
-  deadline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    borderColor: colors.warning,
-  },
+  deadline: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   deadlineLabel: {
     color: colors.mutedText,
-    fontFamily: fonts.mono,
+    fontFamily: fonts.monoMedium,
     fontSize: 10,
-    letterSpacing: 0.6,
+    letterSpacing: 1,
   },
   deadlineValue: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 14 },
+  error: { color: colors.danger, fontFamily: fonts.body, fontSize: 13, lineHeight: 18 },
   successWrap: {
     flex: 1,
     justifyContent: 'center',
-    gap: spacing.md,
+    gap: spacing.lg,
     paddingBottom: spacing.xxxl,
   },
-  successIcon: { alignItems: 'center', marginBottom: spacing.sm },
+  successIcon: { alignItems: 'center' },
   successTitle: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
@@ -175,6 +208,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
-    marginBottom: spacing.md,
   },
 });

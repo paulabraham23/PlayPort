@@ -63,12 +63,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="combos"
         options={{
-          title: 'Explore',
+          title: 'Combos',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              name={focused ? 'grid' : 'grid-outline'}
+              name={focused ? 'layers' : 'layers-outline'}
               color={String(color)}
               focused={focused}
             />

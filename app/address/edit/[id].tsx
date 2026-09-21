@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -12,13 +12,16 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { PlacesAutocomplete } from '@/components/address/PlacesAutocomplete';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
+import type { ResolvedPlaceAddress } from '@/lib/places';
 import { useAppStore } from '@/store/appStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 import type { Address } from '@/types';
 
 const TYPES: Address['type'][] = ['home', 'work', 'other'];
@@ -26,6 +29,7 @@ const TYPES: Address['type'][] = ['home', 'work', 'other'];
 export default function EditAddressScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { horizontalPadding } = useResponsive();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const addresses = useAppStore((s) => s.addresses);
   const updateAddress = useAppStore((s) => s.updateAddress);
   const deleteAddress = useAppStore((s) => s.deleteAddress);
@@ -44,6 +48,41 @@ export default function EditAddressScreen() {
   const [phone, setPhone] = useState(existing?.phone ?? '');
   const [instructions, setInstructions] = useState(existing?.instructions ?? '');
   const [isDefault, setIsDefault] = useState(existing?.isDefault ?? false);
+  const [hydrated, setHydrated] = useState(Boolean(existing));
+
+  useEffect(() => {
+    if (!isAuthenticated) ensureLoggedIn(`/address/edit/${id}`);
+  }, [isAuthenticated, id]);
+
+  useEffect(() => {
+    if (!existing || hydrated) return;
+    setLabel(existing.label);
+    setType(existing.type);
+    setLine1(existing.line1);
+    setLine2(existing.line2 ?? '');
+    setArea(existing.area);
+    setCity(existing.city);
+    setPincode(existing.pincode);
+    setContactName(existing.contactName);
+    setPhone(existing.phone);
+    setInstructions(existing.instructions ?? '');
+    setIsDefault(existing.isDefault);
+    setHydrated(true);
+  }, [existing, hydrated]);
+
+  if (!isAuthenticated) {
+    return (
+      <Screen showHeader={false} narrow>
+        <ScreenHeader title="Edit Address" onBack={() => router.back()} />
+        <EmptyState
+          title="Log in required"
+          subtitle="Sign in to edit this address."
+          actionLabel="Log in"
+          onAction={() => ensureLoggedIn(`/address/edit/${id}`)}
+        />
+      </Screen>
+    );
+  }
 
   if (!existing) {
     return (
@@ -68,6 +107,14 @@ export default function EditAddressScreen() {
     pincode.trim().length >= 6 &&
     contactName.trim() &&
     phone.trim().length >= 10;
+
+  const onPlaceSelected = (place: ResolvedPlaceAddress) => {
+    if (place.line1) setLine1(place.line1);
+    if (place.line2) setLine2(place.line2);
+    if (place.area) setArea(place.area);
+    if (place.city) setCity(place.city);
+    if (place.pincode) setPincode(place.pincode.replace(/\D/g, '').slice(0, 6));
+  };
 
   const onSave = () => {
     if (!canSave || !id) return;
@@ -116,6 +163,8 @@ export default function EditAddressScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
         >
+          <PlacesAutocomplete onPlaceSelected={onPlaceSelected} />
+
           <Field label="Label" value={label} onChangeText={setLabel} placeholder="Home, Studio…" />
 
           <Text style={styles.fieldLabel}>Type</Text>

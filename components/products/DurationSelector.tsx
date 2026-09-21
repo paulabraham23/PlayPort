@@ -1,104 +1,175 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
-import { DURATIONS } from '@/data/mock';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
-import type { Product, RentalDurationId } from '@/types';
+import { normalizeProduct } from '@/utils/rentalPricing';
+import type { Product, PricingMode } from '@/types';
 
 interface Props {
   product: Product;
-  value: RentalDurationId;
-  onChange: (id: RentalDurationId) => void;
+  mode: PricingMode;
+  planId: string;
+  hourlyHours: number;
+  onModeChange: (mode: PricingMode) => void;
+  onPlanChange: (planId: string) => void;
+  onHourlyHoursChange: (hours: number) => void;
 }
 
-const ICONS: Record<RentalDurationId, keyof typeof Ionicons.glyphMap> = {
-  '6h': 'time-outline',
-  '12h': 'moon-outline',
-  '24h': 'sunny-outline',
-  weekend: 'calendar-outline',
-};
+export function DurationSelector({
+  product,
+  mode,
+  planId,
+  hourlyHours,
+  onModeChange,
+  onPlanChange,
+  onHourlyHoursChange,
+}: Props) {
+  const p = normalizeProduct(product);
+  const plans = p.plans;
+  const hourly = p.hourly;
+  const maxHours = hourly?.maxHours ?? 24;
 
-export function DurationSelector({ product, value, onChange }: Props) {
   return (
-    <View style={styles.grid}>
-      {DURATIONS.map((d) => {
-        const selected = value === d.id;
-        return (
+    <View style={styles.wrap}>
+      {hourly?.enabled ? (
+        <View style={styles.modeRow}>
           <Pressable
-            key={d.id}
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
-            onPress={() => onChange(d.id)}
-            style={[styles.card, selected && styles.selected]}
+            onPress={() => onModeChange('package')}
+            style={[styles.modeChip, mode === 'package' && styles.modeChipOn]}
           >
-            {d.popular ? (
-              <View style={styles.popular}>
-                <Text style={styles.popularText}>Popular</Text>
-              </View>
-            ) : null}
-            <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
-              <Ionicons
-                name={ICONS[d.id]}
-                size={18}
-                color={selected ? colors.playportOrange : colors.secondaryText}
-              />
-            </View>
-            <Text style={styles.label}>{d.label}</Text>
-            <Text style={[styles.price, selected && styles.priceSelected]}>
-              {formatINR(product.priceByDuration[d.id])}
-            </Text>
-            <Text style={styles.desc}>{d.description}</Text>
+            <Text style={[styles.modeText, mode === 'package' && styles.modeTextOn]}>Packages</Text>
           </Pressable>
-        );
-      })}
+          <Pressable
+            onPress={() => onModeChange('hourly')}
+            style={[styles.modeChip, mode === 'hourly' && styles.modeChipOn]}
+          >
+            <Text style={[styles.modeText, mode === 'hourly' && styles.modeTextOn]}>Hourly</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {mode === 'hourly' && hourly?.enabled ? (
+        <View style={styles.hourlyCard}>
+          <Text style={styles.hourlyTitle}>Hourly plan</Text>
+          <Text style={styles.hourlyMeta}>
+            {formatINR(hourly.firstHourPrice)} first hour · {formatINR(hourly.extraHourPrice)} each
+            extra
+          </Text>
+          <View style={styles.stepper}>
+            <Pressable
+              onPress={() => onHourlyHoursChange(Math.max(1, hourlyHours - 1))}
+              style={styles.stepBtn}
+            >
+              <Ionicons name="remove" size={18} color={colors.primaryText} />
+            </Pressable>
+            <Text style={styles.stepValue}>{hourlyHours}h</Text>
+            <Pressable
+              onPress={() => onHourlyHoursChange(Math.min(maxHours, hourlyHours + 1))}
+              style={styles.stepBtn}
+            >
+              <Ionicons name="add" size={18} color={colors.primaryText} />
+            </Pressable>
+          </View>
+          <Text style={styles.note}>Extended hourly cannot convert to package prices later.</Text>
+        </View>
+      ) : (
+        <View style={styles.grid}>
+          {plans.map((d) => {
+            const active = planId === d.id;
+            return (
+              <Pressable
+                key={d.id}
+                onPress={() => {
+                  onModeChange('package');
+                  onPlanChange(d.id);
+                }}
+                style={[styles.card, active && styles.cardActive]}
+              >
+                {d.popular ? (
+                  <View style={styles.popular}>
+                    <Text style={styles.popularText}>Popular</Text>
+                  </View>
+                ) : null}
+                <Text style={[styles.label, active && styles.labelActive]}>{d.label}</Text>
+                <Text style={[styles.price, active && styles.priceActive]}>
+                  {formatINR(d.price)}
+                </Text>
+                <Text style={styles.hours}>{d.hours}h session</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  card: {
-    width: '48%',
-    flexGrow: 1,
-    minWidth: 140,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radii.lg,
-    borderWidth: 1.5,
-    borderColor: colors.borderSubtle,
-    padding: spacing.md,
-    gap: 6,
+  wrap: { gap: spacing.sm },
+  modeRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  modeChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  selected: {
+  modeChipOn: {
     borderColor: colors.playportOrange,
     backgroundColor: colors.orangeTint,
-    ...shadows.glow,
+  },
+  modeText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  modeTextOn: { color: colors.playportOrange },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  card: {
+    width: '47%',
+    flexGrow: 1,
+    minWidth: 140,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: 4,
+  },
+  cardActive: {
+    borderColor: colors.playportOrange,
+    backgroundColor: colors.orangeTint,
   },
   popular: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
+    alignSelf: 'flex-start',
     backgroundColor: colors.playportOrange,
     borderRadius: radii.full,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 2,
+    marginBottom: 4,
   },
-  popularText: {
-    color: colors.white,
-    fontSize: 9,
-    fontFamily: fonts.bodyMedium,
-    letterSpacing: 0.3,
+  popularText: { color: '#fff', fontSize: 10, fontFamily: fonts.heading },
+  label: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
+  labelActive: { color: colors.playportOrange },
+  price: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },
+  priceActive: { color: colors.playportOrange },
+  hours: { color: colors.mutedText, fontSize: 12, fontFamily: fonts.body },
+  hourlyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: 8,
   },
-  iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: radii.sm,
+  hourlyTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 16 },
+  hourlyMeta: { color: colors.secondaryText, fontSize: 13 },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 4 },
+  stepBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapSelected: { backgroundColor: colors.orangeTintStrong },
-  label: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body, marginTop: 2 },
-  price: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.title },
-  priceSelected: { color: colors.playportOrange },
-  desc: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.caption, lineHeight: 15 },
+  stepValue: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20, minWidth: 48, textAlign: 'center' },
+  note: { color: colors.mutedText, fontSize: 11, fontFamily: fonts.body, marginTop: 4 },
 });

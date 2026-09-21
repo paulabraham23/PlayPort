@@ -53,7 +53,7 @@ export function AmbientGlow() {
   }, [a, b, c]);
 
   const orbA = useAnimatedStyle(() => ({
-    opacity: 0.14 + a.value * 0.1,
+    opacity: 0.08 + a.value * 0.06,
     transform: [
       { translateX: a.value * 40 - 20 },
       { translateY: a.value * 28 - 14 },

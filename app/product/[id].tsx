@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
@@ -14,12 +14,21 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
-import { PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
-import type { RentalDurationId } from '@/types';
+import {
+  addonsTotal,
+  computeAddonLines,
+  defaultPlan,
+  kitUnitPrice,
+  normalizeProduct,
+  priceForAddon,
+  resolveHours,
+} from '@/utils/rentalPricing';
+import type { PricingMode } from '@/types';
 
 const FLOW_STEPS = [
   {
@@ -40,32 +49,50 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { horizontalPadding, useSplitPane, productColumns, gap } = useResponsive();
   const stickyPad = useStickyBarPadding();
-  const [durationId, setDurationId] = useState<RentalDurationId>('12h');
-  const [wishlisted, setWishlisted] = useState(false);
   const reviews = useAppStore((s) => s.reviews);
   const cart = useAppStore((s) => s.cart);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
+  const products = useCatalogStore((s) => s.products);
 
-  const product = PRODUCTS.find((p) => p.id === id);
+  const product = products.find((p) => p.id === id);
+  const normalized = product ? normalizeProduct(product) : null;
+  const initialPlan = product ? defaultPlan(product) : null;
+
+  const [mode, setMode] = useState<PricingMode>('package');
+  const [planId, setPlanId] = useState(initialPlan?.id ?? '12h');
+  const [hourlyHours, setHourlyHours] = useState(1);
+  const [addonQty, setAddonQty] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!product) return;
+    const plan = defaultPlan(product);
+    setPlanId(plan?.id ?? product.plans?.[0]?.id ?? '12h');
+    setMode('package');
+    setHourlyHours(1);
+    setAddonQty({});
+  }, [product?.id]);
+
   const productReviews = useMemo(
     () => reviews.filter((r) => r.productId === product?.id),
     [reviews, product?.id]
   );
   const related = useMemo(
     () =>
-      PRODUCTS.filter(
-        (p) => p.categoryId === product?.categoryId && p.id !== product?.id && p.id !== 'screen-addon'
-      ).slice(0, 4),
-    [product]
+      products
+        .filter(
+          (p) =>
+            p.categoryId === product?.categoryId && p.id !== product?.id && p.id !== 'screen-addon'
+        )
+        .slice(0, 4),
+    [product, products]
   );
 
   const qtyFor = (productId: string) =>
     cart.filter((c) => c.productId === productId).reduce((sum, c) => sum + c.quantity, 0);
-  const cartItemIdFor = (productId: string) =>
-    cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
+  const cartItemIdFor = (productId: string) => cart.find((c) => c.productId === productId)?.id;
 
-  if (!product) {
+  if (!product || !normalized) {
     return (
       <Screen showHeader={false}>
         <ScreenHeader title="Item Detail" onBack={() => router.back()} />
@@ -73,15 +100,24 @@ export default function ProductDetailScreen() {
           title="Product not found"
           subtitle="This kit may have moved hubs."
           actionLabel="Explore"
-          onAction={() => router.replace('/(tabs)/explore')}
+          onAction={() => router.replace('/(tabs)')}
         />
       </Screen>
     );
   }
 
-  const price = product.priceByDuration[durationId];
+  const hours = resolveHours(normalized, mode, planId, hourlyHours);
+  const kitPrice = kitUnitPrice(normalized, mode, planId, hours);
+  const selectedAddons = Object.entries(addonQty)
+    .filter(([, q]) => q > 0)
+    .map(([addonId, quantity]) => ({ id: addonId, quantity }));
+  const addonLines = computeAddonLines(normalized, hours, selectedAddons);
+  const extras = addonsTotal(addonLines);
+  const lineTotal = kitPrice + extras;
   const durationLabel =
-    durationId === 'weekend' ? 'Weekend' : durationId === '12h' ? '12 Hours' : durationId === '24h' ? '24 Hours' : '6 Hours';
+    mode === 'hourly'
+      ? `${hours}h hourly`
+      : normalized.plans.find((p) => p.id === planId)?.label ?? planId;
 
   const heroBlock = (
     <View style={[styles.hero, useSplitPane && styles.heroSplit]}>
@@ -93,18 +129,6 @@ export default function ProductDetailScreen() {
           backgroundColor={colors.etaBg}
           left={<Ionicons name="flash" size={12} color={colors.etaText} />}
         />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Toggle wishlist"
-          onPress={() => setWishlisted((w) => !w)}
-          style={styles.heart}
-        >
-          <Ionicons
-            name={wishlisted ? 'heart' : 'heart-outline'}
-            size={20}
-            color={wishlisted ? colors.badgeRed : colors.white}
-          />
-        </Pressable>
       </View>
       <View style={styles.heroBottom}>
         <View style={styles.sanitizePill}>
@@ -137,9 +161,9 @@ export default function ProductDetailScreen() {
       <Text style={[styles.title, useSplitPane && styles.titleLg]}>{product.name}</Text>
       <Text style={styles.desc}>{product.description}</Text>
       <View style={styles.pricePreview}>
-        <Text style={styles.pricePreviewLabel}>From</Text>
+        <Text style={styles.pricePreviewLabel}>Selected</Text>
         <Text style={styles.pricePreviewValue}>
-          {formatINR(price)} / {durationLabel}
+          {formatINR(lineTotal)} / {durationLabel}
         </Text>
       </View>
     </View>
@@ -150,7 +174,10 @@ export default function ProductDetailScreen() {
       <ScreenHeader title="Item Detail" onBack={() => router.back()} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad },
+        ]}
       >
         <View style={[styles.topBlock, useSplitPane && styles.topBlockSplit]}>
           {heroBlock}
@@ -159,11 +186,65 @@ export default function ProductDetailScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionTop}>
-            <SectionHeader eyebrow="Duration" title="Select rental duration" />
+            <SectionHeader eyebrow="Duration" title="Select rental plan" />
             <Text style={styles.metaLabel}>FREE SETUP</Text>
           </View>
-          <DurationSelector product={product} value={durationId} onChange={setDurationId} />
+          <DurationSelector
+            product={normalized}
+            mode={mode}
+            planId={planId}
+            hourlyHours={hourlyHours}
+            onModeChange={setMode}
+            onPlanChange={setPlanId}
+            onHourlyHoursChange={setHourlyHours}
+          />
         </View>
+
+        {(normalized.addons?.length ?? 0) > 0 ? (
+          <View style={styles.section}>
+            <SectionHeader eyebrow="Add-ons" title="Optional extras" />
+            {normalized.addons!.map((addon) => {
+              const qty = addonQty[addon.id] ?? 0;
+              const unitPreview = priceForAddon(addon, hours, 1);
+              return (
+                <View key={addon.id} style={styles.addonRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.addonName}>{addon.name}</Text>
+                    {addon.description ? (
+                      <Text style={styles.addonDesc}>{addon.description}</Text>
+                    ) : null}
+                    <Text style={styles.addonPrice}>{formatINR(unitPreview)} each</Text>
+                  </View>
+                  <View style={styles.stepper}>
+                    <Pressable
+                      onPress={() =>
+                        setAddonQty((prev) => ({
+                          ...prev,
+                          [addon.id]: Math.max(0, (prev[addon.id] ?? 0) - 1),
+                        }))
+                      }
+                      style={styles.stepBtn}
+                    >
+                      <Ionicons name="remove" size={16} color={colors.primaryText} />
+                    </Pressable>
+                    <Text style={styles.stepValue}>{qty}</Text>
+                    <Pressable
+                      onPress={() =>
+                        setAddonQty((prev) => ({
+                          ...prev,
+                          [addon.id]: Math.min(addon.maxQuantity, (prev[addon.id] ?? 0) + 1),
+                        }))
+                      }
+                      style={styles.stepBtn}
+                    >
+                      <Ionicons name="add" size={16} color={colors.primaryText} />
+                    </Pressable>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
 
         <View style={styles.section}>
           <View style={styles.sectionTop}>
@@ -207,13 +288,13 @@ export default function ProductDetailScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionTop}>
-            <SectionHeader eyebrow="Reviews" title="Verified by renters" />
+            <SectionHeader eyebrow="Reviews" title="Customer reviews" />
             <Text style={styles.metaLabel}>{product.rating.toFixed(1)} / 5</Text>
           </View>
           <View style={styles.ratingCard}>
             <Text style={styles.bigRating}>{product.rating.toFixed(2)}</Text>
             <Text style={styles.stars}>★★★★★</Text>
-            <Text style={styles.reviewCount}>{product.reviewCount}+ verified sessions</Text>
+            <Text style={styles.reviewCount}>{product.reviewCount}+ ratings</Text>
           </View>
           {productReviews.map((review) => (
             <View key={review.id} style={styles.reviewCard}>
@@ -244,8 +325,14 @@ export default function ProductDetailScreen() {
                   compact={productColumns === 1}
                   quantityInCart={qtyFor(item.id)}
                   onPress={() => router.push(`/product/${item.id}`)}
-                  onAdd={() => addProductToCart(item.id, '12h')}
-                  onIncrement={() => addProductToCart(item.id, '12h')}
+                  onAdd={() => {
+                    if (!ensureLoggedIn(`/product/${item.id}`)) return;
+                    addProductToCart(item.id);
+                  }}
+                  onIncrement={() => {
+                    if (!ensureLoggedIn(`/product/${item.id}`)) return;
+                    addProductToCart(item.id);
+                  }}
                   onDecrement={() => {
                     const cartId = cartItemIdFor(item.id);
                     const qty = qtyFor(item.id);
@@ -260,17 +347,25 @@ export default function ProductDetailScreen() {
 
       <StickyBottomBar>
         <View style={{ flex: 1, minWidth: 140 }}>
-          <Text style={styles.selectedLabel}>Selected plan</Text>
+          <Text style={styles.selectedLabel}>
+            Kit {formatINR(kitPrice)}
+            {extras > 0 ? ` + add-ons ${formatINR(extras)}` : ''}
+          </Text>
           <Text style={styles.selectedPrice}>
-            {formatINR(price)} / {durationLabel}
+            {formatINR(lineTotal)} · {durationLabel}
           </Text>
         </View>
         <Button
           title="Add to cart"
           icon={<Ionicons name="bag-add-outline" size={16} color={colors.white} />}
           onPress={() => {
-            addProductToCart(product.id, durationId);
             if (!ensureLoggedIn('/cart')) return;
+            addProductToCart(product.id, {
+              planId: mode === 'hourly' ? 'hourly' : planId,
+              pricingMode: mode,
+              hours,
+              addons: selectedAddons,
+            });
             router.push('/cart');
           }}
           style={styles.bookBtn}
@@ -311,14 +406,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-  },
-  heart: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   heroBottom: { position: 'absolute', left: 14, right: 14, bottom: 14 },
   sanitizePill: {
@@ -383,6 +470,45 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 4,
     flexShrink: 0,
+  },
+  addonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
+    padding: spacing.md,
+  },
+  addonName: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  addonDesc: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    marginTop: 2,
+  },
+  addonPrice: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.small,
+    marginTop: 4,
+  },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  stepBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepValue: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: 16,
+    minWidth: 20,
+    textAlign: 'center',
   },
   includesList: { gap: 10 },
   includeRow: {

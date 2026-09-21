@@ -44,7 +44,7 @@ export function HeroBanner({ product, etaMinutes = 30, onPress }: Props) {
 
         <Text style={styles.kicker}>Tonight's entertainment</Text>
         <Text style={styles.title}>Premium kits at your door</Text>
-        <Text style={styles.sub}>Consoles · VR · Cinema · Racing — setup included, zero deposit.</Text>
+        <Text style={styles.sub}>Consoles · VR · Cinema · Racing — sanitized and setup-ready.</Text>
 
         <View style={styles.ctaRow}>
           <Text style={styles.cta}>Browse kits</Text>

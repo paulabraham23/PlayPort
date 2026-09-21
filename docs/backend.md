@@ -1,8 +1,8 @@
 # PlayPort backend (Firebase)
 
-Project: **playport-blr-2026**  
+Project: **playport-fd57f**  
 Region: **asia-south1**  
-Account: playportofficial@gmail.com
+Account: playportofficial (shared; paulabraham.net@gmail.com as Editor)
 
 Firestore is the **source of truth**. Zustand caches UI state only — never authoritative for inventory, orders, payments, or reservations.
 
@@ -66,10 +66,21 @@ Most of the app does **not** need Blaze. Only **deploying Cloud Functions to pro
 |--------------------|----------------------------------|
 | Firestore rules + indexes deploy | `firebase:deploy:functions` |
 | Admin seed (catalog, hub, `inventory_units`) | Production checkout (`createBooking`) |
-| Guest browse + catalog from Firestore | Real Phone Auth SMS |
-| Mock OTP login (any 6 digits) | Scheduled hold expiry cron |
-| Cart + addresses sync to Firestore | Razorpay webhook (HTTP Function) |
-| User profile in `users/{uid}` | FCM push from Functions |
+| In-app `/admin` ops panel (claim-gated client writes) | Real Phone Auth SMS |
+| Guest browse + catalog from Firestore | Scheduled hold expiry cron |
+| Mock OTP login (any 6 digits) | Razorpay webhook (HTTP Function) |
+| Cart + addresses sync to Firestore | FCM push from Functions |
+| User profile in `users/{uid}` | |
+
+### Admin ops (`/admin`)
+
+Gate: Firebase Auth custom claim `admin: true`.
+
+```bash
+npm run firebase:admin:claim -- <uid>
+```
+
+After granting, sign out and sign in again. Profile shows **Admin panel** when the claim is present.
 
 **Until Blaze:** checkout shows a clear message that the server is not live yet. Everything else works.
 

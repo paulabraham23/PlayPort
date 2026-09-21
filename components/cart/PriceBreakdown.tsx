@@ -33,11 +33,13 @@ export function PriceBreakdown({
         value={deliveryFree ? 'FREE' : formatINR(99)}
         valueColor={deliveryFree ? colors.playportOrange : colors.primaryText}
       />
-      <Row label="Refundable Security Deposit" value={formatINR(deposit)} />
+      {deposit > 0 ? (
+        <Row label="Refundable Security Deposit" value={formatINR(deposit)} />
+      ) : null}
       <Row label="Government Taxes" value={formatINR(taxes)} />
       <View style={styles.divider} />
       <Row label="Total Payable" value={formatINR(total)} strong valueColor={colors.playportOrange} />
-      <Text style={styles.note}>No hidden rental deposits</Text>
+      <Text style={styles.note}>Taxes included · no hidden fees</Text>
     </View>
   );
 }

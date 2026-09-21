@@ -55,8 +55,15 @@ export function searchProducts<
   });
 }
 
-export function calcCartTotals(items: { unitPrice: number; quantity: number }[]) {
-  const itemsTotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+export function calcCartTotals(
+  items: { unitPrice: number; quantity: number; addonsTotal?: number; addons?: { unitPrice: number; quantity: number }[] }[]
+) {
+  const itemsTotal = items.reduce((sum, item) => {
+    const extras =
+      item.addonsTotal ??
+      (item.addons ?? []).reduce((s, a) => s + a.unitPrice * a.quantity, 0);
+    return sum + (item.unitPrice + extras) * item.quantity;
+  }, 0);
   const taxes = items.length ? Math.round(itemsTotal * 0.05) : 0;
   const sanitization = 0;
   const delivery = 0;

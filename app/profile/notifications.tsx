@@ -65,7 +65,12 @@ export default function NotificationsScreen() {
                 <Pressable
                   key={n.id}
                   accessibilityRole="button"
-                  onPress={() => markNotificationRead(n.id)}
+                  onPress={() => {
+                    markNotificationRead(n.id);
+                    if (n.orderId) {
+                      router.push(`/order/track/${n.orderId}`);
+                    }
+                  }}
                 >
                   <Card style={[styles.card, !n.read && styles.unread]}>
                     <View style={[styles.icon, !n.read && styles.iconUnread]}>

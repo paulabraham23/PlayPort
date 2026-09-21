@@ -1,6 +1,11 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import type { ReactNode } from 'react';
 
+const SITE = 'https://playport-one.vercel.app';
+const TITLE = 'PlayPort — Entertainment kits, delivered fast';
+const DESCRIPTION =
+  'PlayPort — entertainment kits delivered fast. Consoles, cinema, VR and more at your door.';
+
 export default function Root({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -11,22 +16,53 @@ export default function Root({ children }: { children: ReactNode }) {
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no, viewport-fit=cover"
         />
+        <title>{TITLE}</title>
+        <meta name="description" content={DESCRIPTION} />
         <meta name="theme-color" content="#0A0A0B" />
-        <meta
-          name="description"
-          content="PlayPort — entertainment kits delivered fast. Consoles, cinema, VR and more."
-        />
+        <meta name="color-scheme" content="dark" />
+        <meta name="application-name" content="PlayPort" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="PlayPort" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="format-detection" content="telephone=no" />
+        <link rel="canonical" href={`${SITE}/`} />
+
+        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
+        <link rel="manifest" href="/manifest.json?v=2" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="PlayPort" />
+        <meta property="og:title" content={TITLE} />
+        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:url" content={`${SITE}/`} />
+        <meta property="og:image" content={`${SITE}/icon-512.png?v=2`} />
+        <meta property="og:locale" content="en_IN" />
+
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={TITLE} />
+        <meta name="twitter:description" content={DESCRIPTION} />
+        <meta name="twitter:image" content={`${SITE}/icon-512.png?v=2`} />
+
         <ScrollViewStyleReset />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
         <style dangerouslySetInnerHTML={{ __html: globalCss }} />
+        <script dangerouslySetInnerHTML={{ __html: registerServiceWorker }} />
       </head>
       <body>{children}</body>
     </html>
   );
 }
+
+const registerServiceWorker = `
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(function () {});
+  });
+}
+`;
 
 const globalCss = `
 html, body, #root {
@@ -35,7 +71,7 @@ html, body, #root {
   width: 100%;
   overflow-x: hidden;
   touch-action: manipulation;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color-scheme: dark;
   scroll-behavior: smooth;
 }
@@ -56,7 +92,7 @@ input, textarea {
   font-size: 16px;
 }
 ::selection {
-  background: rgba(249, 115, 22, 0.35);
+  background: rgba(196, 94, 26, 0.28);
   color: #fff;
 }
 ::-webkit-scrollbar {

@@ -8,8 +8,10 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import 'react-native-reanimated';
 
+import { InstallAppBanner } from '@/components/pwa/InstallAppBanner';
 import { colors } from '@/constants/theme';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
@@ -51,11 +53,16 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
+    // Don't block first paint on web fonts — hydrate ASAP, fonts swap in.
+    SplashScreen.hideAsync();
+    void hydrateCatalog();
+  }, [hydrateCatalog]);
+
+  useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
-      void hydrateCatalog();
     }
-  }, [loaded, hydrateCatalog]);
+  }, [loaded]);
 
   useEffect(() => {
     const unsub = bootstrapAuth();
@@ -68,13 +75,15 @@ export default function RootLayout() {
     }
   }, [isAuthenticated]);
 
-  if (!loaded) {
+  // Web: render immediately. Native: wait for fonts to avoid layout flash.
+  if (!loaded && Platform.OS !== 'web') {
     return null;
   }
 
   return (
     <ThemeProvider value={PlayPortTheme}>
       <StatusBar style="light" />
+      <InstallAppBanner />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -86,6 +95,8 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="admin" options={{ animation: 'fade' }} />
+        <Stack.Screen name="rider" options={{ animation: 'fade' }} />
         <Stack.Screen name="search/index" options={{ animation: 'fade' }} />
         <Stack.Screen name="search/results" />
         <Stack.Screen name="product/[id]" options={{ animation: 'slide_from_right' }} />

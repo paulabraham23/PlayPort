@@ -11,22 +11,22 @@ export const colors = {
   surfaceHover: '#2A2A32',
   border: '#2E2E36',
   borderSubtle: '#232328',
-  borderFocus: 'rgba(232,93,4,0.45)',
+  borderFocus: 'rgba(196, 94, 26, 0.40)',
 
   // Text
   primaryText: '#FAFAFA',
   secondaryText: '#A1A1AA',
   mutedText: '#71717A',
 
-  // Brand
-  playportOrange: '#F97316',
-  ctaPrimary: '#F97316',
+  // Brand — matte carrot orange (desaturated, not neon)
+  playportOrange: '#C45E1A',
+  ctaPrimary: '#C45E1A',
   ctaPrimaryText: '#FFFFFF',
-  ctaPrimaryHover: '#FB923C',
-  orangeSoft: '#EA580C',
-  orangeTint: 'rgba(249,115,22,0.14)',
-  orangeTintStrong: 'rgba(249,115,22,0.24)',
-  orangeGlow: 'rgba(249,115,22,0.35)',
+  ctaPrimaryHover: '#D96B2E',
+  orangeSoft: '#A34E16',
+  orangeTint: 'rgba(196, 94, 26, 0.14)',
+  orangeTintStrong: 'rgba(196, 94, 26, 0.22)',
+  orangeGlow: 'rgba(196, 94, 26, 0.22)',
 
   // Status
   success: '#4ADE80',
@@ -53,7 +53,7 @@ export const colors = {
     gaming: '#A78BFA',
     movieNights: '#F472B6',
     musicKaraoke: '#38BDF8',
-    partySocial: '#FB923C',
+    partySocial: '#D96B2E',
     family: '#34D399',
     kids: '#FBBF24',
     dateNight: '#F87171',
@@ -130,9 +130,9 @@ export const shadows = {
   },
   glow: {
     shadowColor: colors.playportOrange,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 3,
   },
 } as const;

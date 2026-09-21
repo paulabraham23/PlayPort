@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -11,32 +11,68 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { PlacesAutocomplete } from '@/components/address/PlacesAutocomplete';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
+import type { ResolvedPlaceAddress } from '@/lib/places';
 import { useAppStore } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
+import { ensureLoggedIn, resolveAuthNext } from '@/utils/authGate';
 import type { Address } from '@/types';
 
 const TYPES: Address['type'][] = ['home', 'work', 'other'];
 
 export default function AddAddressScreen() {
+  const { onboarding, next } = useLocalSearchParams<{ onboarding?: string; next?: string }>();
+  const isOnboarding = onboarding === '1';
+  const returnTo = resolveAuthNext(next);
   const { horizontalPadding } = useResponsive();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const user = useAppStore((s) => s.user);
   const addAddress = useAppStore((s) => s.addAddress);
   const selectAddress = useAppStore((s) => s.selectAddress);
+  const updateUserProfile = useAppStore((s) => s.updateUserProfile);
+  const hub = useCatalogStore((s) => s.hub);
 
-  const [label, setLabel] = useState('');
+  useEffect(() => {
+    if (!isAuthenticated) ensureLoggedIn('/address/add');
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return (
+      <Screen showHeader={false}>
+        <ScreenHeader title="Add address" onBack={() => router.back()} />
+        <EmptyState
+          title="Log in required"
+          subtitle="Sign in to save a delivery address."
+          actionLabel="Log in"
+          onAction={() => ensureLoggedIn('/address/add')}
+        />
+      </Screen>
+    );
+  }
+
+  const phoneDigits = useMemo(
+    () => (user?.phone ?? '').replace(/\D/g, '').slice(-10),
+    [user?.phone]
+  );
+
+  const [label, setLabel] = useState(isOnboarding ? 'Home' : '');
   const [type, setType] = useState<Address['type']>('home');
   const [line1, setLine1] = useState('');
   const [line2, setLine2] = useState('');
   const [area, setArea] = useState('');
-  const [city, setCity] = useState('Bengaluru');
+  const [city, setCity] = useState(hub?.city || 'Bengaluru');
   const [pincode, setPincode] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [contactName, setContactName] = useState(user?.name ?? '');
+  const [phone, setPhone] = useState(phoneDigits);
   const [instructions, setInstructions] = useState('');
-  const [isDefault, setIsDefault] = useState(false);
+  const [isDefault, setIsDefault] = useState(isOnboarding || false);
+  const [saving, setSaving] = useState(false);
 
   const canSave =
     label.trim() &&
@@ -45,32 +81,72 @@ export default function AddAddressScreen() {
     city.trim() &&
     pincode.trim().length >= 6 &&
     contactName.trim() &&
-    phone.trim().length >= 10;
+    phone.trim().length >= 10 &&
+    !saving;
 
-  const onSave = () => {
+  const onPlaceSelected = (place: ResolvedPlaceAddress) => {
+    if (place.line1) setLine1(place.line1);
+    if (place.line2) setLine2(place.line2);
+    if (place.area) setArea(place.area);
+    if (place.city) setCity(place.city);
+    if (place.pincode) setPincode(place.pincode.replace(/\D/g, '').slice(0, 6));
+    if (!label.trim()) setLabel(place.area || place.city || 'Home');
+  };
+
+  const onSave = async () => {
     if (!canSave) return;
-    const id = addAddress({
-      label: label.trim(),
-      type,
-      line1: line1.trim(),
-      line2: line2.trim() || undefined,
-      area: area.trim(),
-      city: city.trim(),
-      pincode: pincode.trim(),
-      contactName: contactName.trim(),
-      phone: phone.trim(),
-      instructions: instructions.trim() || undefined,
-      isDefault,
-      etaMinutes: area.toLowerCase().includes('whitefield') ? 90 : 32,
-      inRapidZone: !area.toLowerCase().includes('whitefield'),
-    });
-    selectAddress(id);
+    setSaving(true);
+    try {
+      const id = addAddress({
+        label: label.trim(),
+        type,
+        line1: line1.trim(),
+        line2: line2.trim() || undefined,
+        area: area.trim(),
+        city: city.trim(),
+        pincode: pincode.trim(),
+        contactName: contactName.trim(),
+        phone: phone.trim(),
+        instructions: instructions.trim() || undefined,
+        isDefault: isOnboarding ? true : isDefault,
+        etaMinutes: hub?.etaMinutes ?? 32,
+        inRapidZone: true,
+      });
+      selectAddress(id);
+
+      if (isOnboarding) {
+        await updateUserProfile({
+          onboardingComplete: true,
+          homeHub: hub?.city || hub?.name || city.trim(),
+          homeHubId: hub?.id,
+        });
+        router.replace(returnTo as never);
+        return;
+      }
+      router.back();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onBack = () => {
+    if (isOnboarding) {
+      router.replace({
+        pathname: '/(auth)/onboarding',
+        params: { next: returnTo },
+      } as never);
+      return;
+    }
     router.back();
   };
 
   return (
     <Screen showHeader={false} narrow>
-      <ScreenHeader title="Add Address" subtitle="New drop-off location" onBack={() => router.back()} />
+      <ScreenHeader
+        title={isOnboarding ? 'Delivery address' : 'Add Address'}
+        subtitle={isOnboarding ? 'Where should we drop your kit?' : 'New drop-off location'}
+        onBack={onBack}
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -80,6 +156,8 @@ export default function AddAddressScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
         >
+          <PlacesAutocomplete onPlaceSelected={onPlaceSelected} />
+
           <Field label="Label" value={label} onChangeText={setLabel} placeholder="Home, Studio…" />
 
           <Text style={styles.fieldLabel}>Type</Text>
@@ -100,7 +178,7 @@ export default function AddAddressScreen() {
 
           <Field label="Address line 1" value={line1} onChangeText={setLine1} placeholder="Flat / Building" />
           <Field label="Address line 2" value={line2} onChangeText={setLine2} placeholder="Street (optional)" />
-          <Field label="Area" value={area} onChangeText={setArea} placeholder="Banjara Hills" />
+          <Field label="Area" value={area} onChangeText={setArea} placeholder="Indiranagar" />
           <Field label="City" value={city} onChangeText={setCity} placeholder="Bengaluru" />
           <Field
             label="Pincode"
@@ -110,7 +188,12 @@ export default function AddAddressScreen() {
             keyboardType="number-pad"
             maxLength={6}
           />
-          <Field label="Contact name" value={contactName} onChangeText={setContactName} placeholder="Rahul" />
+          <Field
+            label="Contact name"
+            value={contactName}
+            onChangeText={setContactName}
+            placeholder="Your name"
+          />
           <Field
             label="Phone"
             value={phone}
@@ -127,27 +210,29 @@ export default function AddAddressScreen() {
             multiline
           />
 
-          <Pressable
-            accessibilityRole="switch"
-            accessibilityState={{ checked: isDefault }}
-            onPress={() => setIsDefault((v) => !v)}
-            style={styles.switchRow}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.switchTitle}>Set as default</Text>
-              <Text style={styles.switchSub}>Use this for checkout & express routing</Text>
-            </View>
-            <View style={[styles.toggle, isDefault && styles.toggleOn]}>
-              <View style={[styles.knob, isDefault && styles.knobOn]} />
-            </View>
-          </Pressable>
+          {!isOnboarding ? (
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityState={{ checked: isDefault }}
+              onPress={() => setIsDefault((v) => !v)}
+              style={styles.switchRow}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.switchTitle}>Set as default</Text>
+                <Text style={styles.switchSub}>Use this for checkout & express routing</Text>
+              </View>
+              <View style={[styles.toggle, isDefault && styles.toggleOn]}>
+                <View style={[styles.knob, isDefault && styles.knobOn]} />
+              </View>
+            </Pressable>
+          ) : null}
 
           <Button
-            title="Save Address"
+            title={saving ? 'Saving…' : isOnboarding ? 'Finish setup' : 'Save Address'}
             fullWidth
             disabled={!canSave}
             icon={<Ionicons name="checkmark" size={18} color={colors.white} />}
-            onPress={onSave}
+            onPress={() => void onSave()}
           />
         </ScrollView>
       </KeyboardAvoidingView>

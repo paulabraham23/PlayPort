@@ -131,7 +131,7 @@ export default function LoginScreen() {
 
           <View style={styles.trustLine}>
             <Ionicons name="shield-checkmark-outline" size={14} color={colors.mutedText} />
-            <Text style={styles.trustText}>Secure OTP · Zero deposit KYC · 30-min delivery</Text>
+            <Text style={styles.trustText}>Secure OTP · Sanitized kits · Fast delivery</Text>
           </View>
 
           <Pressable

@@ -6,8 +6,8 @@ import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 const ITEMS = [
   { icon: 'sparkles-outline' as const, label: 'Sanitized' },
   { icon: 'construct-outline' as const, label: 'Setup included' },
-  { icon: 'wallet-outline' as const, label: 'Zero deposit' },
-  { icon: 'flash-outline' as const, label: '30 min drop' },
+  { icon: 'bicycle-outline' as const, label: 'Doorstep drop' },
+  { icon: 'flash-outline' as const, label: 'Fast delivery' },
 ];
 
 export function TrustStrip() {

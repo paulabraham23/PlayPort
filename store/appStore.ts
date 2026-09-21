@@ -1,14 +1,5 @@
 import { create } from 'zustand';
-import {
-  ADDRESSES,
-  CURRENT_USER,
-  DURATIONS,
-  EXPERIENCES,
-  PAYMENT_METHODS,
-  PRODUCTS,
-  RECENT_SEARCHES,
-  REVIEWS,
-} from '@/data/mock';
+import { PAYMENT_METHODS } from '@/data/mock';
 import {
   confirmPhoneLogin,
   mapFirebaseUserToAppUser,
@@ -31,6 +22,7 @@ import {
   replaceUserCart,
   upsertAddress,
   upsertCartItem,
+  upsertUserProfile,
   watchUserNotifications,
   watchUserOrders,
 } from '@/lib/firestore';
@@ -44,17 +36,34 @@ import {
 import { useCatalogStore } from '@/store/catalogStore';
 import { calcCartTotals } from '@/utils/format';
 import { formatFunctionsError } from '@/utils/functionsError';
+import { isPlaceholderName } from '@/utils/onboarding';
+import {
+  addonsTotal,
+  computeAddonLines,
+  defaultPlan,
+  kitUnitPrice,
+  normalizeProduct,
+  resolveHours,
+} from '@/utils/rentalPricing';
 import type {
   Address,
   AppNotification,
   CartItem,
+  PricingMode,
   Order,
   PaymentMethod,
-  RentalDurationId,
   Review,
   User,
 } from '@/types';
 import type { Unsubscribe } from 'firebase/firestore';
+
+export type AddToCartOptions = {
+  planId?: string;
+  pricingMode?: PricingMode;
+  hours?: number;
+  addons?: { id: string; quantity: number }[];
+  quantity?: number;
+};
 
 interface AppState {
   isAuthenticated: boolean;
@@ -81,11 +90,22 @@ interface AppState {
   login: (code: string) => Promise<void>;
   logout: () => void;
   hydrateUserData: (userId: string) => Promise<void>;
+  updateUserProfile: (patch: Partial<User>) => Promise<void>;
 
-  addProductToCart: (productId: string, durationId: RentalDurationId, quantity?: number) => void;
+  addProductToCart: (productId: string, options?: AddToCartOptions) => void;
   addExperienceToCart: (experienceId: string) => void;
   updateCartQuantity: (cartItemId: string, quantity: number) => void;
-  updateCartDuration: (cartItemId: string, durationId: RentalDurationId) => void;
+  updateCartPlan: (
+    cartItemId: string,
+    patch: {
+      planId?: string;
+      pricingMode?: PricingMode;
+      hours?: number;
+      addons?: { id: string; quantity: number }[];
+    }
+  ) => void;
+  /** @deprecated Use updateCartPlan */
+  updateCartDuration: (cartItemId: string, planId: string) => void;
   removeFromCart: (cartItemId: string) => void;
   clearCart: () => void;
   syncCartRemote: () => void;
@@ -110,10 +130,6 @@ interface AppState {
   clearPaymentError: () => void;
 }
 
-function durationLabel(id: RentalDurationId): string {
-  return DURATIONS.find((d) => d.id === id)?.label ?? id;
-}
-
 let ordersUnsub: Unsubscribe | null = null;
 let notifUnsub: Unsubscribe | null = null;
 
@@ -123,6 +139,9 @@ function clearListeners() {
   ordersUnsub = null;
   notifUnsub = null;
 }
+
+/** IDs previously auto-seeded from mock data — strip so profiles stay empty until real onboarding. */
+const LEGACY_MOCK_ADDRESS_IDS = new Set(['addr-home', 'addr-office', 'addr-villa']);
 
 function attachListeners(userId: string, set: (partial: Partial<AppState>) => void) {
   clearListeners();
@@ -143,8 +162,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedPaymentMethodId: PAYMENT_METHODS[0].id,
   orders: [],
   notifications: [],
-  reviews: REVIEWS,
-  recentSearches: RECENT_SEARCHES,
+  reviews: [],
+  recentSearches: [],
   lastOrderId: null,
   paymentError: null,
   pendingOrderId: null,
@@ -199,9 +218,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         fetchReviews(),
       ]);
 
-      const nextAddresses = addresses.length ? addresses : ADDRESSES;
-      if (!addresses.length) {
-        await Promise.all(ADDRESSES.map((a) => upsertAddress(userId, a)));
+      const legacy = addresses.filter((a) => LEGACY_MOCK_ADDRESS_IDS.has(a.id));
+      const realAddresses = addresses.filter((a) => !LEGACY_MOCK_ADDRESS_IDS.has(a.id));
+      if (legacy.length) {
+        void Promise.all(legacy.map((a) => deleteAddressDoc(userId, a.id))).catch(() => {});
       }
 
       const hub = useCatalogStore.getState().hub;
@@ -213,7 +233,6 @@ export const useAppStore = create<AppState>((set, get) => ({
           homeHub: hub.city || hub.name,
         };
         set({ user: patched });
-        const { upsertUserProfile } = await import('@/lib/firestore');
         void upsertUserProfile(userId, {
           homeHubId: hub.id,
           homeHub: patched.homeHub,
@@ -222,22 +241,44 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       set({
         cart,
-        addresses: nextAddresses,
+        addresses: realAddresses,
         selectedAddressId:
-          nextAddresses.find((a) => a.isDefault)?.id ?? nextAddresses[0]?.id ?? null,
+          realAddresses.find((a) => a.isDefault)?.id ?? realAddresses[0]?.id ?? null,
         orders,
-        notifications: notifications.length ? notifications : [],
-        reviews: reviews.length ? reviews : REVIEWS,
+        notifications,
+        reviews,
       });
+
+      // Heal profiles that finished setup before onboardingComplete was reliable.
+      const healed = get().user;
+      if (
+        healed &&
+        !healed.onboardingComplete &&
+        !isPlaceholderName(healed.name) &&
+        realAddresses.length > 0
+      ) {
+        const next = { ...healed, onboardingComplete: true };
+        set({ user: next });
+        void upsertUserProfile(userId, { onboardingComplete: true }).catch(() => {});
+      }
     } catch (e) {
       console.warn('hydrateUserData failed', e);
       set({
-        addresses: ADDRESSES,
-        selectedAddressId: ADDRESSES.find((a) => a.isDefault)?.id ?? ADDRESSES[0]?.id ?? null,
+        addresses: [],
+        selectedAddressId: null,
         orders: [],
         notifications: [],
+        reviews: [],
       });
     }
+  },
+
+  updateUserProfile: async (patch) => {
+    const user = get().user;
+    if (!user?.id) return;
+    const next = { ...user, ...patch };
+    set({ user: next });
+    await upsertUserProfile(user.id, patch);
   },
 
   setPhoneDraft: (phone) => set({ phoneDraft: phone }),
@@ -288,11 +329,34 @@ export const useAppStore = create<AppState>((set, get) => ({
     void replaceUserCart(user.id, cart).catch(() => {});
   },
 
-  addProductToCart: (productId, durationId, quantity = 1) => {
-    const catalogProducts = useCatalogStore.getState().products;
-    const product = catalogProducts.find((p) => p.id === productId) ?? PRODUCTS.find((p) => p.id === productId);
-    if (!product) return;
-    const existing = get().cart.find((c) => c.productId === productId && c.durationId === durationId);
+  addProductToCart: (productId, options = {}) => {
+    const raw = useCatalogStore.getState().products.find((p) => p.id === productId);
+    if (!raw) return;
+    const product = normalizeProduct(raw);
+    const quantity = options.quantity ?? 1;
+    const pricingMode: PricingMode = options.pricingMode ?? 'package';
+    const plan =
+      pricingMode === 'hourly'
+        ? null
+        : product.plans.find((p) => p.id === options.planId) ?? defaultPlan(product);
+    const planId = pricingMode === 'hourly' ? 'hourly' : plan?.id ?? '12h';
+    const hours = resolveHours(product, pricingMode, planId, options.hours);
+    const unitPrice = kitUnitPrice(product, pricingMode, planId, hours);
+    const addonLines = computeAddonLines(product, hours, options.addons ?? []);
+    const extras = addonsTotal(addonLines);
+    const durationLabel =
+      pricingMode === 'hourly'
+        ? `${hours}h hourly`
+        : plan?.label ?? planId;
+    const key = `${productId}-${pricingMode}-${planId}-${hours}-${addonLines.map((a) => `${a.id}:${a.quantity}`).join(',')}`;
+    const existing = get().cart.find(
+      (c) =>
+        c.productId === productId &&
+        c.pricingMode === pricingMode &&
+        c.planId === planId &&
+        c.hours === hours &&
+        JSON.stringify(c.addons ?? []) === JSON.stringify(addonLines)
+    );
     let next: CartItem[];
     if (existing) {
       next = get().cart.map((c) =>
@@ -300,14 +364,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       );
     } else {
       const item: CartItem = {
-        id: `cart-${productId}-${durationId}-${Date.now()}`,
+        id: `cart-${key}-${Date.now()}`,
         productId,
         name: product.shortName,
         image: product.images[0],
         categoryLabel: product.categoryId.replace('-', ' ').toUpperCase(),
-        durationId,
-        durationLabel: durationLabel(durationId),
-        unitPrice: product.priceByDuration[durationId],
+        planId,
+        durationId: planId,
+        durationLabel,
+        hours,
+        pricingMode,
+        unitPrice,
+        addons: addonLines,
+        addonsTotal: extras,
         quantity,
         includesNote: product.includes[0]?.detail,
       };
@@ -316,15 +385,19 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ cart: next });
     const uid = get().user?.id;
     if (uid && get().isAuthenticated) {
-      const item = next.find((c) => c.productId === productId && c.durationId === durationId);
+      const item = next.find(
+        (c) =>
+          c.productId === productId &&
+          c.planId === planId &&
+          c.hours === hours &&
+          c.pricingMode === pricingMode
+      );
       if (item) void upsertCartItem(uid, item).catch(() => {});
     }
   },
 
   addExperienceToCart: (experienceId) => {
-    const catalogExperiences = useCatalogStore.getState().experiences;
-    const exp =
-      catalogExperiences.find((e) => e.id === experienceId) ?? EXPERIENCES.find((e) => e.id === experienceId);
+    const exp = useCatalogStore.getState().experiences.find((e) => e.id === experienceId);
     if (!exp) return;
     const existing = get().cart.find((c) => c.experienceId === experienceId);
     let next: CartItem[];
@@ -339,9 +412,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         name: exp.name,
         image: exp.image,
         categoryLabel: exp.tag,
-        durationId: '12h',
+        planId: 'combo',
+        durationId: 'combo',
         durationLabel: exp.durationLabel.replace('/', '').trim() || 'Night',
+        hours: 12,
+        pricingMode: 'package',
         unitPrice: exp.price,
+        addons: [],
+        addonsTotal: 0,
         quantity: 1,
         includesNote: exp.includes.slice(0, 2).join(' • '),
       };
@@ -364,23 +442,46 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (uid && get().isAuthenticated && item) void upsertCartItem(uid, item).catch(() => {});
   },
 
-  updateCartDuration: (cartItemId, durationId) => {
+  updateCartPlan: (cartItemId, patch) => {
     const products = useCatalogStore.getState().products;
     set({
       cart: get().cart.map((c) => {
-        if (c.id !== cartItemId) return c;
-        const product = c.productId
-          ? products.find((p) => p.id === c.productId) ?? PRODUCTS.find((p) => p.id === c.productId)
-          : undefined;
+        if (c.id !== cartItemId || !c.productId) return c;
+        const raw = products.find((p) => p.id === c.productId);
+        if (!raw) return c;
+        const product = normalizeProduct(raw);
+        const pricingMode = patch.pricingMode ?? c.pricingMode ?? 'package';
+        const planId =
+          pricingMode === 'hourly'
+            ? 'hourly'
+            : patch.planId ?? c.planId ?? defaultPlan(product)?.id ?? '12h';
+        const hours = resolveHours(product, pricingMode, planId, patch.hours ?? c.hours);
+        const unitPrice = kitUnitPrice(product, pricingMode, planId, hours);
+        const selected =
+          patch.addons ??
+          (c.addons ?? []).map((a) => ({ id: a.id, quantity: a.quantity }));
+        const addonLines = computeAddonLines(product, hours, selected);
+        const extras = addonsTotal(addonLines);
+        const plan = product.plans.find((p) => p.id === planId);
         return {
           ...c,
-          durationId,
-          durationLabel: durationLabel(durationId),
-          unitPrice: product ? product.priceByDuration[durationId] : c.unitPrice,
+          planId,
+          durationId: planId,
+          pricingMode,
+          hours,
+          durationLabel:
+            pricingMode === 'hourly' ? `${hours}h hourly` : plan?.label ?? planId,
+          unitPrice,
+          addons: addonLines,
+          addonsTotal: extras,
         };
       }),
     });
     get().syncCartRemote();
+  },
+
+  updateCartDuration: (cartItemId, planId) => {
+    get().updateCartPlan(cartItemId, { planId, pricingMode: 'package' });
   },
 
   removeFromCart: (cartItemId) => {
@@ -453,42 +554,69 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectPaymentMethod: (id) => set({ selectedPaymentMethodId: id, paymentError: null }),
 
   placeOrder: async (fail = false) => {
-    const { cart, addresses, selectedAddressId, selectedPaymentMethodId, paymentMethods, user } = get();
-    if (!cart.length) return { ok: false, error: 'Cart is empty' };
+    const { cart, addresses, selectedAddressId, selectedPaymentMethodId, paymentMethods, user, pendingOrderId } =
+      get();
     if (!user?.id) return { ok: false, error: 'Sign in required' };
 
     const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
+    if (!address?.line1 && !address?.area) {
+      return { ok: false, error: 'Add a delivery address before paying' };
+    }
+
     const payment = paymentMethods.find((p) => p.id === selectedPaymentMethodId);
     const totals = calcCartTotals(cart);
     const hub = useCatalogStore.getState().hub;
+    const hubId = user.homeHubId || hub?.id;
+
+    // Snapshot cart so we can restore if payment fails after booking.
+    const cartSnapshot = cart.map((c) => ({ ...c }));
 
     try {
-      const booking = await callCreateBooking({
-        hubId: hub.id,
-        cart,
-        addressLabel: address?.label ?? 'Home',
-        addressFull: address
-          ? `${address.line1}, ${address.line2 ? address.line2 + ', ' : ''}${address.area}, ${address.city}`
-          : `${hub.city}`,
-        paymentMethodLabel: payment?.label ?? 'UPI',
-        subtotal: totals.itemsTotal,
-        taxes: totals.taxes,
-        total: totals.total,
-      });
+      let orderId = pendingOrderId ?? undefined;
+      let bookingOrder: Order | undefined;
 
-      set({
-        pendingOrderId: booking.orderId,
-        cart: [],
-        orders: [booking.order as Order, ...get().orders.filter((o) => o.id !== booking.orderId)],
-      });
+      // Resume unpaid hold if we already created a booking this session.
+      if (!orderId) {
+        if (!cartSnapshot.length) return { ok: false, error: 'Cart is empty' };
+        const booking = await callCreateBooking({
+          hubId,
+          cart: cartSnapshot,
+          addressLabel: address.label || 'Home',
+          addressFull: [
+            address.line1,
+            address.line2,
+            address.area,
+            address.city,
+            address.pincode,
+          ]
+            .filter(Boolean)
+            .join(', '),
+          paymentMethodLabel: payment?.label ?? 'UPI',
+          subtotal: totals.itemsTotal,
+          taxes: totals.taxes,
+          total: totals.total,
+          startAt: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+        });
+        orderId = booking.orderId;
+        bookingOrder = booking.order as Order;
+        set({
+          pendingOrderId: orderId,
+          orders: [bookingOrder, ...get().orders.filter((o) => o.id !== orderId)],
+        });
+      }
 
-      const rzp = await callCreateRazorpayOrder(booking.orderId);
+      const rzp = await callCreateRazorpayOrder(orderId!);
+      const useDemo = Boolean(rzp.demo || !rzp.keyId);
 
-      if (rzp.demo || !rzp.keyId) {
-        const paid = await callConfirmPayment(booking.orderId, fail);
+      if (useDemo) {
+        const paid = await callConfirmPayment(orderId!, fail);
         if (!paid.ok) {
-          set({ paymentError: paid.error ?? 'Payment failed' });
-          return { ok: false, error: paid.error ?? 'Payment failed', orderId: booking.orderId };
+          set({
+            paymentError: paid.error ?? 'Payment failed',
+            // Keep cart so user can retry or rebuild
+            cart: get().cart.length ? get().cart : cartSnapshot,
+          });
+          return { ok: false, error: paid.error ?? 'Payment failed', orderId };
         }
       } else if (typeof window !== 'undefined') {
         await openRazorpayCheckout({
@@ -496,57 +624,49 @@ export const useAppStore = create<AppState>((set, get) => ({
           amount: rzp.amount,
           currency: rzp.currency,
           razorpayOrderId: rzp.razorpayOrderId,
-          orderId: booking.orderId,
+          orderId: orderId!,
           name: user.name,
           phone: user.phone,
         });
-        await callConfirmPayment(booking.orderId, false);
-        set({
-          orders: get().orders.map((o) =>
-            o.id === booking.orderId ? { ...o, paymentStatus: 'paid', progressPercent: 20 } : o
-          ),
-        });
+        await callConfirmPayment(orderId!, false);
       } else {
-        await callConfirmPayment(booking.orderId, fail);
+        await callConfirmPayment(orderId!, fail);
       }
 
+      // Success — clear cart only now (server cart already cleared on createBooking)
       set({
-        lastOrderId: booking.orderId,
+        cart: [],
+        lastOrderId: orderId!,
         paymentError: null,
         pendingOrderId: null,
+        orders: get().orders.map((o) =>
+          o.id === orderId
+            ? { ...o, paymentStatus: 'paid', progressPercent: 20, status: 'confirmed' }
+            : o
+        ),
       });
-      return { ok: true, orderId: booking.orderId };
+      return { ok: true, orderId };
     } catch (e) {
       const message = formatFunctionsError(e);
-      set({ paymentError: message });
-      return { ok: false, error: message };
+      set({
+        paymentError: message,
+        cart: get().cart.length ? get().cart : cartSnapshot,
+      });
+      return { ok: false, error: message, orderId: get().pendingOrderId ?? undefined };
     }
   },
 
   cancelOrder: async (orderId, reason) => {
-    try {
-      await callCancelBooking(orderId, reason);
-      set({
-        orders: get().orders.map((o) =>
-          o.id === orderId ? { ...o, status: 'cancelled', progressPercent: 0 } : o
-        ),
-      });
-    } catch (e) {
-      console.warn('cancelOrder failed', e);
-      set({
-        orders: get().orders.map((o) =>
-          o.id === orderId ? { ...o, status: 'cancelled', progressPercent: 0 } : o
-        ),
-      });
-    }
+    await callCancelBooking(orderId, reason);
+    set({
+      orders: get().orders.map((o) =>
+        o.id === orderId ? { ...o, status: 'cancelled', progressPercent: 0 } : o
+      ),
+    });
   },
 
   completeReturn: async (orderId) => {
-    try {
-      await callCompleteReturn(orderId);
-    } catch (e) {
-      console.warn('completeReturn failed', e);
-    }
+    await callCompleteReturn(orderId);
     set({
       orders: get().orders.map((o) =>
         o.id === orderId ? { ...o, status: 'completed', progressPercent: 100 } : o
@@ -591,7 +711,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   loadReviews: async () => {
     try {
       const reviews = await fetchReviews();
-      if (reviews.length) set({ reviews });
+      set({ reviews });
     } catch {
       /* keep local */
     }
@@ -662,6 +782,3 @@ export function useCartTotals() {
   const cart = useAppStore((s) => s.cart);
   return calcCartTotals(cart);
 }
-
-// Silence unused CURRENT_USER if tree-shaken oddly
-void CURRENT_USER;

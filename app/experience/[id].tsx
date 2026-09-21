@@ -11,9 +11,9 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
-import { EXPERIENCES, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 
@@ -23,21 +23,23 @@ export default function ExperienceDetailScreen() {
   const stickyPad = useStickyBarPadding();
   const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
+  const experiences = useCatalogStore((s) => s.experiences);
+  const products = useCatalogStore((s) => s.products);
 
-  const experience = EXPERIENCES.find((e) => e.id === id);
+  const experience = experiences.find((e) => e.id === id);
   const includedProducts = experience
-    ? PRODUCTS.filter((p) => experience.productIds.includes(p.id))
+    ? products.filter((p) => experience.productIds.includes(p.id))
     : [];
 
   if (!experience) {
     return (
       <Screen showHeader={false}>
-        <ScreenHeader title="Experience" onBack={() => router.back()} />
+        <ScreenHeader title="Combo" onBack={() => router.back()} />
         <EmptyState
-          title="Experience not found"
-          subtitle="This vibe may have rotated out."
-          actionLabel="Explore"
-          onAction={() => router.replace('/(tabs)/explore')}
+          title="Combo not found"
+          subtitle="This bundle may have rotated out."
+          actionLabel="Browse combos"
+          onAction={() => router.replace('/(tabs)/combos' as never)}
         />
       </Screen>
     );
@@ -81,7 +83,7 @@ export default function ExperienceDetailScreen() {
 
   return (
     <Screen showHeader={false} edges={['top']}>
-      <ScreenHeader title="Experience" onBack={() => router.back()} />
+      <ScreenHeader title="Combo" onBack={() => router.back()} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
@@ -130,8 +132,9 @@ export default function ExperienceDetailScreen() {
                   product={product}
                   compact={productColumns === 1}
                   onPress={() => router.push(`/product/${product.id}`)}
-                  onRent={() => {
-                    addProductToCart(product.id, '12h');
+                  onAdd={() => {
+                    if (!ensureLoggedIn('/cart')) return;
+                    addProductToCart(product.id);
                     router.push('/cart');
                   }}
                 />
@@ -147,11 +150,11 @@ export default function ExperienceDetailScreen() {
           <Text style={styles.stickyPrice}>{formatINR(experience.price)}</Text>
         </View>
         <Button
-          title="Book Experience"
+          title="Book combo"
           icon={<Ionicons name="flash" size={16} color={colors.white} />}
           onPress={() => {
-            addExperienceToCart(experience.id);
             if (!ensureLoggedIn('/cart')) return;
+            addExperienceToCart(experience.id);
             router.push('/cart');
           }}
           style={styles.bookBtn}

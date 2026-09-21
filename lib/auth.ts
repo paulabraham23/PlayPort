@@ -10,14 +10,24 @@ import {
 import { Platform } from 'react-native';
 import { auth } from '@/lib/firebase';
 import { fetchUserProfile, upsertUserProfile } from '@/lib/firestore';
-import { HUB } from '@/data/mock';
+import { useCatalogStore } from '@/store/catalogStore';
 import type { User } from '@/types';
+import { isPlaceholderName } from '@/utils/onboarding';
 
 let phoneConfirmation: ConfirmationResult | null = null;
 let recaptchaVerifier: RecaptchaVerifier | null = null;
 
+function hubDefaults() {
+  const hub = useCatalogStore.getState().hub;
+  return {
+    homeHub: hub?.city && hub.city !== '—' ? hub.city : hub?.name || 'PlayPort',
+    homeHubId: hub?.id && hub.id !== 'pending' ? hub.id : undefined,
+  };
+}
+
 function profileFromAuth(firebaseUser: FirebaseUser, phone?: string): User {
   const digits = (phone ?? firebaseUser.phoneNumber ?? '').replace(/\D/g, '').slice(-10);
+  const hub = hubDefaults();
   return {
     id: firebaseUser.uid,
     name: firebaseUser.displayName || (digits ? `Member ${digits.slice(-4)}` : 'PlayPort Member'),
@@ -26,10 +36,11 @@ function profileFromAuth(firebaseUser: FirebaseUser, phone?: string): User {
     avatar:
       firebaseUser.photoURL ||
       `https://api.dicebear.com/7.x/avataaars/png?seed=${firebaseUser.uid}`,
-    kycVerified: Boolean(firebaseUser.phoneNumber || digits),
+    kycVerified: false,
     sessionsCount: 0,
-    homeHub: HUB.city,
-    homeHubId: HUB.id,
+    homeHub: hub.homeHub,
+    homeHubId: hub.homeHubId,
+    onboardingComplete: false,
   };
 }
 
@@ -54,19 +65,31 @@ export async function ensureRecaptcha(containerId = 'playport-recaptcha'): Promi
   return recaptchaVerifier;
 }
 
-/** Send Firebase Phone Auth OTP (web). Falls back to mock confirmation in DEV when Phone Auth is unavailable. */
+/** Send Firebase Phone Auth OTP (web). Falls back to mock only in __DEV__. */
 export async function startPhoneLogin(phone10: string): Promise<{ mode: 'firebase' | 'mock' }> {
   const e164 = `+91${phone10.replace(/\D/g, '').slice(-10)}`;
 
   if (Platform.OS === 'web') {
     try {
       const verifier = await ensureRecaptcha();
-      if (verifier) {
-        phoneConfirmation = await signInWithPhoneNumber(auth, e164, verifier);
-        return { mode: 'firebase' };
+      if (!verifier) {
+        throw new Error('Could not start phone verification on this browser.');
       }
+      phoneConfirmation = await signInWithPhoneNumber(auth, e164, verifier);
+      return { mode: 'firebase' };
     } catch (err) {
-      console.warn('Phone Auth send failed, using mock path:', err);
+      console.warn('Phone Auth send failed:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      // Production: surface the real error (API key / Identity Toolkit / billing / etc.)
+      if (typeof __DEV__ === 'undefined' || !__DEV__) {
+        if (/identitytoolkit|API.?key|blocked|PERMISSION_DENIED|requests? to this API/i.test(message)) {
+          throw new Error(
+            'Phone sign-in is blocked by Google Cloud API key settings. Identity Toolkit must be allowed on the Firebase browser key.'
+          );
+        }
+        throw new Error(message || 'Could not send OTP. Try again.');
+      }
+      // DEV only: fall back to mock OTP
       phoneConfirmation = null;
     }
   }
@@ -82,10 +105,7 @@ export async function confirmPhoneLogin(code: string, name = 'PlayPort Member'):
   if (phoneConfirmation) {
     const cred = await phoneConfirmation.confirm(code);
     phoneConfirmation = null;
-    const user = profileFromAuth(cred.user);
-    if (name) user.name = name;
-    await upsertUserProfile(cred.user.uid, user);
-    return user;
+    return finalizePhoneSession(cred.user, undefined, name);
   }
 
   // DEV / unavailable Phone Auth: any 6-digit code + anonymous session keyed by phone.
@@ -94,11 +114,55 @@ export async function confirmPhoneLogin(code: string, name = 'PlayPort Member'):
   }
   const phone = mockPhone ?? '+910000000000';
   const cred = auth.currentUser ? { user: auth.currentUser } : await signInAnonymously(auth);
-  const user = profileFromAuth(cred.user, phone);
-  user.name = name;
-  user.kycVerified = true;
-  await upsertUserProfile(cred.user.uid, user);
+  const user = await finalizePhoneSession(cred.user, phone, name);
   delete (globalThis as { __playportMockPhone?: string }).__playportMockPhone;
+  return user;
+}
+
+/** Merge auth session with any existing Firestore profile — never wipe name / onboarding on re-login. */
+async function finalizePhoneSession(
+  firebaseUser: FirebaseUser,
+  phoneOverride?: string,
+  fallbackName = 'PlayPort Member'
+): Promise<User> {
+  const existing = await fetchUserProfile(firebaseUser.uid);
+  const base = profileFromAuth(firebaseUser, phoneOverride);
+  const phone = existing?.phone || base.phone;
+  const digits = phone.replace(/\D/g, '').slice(-10);
+
+  const preservedName =
+    existing?.name && !isPlaceholderName(existing.name)
+      ? existing.name
+      : fallbackName && !isPlaceholderName(fallbackName)
+        ? fallbackName
+        : existing?.name || base.name;
+
+  const user: User = {
+    ...base,
+    ...existing,
+    id: firebaseUser.uid,
+    phone: phone || (digits ? `+91${digits}` : base.phone),
+    email: existing?.email || base.email,
+    name: preservedName,
+    avatar: existing?.avatar || base.avatar,
+    kycVerified: existing?.kycVerified ?? false,
+    sessionsCount: existing?.sessionsCount ?? 0,
+    homeHub: existing?.homeHub || base.homeHub,
+    homeHubId: existing?.homeHubId || base.homeHubId,
+    onboardingComplete: Boolean(existing?.onboardingComplete),
+  };
+
+  // Only write auth/contact fields on login — never reset onboarding or a chosen name.
+  await upsertUserProfile(firebaseUser.uid, {
+    id: user.id,
+    phone: user.phone,
+    email: user.email,
+    avatar: user.avatar,
+    homeHub: user.homeHub,
+    homeHubId: user.homeHubId,
+    ...(existing ? {} : { name: user.name, onboardingComplete: false, kycVerified: false, sessionsCount: 0 }),
+  });
+
   return user;
 }
 
@@ -120,6 +184,7 @@ export async function mapFirebaseUserToAppUser(firebaseUser: FirebaseUser): Prom
 /** Guest browse — anonymous Firebase session. */
 export async function signInAsGuest() {
   const cred = await signInAnonymously(auth);
+  const hub = hubDefaults();
   await upsertUserProfile(cred.user.uid, {
     id: cred.user.uid,
     name: 'Guest',
@@ -128,8 +193,9 @@ export async function signInAsGuest() {
     avatar: '',
     kycVerified: false,
     sessionsCount: 0,
-    homeHub: HUB.city,
-    homeHubId: HUB.id,
+    homeHub: hub.homeHub,
+    homeHubId: hub.homeHubId,
+    onboardingComplete: false,
   });
   return cred.user;
 }

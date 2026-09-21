@@ -8,9 +8,10 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { colors, fonts, spacing, typeScale } from '@/constants/theme';
-import { CATEGORIES, EXPERIENCES, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 
 export default function CategoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -19,15 +20,29 @@ export default function CategoryScreen() {
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
   const cart = useAppStore((s) => s.cart);
   const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
+  const allProducts = useCatalogStore((s) => s.products);
+  const allCategories = useCatalogStore((s) => s.categories);
+  const allExperiences = useCatalogStore((s) => s.experiences);
 
-  const category = CATEGORIES.find((c) => c.id === id);
-  const products = PRODUCTS.filter((p) => p.categoryId === id);
-  const experiences = EXPERIENCES.filter((e) => e.categoryId === id);
+  const category = allCategories.find((c) => c.id === id);
+  const products = allProducts.filter((p) => p.categoryId === id);
+  const experiences = allExperiences.filter((e) => e.categoryId === id);
 
   const qtyFor = (productId: string) =>
     cart.filter((c) => c.productId === productId).reduce((sum, c) => sum + c.quantity, 0);
   const cartItemIdFor = (productId: string) =>
-    cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
+    cart.find((c) => c.productId === productId)?.id;
+
+  const addKit = (productId: string) => {
+    if (!ensureLoggedIn(`/category/${id}`)) return;
+    addProductToCart(productId);
+  };
+
+  const bookExp = (experienceId: string) => {
+    if (!ensureLoggedIn('/cart')) return;
+    addExperienceToCart(experienceId);
+    router.push('/cart');
+  };
 
   if (!category) {
     return (
@@ -37,7 +52,7 @@ export default function CategoryScreen() {
           title="Category not found"
           subtitle="Try exploring from Home or Search."
           actionLabel="Explore"
-          onAction={() => router.replace('/(tabs)/explore')}
+          onAction={() => router.replace('/(tabs)')}
         />
       </Screen>
     );
@@ -67,8 +82,8 @@ export default function CategoryScreen() {
                   compact={productColumns === 1}
                   quantityInCart={qtyFor(product.id)}
                   onPress={() => router.push(`/product/${product.id}`)}
-                  onAdd={() => addProductToCart(product.id, '12h')}
-                  onIncrement={() => addProductToCart(product.id, '12h')}
+                  onAdd={() => addKit(product.id)}
+                  onIncrement={() => addKit(product.id)}
                   onDecrement={() => {
                     const cartId = cartItemIdFor(product.id);
                     const qty = qtyFor(product.id);
@@ -89,10 +104,7 @@ export default function CategoryScreen() {
                   key={experience.id}
                   experience={experience}
                   onPress={() => router.push(`/experience/${experience.id}`)}
-                  onBook={() => {
-                    addExperienceToCart(experience.id);
-                    router.push('/cart');
-                  }}
+                  onBook={() => bookExp(experience.id)}
                 />
               ))}
             </ResponsiveGrid>
@@ -104,7 +116,7 @@ export default function CategoryScreen() {
             title="Nothing in this vibe yet"
             subtitle="Check back soon or browse other categories."
             actionLabel="Browse all"
-            onAction={() => router.push('/(tabs)/explore')}
+            onAction={() => router.push('/(tabs)')}
           />
         ) : null}
       </ScrollView>

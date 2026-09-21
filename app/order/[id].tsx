@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
 import { Screen } from '@/components/layout/Screen';
@@ -50,7 +50,6 @@ export default function OrderDetailScreen() {
   const { horizontalPadding } = useResponsive();
   const orders = useAppStore((s) => s.orders);
   const order = useMemo(() => orders.find((o) => o.id === id), [orders, id]);
-  const [invoiceMsg, setInvoiceMsg] = useState<string | null>(null);
 
   if (!order) {
     return (
@@ -213,8 +212,6 @@ export default function OrderDetailScreen() {
           <Text style={styles.payMethod}>Paid via {order.paymentMethodLabel}</Text>
         </Card>
 
-        {invoiceMsg ? <Text style={styles.toast}>{invoiceMsg}</Text> : null}
-
         <View style={styles.actions}>
           <Button
             title="Track Live Delivery"
@@ -223,21 +220,11 @@ export default function OrderDetailScreen() {
             onPress={() => router.push(`/order/track/${order.id}`)}
           />
           <Button
-            title="Contact Tech Desk"
+            title="Contact support"
             variant="secondary"
             fullWidth
             icon={<Ionicons name="headset-outline" size={18} color={colors.primaryText} />}
             onPress={() => router.push('/profile/help')}
-          />
-          <Button
-            title="Download Invoice"
-            variant="ghost"
-            fullWidth
-            icon={<Ionicons name="download-outline" size={18} color={colors.primaryText} />}
-            onPress={() => {
-              setInvoiceMsg('Invoice downloaded');
-              setTimeout(() => setInvoiceMsg(null), 2500);
-            }}
           />
           {cancellable ? (
             <Button

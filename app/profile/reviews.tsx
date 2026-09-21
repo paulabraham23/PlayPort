@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -15,16 +15,23 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
-import { PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 
 export default function ReviewsScreen() {
   const { horizontalPadding } = useResponsive();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const reviews = useAppStore((s) => s.reviews);
   const orders = useAppStore((s) => s.orders);
   const user = useAppStore((s) => s.user);
   const addReview = useAppStore((s) => s.addReview);
+  const products = useCatalogStore((s) => s.products);
+
+  useEffect(() => {
+    if (!isAuthenticated) ensureLoggedIn('/profile/reviews');
+  }, [isAuthenticated]);
 
   const completed = useMemo(
     () => orders.filter((o) => o.status === 'completed'),
@@ -37,10 +44,28 @@ export default function ReviewsScreen() {
   const [submitted, setSubmitted] = useState(false);
 
   const myReviews = useMemo(() => {
-    const name = user?.name;
-    if (!name) return reviews;
-    return reviews.filter((r) => r.userName === name || r.userName === 'You');
-  }, [reviews, user?.name]);
+    if (!user?.id && !user?.name) return [];
+    return reviews.filter(
+      (r) =>
+        (user.id && r.userId === user.id) ||
+        r.userName === user.name ||
+        r.userName === 'You'
+    );
+  }, [reviews, user?.id, user?.name]);
+
+  if (!isAuthenticated) {
+    return (
+      <Screen showHeader={false} narrow>
+        <ScreenHeader title="My Reviews" onBack={() => router.back()} />
+        <EmptyState
+          title="Log in required"
+          subtitle="Sign in to leave and view reviews."
+          actionLabel="Log in"
+          onAction={() => ensureLoggedIn('/profile/reviews')}
+        />
+      </Screen>
+    );
+  }
 
   const onSubmit = () => {
     if (!text.trim() || !rateable) return;
@@ -59,7 +84,7 @@ export default function ReviewsScreen() {
   };
 
   const productName = (productId?: string, experienceId?: string, fallback?: string) => {
-    if (productId) return PRODUCTS.find((p) => p.id === productId)?.shortName ?? fallback;
+    if (productId) return products.find((p) => p.id === productId)?.shortName ?? fallback;
     return fallback ?? 'PlayPort kit';
   };
 
@@ -125,7 +150,7 @@ export default function ReviewsScreen() {
             title="No reviews yet"
             subtitle="Share feedback after your next completed night."
             actionLabel="Browse kits"
-            onAction={() => router.push('/(tabs)/explore')}
+            onAction={() => router.push('/(tabs)')}
           />
         ) : (
           <View style={styles.list}>

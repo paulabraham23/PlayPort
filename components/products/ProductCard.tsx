@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   ZoomIn,
@@ -13,11 +13,11 @@ import { PressableScale } from '@/components/motion/PressableScale';
 import { ValuePop } from '@/components/motion/ValuePop';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
-import type { Product, RentalDurationId } from '@/types';
+import { cheapestPlanPrice, defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
+import type { Product } from '@/types';
 
 interface Props {
   product: Product;
-  durationId?: RentalDurationId;
   onPress?: () => void;
   onAdd?: () => void;
   onIncrement?: () => void;
@@ -100,7 +100,7 @@ function ZoomImage({ uri, style }: { uri: string; style: object }) {
   const scale = useSharedValue(1);
 
   useEffect(() => {
-    // subtle idle “alive” drift
+    if (Platform.OS === 'web') return;
     const loop = () => {
       scale.value = withTiming(1.04, { duration: 6000 }, () => {
         scale.value = withTiming(1, { duration: 6000 });
@@ -112,7 +112,7 @@ function ZoomImage({ uri, style }: { uri: string; style: object }) {
   }, [scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: Platform.OS === 'web' ? 1 : scale.value }],
   }));
 
   return (
@@ -124,7 +124,6 @@ function ZoomImage({ uri, style }: { uri: string; style: object }) {
 
 export function ProductCard({
   product,
-  durationId = '12h',
   onPress,
   onAdd,
   onIncrement,
@@ -133,7 +132,10 @@ export function ProductCard({
   quantityInCart = 0,
   compact,
 }: Props) {
-  const price = product.priceByDuration[durationId];
+  const normalized = normalizeProduct(product);
+  const plan = defaultPlan(normalized);
+  const price = cheapestPlanPrice(normalized) ?? plan?.price ?? 0;
+  const planLabel = plan?.label ?? 'plan';
   const handleAdd = onAdd ?? onRent;
 
   if (compact) {
@@ -150,7 +152,7 @@ export function ProductCard({
           <Text style={styles.compactTitle} numberOfLines={2}>
             {product.shortName}
           </Text>
-          <Text style={styles.unitChip}>1 kit · {durationId}</Text>
+          <Text style={styles.unitChip}>1 kit · from {planLabel}</Text>
           <View style={styles.compactFooter}>
             <View>
               <Text style={styles.price}>{formatINR(price)}</Text>
@@ -186,7 +188,7 @@ export function ProductCard({
           <Text style={styles.title} numberOfLines={2}>
             {product.shortName}
           </Text>
-          <Text style={styles.unitChip}>Setup included · {durationId}</Text>
+          <Text style={styles.unitChip}>Setup included · from {planLabel}</Text>
         </View>
       </PressableScale>
       <View style={styles.footer}>

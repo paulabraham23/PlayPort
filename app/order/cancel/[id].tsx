@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -12,13 +12,16 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
+import { formatFunctionsError } from '@/utils/functionsError';
 
 const REASONS = ['Changed plans', 'Found alternative', 'Delay', 'Other'] as const;
 
 export default function CancelOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { horizontalPadding } = useResponsive();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const orders = useAppStore((s) => s.orders);
   const cancelOrder = useAppStore((s) => s.cancelOrder);
   const order = useMemo(() => orders.find((o) => o.id === id), [orders, id]);
@@ -26,6 +29,26 @@ export default function CancelOrderScreen() {
   const [reason, setReason] = useState<(typeof REASONS)[number] | null>(null);
   const [otherText, setOtherText] = useState('');
   const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) ensureLoggedIn(`/order/cancel/${id}`);
+  }, [isAuthenticated, id]);
+
+  if (!isAuthenticated) {
+    return (
+      <Screen showHeader={false} narrow>
+        <ScreenHeader title="Cancel Order" onBack={() => router.back()} />
+        <EmptyState
+          title="Log in required"
+          subtitle="Sign in to cancel this booking."
+          actionLabel="Log in"
+          onAction={() => ensureLoggedIn(`/order/cancel/${id}`)}
+        />
+      </Screen>
+    );
+  }
 
   if (!order) {
     return (
@@ -63,11 +86,19 @@ export default function CancelOrderScreen() {
   const canConfirm =
     reason != null && (reason !== 'Other' || otherText.trim().length > 0);
 
-  const onConfirm = () => {
-    if (!canConfirm || !id) return;
+  const onConfirm = async () => {
+    if (!canConfirm || !id || busy) return;
     const finalReason = reason === 'Other' ? otherText.trim() : reason!;
-    void cancelOrder(id, finalReason);
-    setDone(true);
+    setBusy(true);
+    setError(null);
+    try {
+      await cancelOrder(id, finalReason);
+      setDone(true);
+    } catch (e) {
+      setError(formatFunctionsError(e));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const first = order.items[0];
@@ -133,12 +164,14 @@ export default function CancelOrderScreen() {
           </Text>
         </Card>
 
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
         <Button
-          title="Confirm cancellation"
+          title={busy ? 'Cancelling…' : 'Confirm cancellation'}
           variant="danger"
           fullWidth
-          disabled={!canConfirm}
-          onPress={onConfirm}
+          disabled={!canConfirm || busy}
+          onPress={() => void onConfirm()}
         />
         <Button title="Keep my order" variant="ghost" fullWidth onPress={() => router.back()} />
       </ScrollView>
@@ -188,6 +221,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 13,
     lineHeight: 19,
+  },
+  error: {
+    color: colors.danger,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    lineHeight: 18,
   },
   successWrap: {
     flex: 1,

@@ -120,3 +120,44 @@ export async function callCheckAvailability(input: {
   const res = await fn(input);
   return res.data;
 }
+
+export type PlacesSuggestion = {
+  placeId: string;
+  primaryText: string;
+  secondaryText: string;
+  fullText: string;
+};
+
+export type ResolvedPlaceAddress = {
+  placeId: string;
+  formattedAddress: string;
+  line1: string;
+  line2?: string;
+  area: string;
+  city: string;
+  pincode: string;
+  state?: string;
+  lat?: number;
+  lng?: number;
+};
+
+export async function callPlacesAutocomplete(input: {
+  input: string;
+  sessionToken?: string;
+  latitude?: number;
+  longitude?: number;
+  radiusMeters?: number;
+}) {
+  const fn = httpsCallable<
+    typeof input,
+    { suggestions: PlacesSuggestion[] }
+  >(functions, 'placesAutocomplete');
+  const res = await fn(input);
+  return res.data;
+}
+
+export async function callPlaceDetails(input: { placeId: string; sessionToken?: string }) {
+  const fn = httpsCallable<typeof input, { place: ResolvedPlaceAddress }>(functions, 'placeDetails');
+  const res = await fn(input);
+  return res.data;
+}

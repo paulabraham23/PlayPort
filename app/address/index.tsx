@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
-import { HUB } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
 
 export default function AddressIndexScreen() {
   const { horizontalPadding } = useResponsive();
@@ -19,6 +19,7 @@ export default function AddressIndexScreen() {
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
   const selectAddress = useAppStore((s) => s.selectAddress);
   const setDefaultAddress = useAppStore((s) => s.setDefaultAddress);
+  const hub = useCatalogStore((s) => s.hub);
 
   return (
     <Screen showHeader={false}>
@@ -42,12 +43,14 @@ export default function AddressIndexScreen() {
               backgroundColor={colors.orangeTint}
             />
           </View>
-          <Text style={styles.hubName}>{HUB.name}</Text>
-          <Text style={styles.hubSector}>{HUB.sector}</Text>
-          <Text style={styles.hubStatus}>{HUB.statusLabel}</Text>
+          <Text style={styles.hubName}>{hub.name}</Text>
+          {hub.sector ? <Text style={styles.hubSector}>{hub.sector}</Text> : null}
+          <Text style={styles.hubStatus}>
+            {hub.statusLabel ?? `${hub.etaMinutes}–45m dropoff · ${hub.city || 'your city'}`}
+          </Text>
           <View style={styles.hubMeta}>
             <Ionicons name="time-outline" size={14} color={colors.secondaryText} />
-            <Text style={styles.hubMetaText}>Avg ETA {HUB.etaMinutes}–45 min</Text>
+            <Text style={styles.hubMetaText}>Avg ETA {hub.etaMinutes}–45 min</Text>
           </View>
         </Card>
 

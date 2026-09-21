@@ -1,16 +1,12 @@
-export type CategoryId =
-  | 'gaming'
-  | 'movie-nights'
-  | 'music-karaoke'
-  | 'party-social'
-  | 'family'
-  | 'kids'
-  | 'date-night'
-  | 'racing'
-  | 'vr'
-  | 'board-games';
+export type CategoryId = string;
 
-export type RentalDurationId = '6h' | '12h' | '24h' | 'weekend';
+/** Plan id is free-form (e.g. "1h", "3h", "12h") — admin-configurable. */
+export type RentalPlanId = string;
+
+/** @deprecated Prefer RentalPlanId — kept for gradual migration aliases. */
+export type RentalDurationId = RentalPlanId;
+
+export type PricingMode = 'package' | 'hourly';
 
 export type OrderStatus =
   | 'confirmed'
@@ -31,8 +27,48 @@ export type InventoryUnitStatus = 'available' | 'maintenance' | 'retired';
 
 export type ReservationStatus = 'hold' | 'confirmed' | 'released' | 'completed';
 
+export interface RentalPlan {
+  id: RentalPlanId;
+  label: string;
+  hours: number;
+  price: number;
+  popular?: boolean;
+}
+
+export interface ProductHourlyRate {
+  enabled: boolean;
+  firstHourPrice: number;
+  extraHourPrice: number;
+  maxHours?: number;
+}
+
+export interface ProductAddonPricing {
+  perHour: number;
+  /** Use per-hour pricing when selected plan hours <= this (e.g. 6). */
+  perHourMaxPlanHours: number;
+  flatPrice: number;
+  /** Use flat pricing when selected plan hours >= this (e.g. 12). */
+  flatMinPlanHours: number;
+}
+
+export interface ProductAddon {
+  id: string;
+  name: string;
+  description?: string;
+  maxQuantity: number;
+  pricing: ProductAddonPricing;
+}
+
+export interface CartAddonLine {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+/** @deprecated Legacy duration metadata — prefer RentalPlan on products. */
 export interface RentalDuration {
-  id: RentalDurationId;
+  id: RentalPlanId;
   label: string;
   hours: number;
   description: string;
@@ -58,7 +94,12 @@ export interface Product {
   description: string;
   categoryId: CategoryId;
   images: string[];
-  priceByDuration: Record<RentalDurationId, number>;
+  /** Admin-configurable package plans (1h, 3h, 6h, …). */
+  plans: RentalPlan[];
+  hourly?: ProductHourlyRate | null;
+  addons?: ProductAddon[];
+  /** @deprecated Migrated into plans — kept for reading old Firestore docs. */
+  priceByDuration?: Record<string, number>;
   compareAtPrice?: number;
   rating: number;
   reviewCount: number;
@@ -96,12 +137,20 @@ export interface CartItem {
   name: string;
   image: string;
   categoryLabel: string;
-  durationId: RentalDurationId;
+  /** Selected package plan id, or "hourly" when pricingMode is hourly. */
+  planId: string;
+  durationId: string;
   durationLabel: string;
+  hours: number;
+  pricingMode: PricingMode;
+  /** Kit / base line unit price (package or hourly total for selected hours). */
   unitPrice: number;
+  addons?: CartAddonLine[];
+  addonsTotal?: number;
   quantity: number;
   includesNote?: string;
 }
+
 
 export interface Address {
   id: string;
@@ -188,6 +237,21 @@ export interface Order {
   progressPercent: number;
   riderName?: string;
   riderDistanceKm?: number;
+  /** Assigned delivery partner */
+  riderId?: string | null;
+  riderPhone?: string;
+  riderAcceptedAt?: string;
+  /** Live rider GPS while en route (not shown as a map to customers) */
+  riderLat?: number;
+  riderLng?: number;
+  riderLocationUpdatedAt?: string;
+  /** Drop-off coordinates for ETA */
+  dropoffLat?: number;
+  dropoffLng?: number;
+  /** Computed delivery ETA in minutes from last location ping */
+  etaMinutes?: number;
+  /** road = Google Routes (traffic-aware); straight = fallback */
+  etaSource?: 'road' | 'straight';
   setupIncluded: boolean;
   liveDispatch?: boolean;
   reservationIds?: string[];
@@ -195,6 +259,21 @@ export interface Order {
   endAt?: string;
   holdExpiresAt?: string | null;
   razorpayOrderId?: string;
+}
+
+/** Delivery partner profile — doc id usually matches Auth uid after bind. */
+export interface Rider {
+  id: string;
+  name: string;
+  phone: string;
+  hubId: string;
+  active: boolean;
+  vehicle?: string;
+  /** Bound Firebase Auth uid (set on first rider login) */
+  uid?: string;
+  lastSeenAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PaymentRecord {
@@ -245,6 +324,8 @@ export interface User {
   homeHub: string;
   /** Firestore hubs/{id} reference — source for booking hub */
   homeHubId?: string;
+  /** True after name + first address onboarding */
+  onboardingComplete?: boolean;
 }
 
 /** Generic hub — multi-city ready. No city hardcoding in business logic. */
@@ -257,4 +338,54 @@ export interface HubInfo {
   sector?: string;
   etaMinutes?: number;
   statusLabel?: string;
+  /** Optional geo for Places bias / routing */
+  lat?: number;
+  lng?: number;
+  addressLine?: string;
+  pincode?: string;
+  phone?: string;
+  notes?: string;
 }
+
+/** Global ops knobs — edited in Admin → Settings */
+export interface AppConfig {
+  taxPercent: number;
+  deliveryFee: number;
+  freeDeliveryAbove: number;
+  defaultEtaMinutes: number;
+  bookingHoldMinutes: number;
+  supportPhone: string;
+  supportEmail: string;
+  supportWhatsapp: string;
+  brandTagline: string;
+  maintenanceMode: boolean;
+  maintenanceMessage: string;
+  allowGuestCheckout: boolean;
+  minOrderAmount: number;
+  maxUnitsPerOrder: number;
+  rapidZonePincodes: string[];
+  homeHeroTitle: string;
+  homeHeroSubtitle: string;
+  updatedAt?: string;
+}
+
+export const DEFAULT_APP_CONFIG: AppConfig = {
+  taxPercent: 18,
+  deliveryFee: 0,
+  freeDeliveryAbove: 0,
+  defaultEtaMinutes: 30,
+  bookingHoldMinutes: 15,
+  supportPhone: '',
+  supportEmail: 'playportofficial@gmail.com',
+  supportWhatsapp: '',
+  brandTagline: 'Entertainment on demand',
+  maintenanceMode: false,
+  maintenanceMessage: 'We’re upgrading hubs — back shortly.',
+  allowGuestCheckout: false,
+  minOrderAmount: 0,
+  maxUnitsPerOrder: 5,
+  rapidZonePincodes: [],
+  homeHeroTitle: '',
+  homeHeroSubtitle: '',
+};
+

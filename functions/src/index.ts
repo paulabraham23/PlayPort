@@ -7,7 +7,13 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import { defineSecret, defineString } from 'firebase-functions/params';
+import { defineString } from 'firebase-functions/params';
+import {
+  cartItemHours,
+  expectedLineTotal,
+  type FnCartItem,
+  type FnProduct,
+} from './rentalPricing';
 
 initializeApp();
 const db = getFirestore();
@@ -29,19 +35,16 @@ const ORDER_TRANSITIONS: Record<string, string[]> = {
 };
 
 const razorpayKeyId = defineString('RAZORPAY_KEY_ID', { default: '' });
-const razorpayKeySecret = defineSecret('RAZORPAY_KEY_SECRET');
-const razorpayWebhookSecret = defineSecret('RAZORPAY_WEBHOOK_SECRET');
+/** Optional — empty = demo checkout (confirmPayment). Set via params when going live. */
+const razorpayKeySecret = defineString('RAZORPAY_KEY_SECRET', { default: '' });
+const razorpayWebhookSecret = defineString('RAZORPAY_WEBHOOK_SECRET', { default: '' });
+const googleMapsApiKey = defineString('GOOGLE_MAPS_API_KEY', { default: '' });
 
-type CartItem = {
+type CartItem = FnCartItem & {
   id: string;
-  productId?: string;
-  experienceId?: string;
   name: string;
   image: string;
-  durationId: string;
   durationLabel: string;
-  unitPrice: number;
-  quantity: number;
   includesNote?: string;
 };
 
@@ -55,19 +58,9 @@ function orderId() {
   return `PP-${new Date().getFullYear()}-${n}`;
 }
 
-function durationHours(durationId: string): number {
-  switch (durationId) {
-    case '6h':
-      return 6;
-    case '12h':
-      return 12;
-    case '24h':
-      return 24;
-    case 'weekend':
-      return 48;
-    default:
-      return 12;
-  }
+function lineClientTotal(c: CartItem): number {
+  const extras = c.addonsTotal ?? (c.addons ?? []).reduce((s, a) => s + a.unitPrice * a.quantity, 0);
+  return (c.unitPrice + extras) * c.quantity;
 }
 
 function rangesOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number) {
@@ -252,15 +245,50 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   if (!Array.isArray(cart) || !cart.length) {
     throw new HttpsError('invalid-argument', 'Cart is empty');
   }
+  if (!addressFull || String(addressFull).trim().length < 8) {
+    throw new HttpsError('invalid-argument', 'Delivery address required');
+  }
 
   const hubId = await resolveHubId(requestedHubId, uid);
   const now = Date.now();
-  const startAt = startAtInput ? new Date(startAtInput) : new Date(now + 60 * 60 * 1000);
+  const startAt = startAtInput ? new Date(startAtInput) : new Date(now + 45 * 60 * 1000);
   if (Number.isNaN(startAt.getTime())) {
     throw new HttpsError('invalid-argument', 'Invalid startAt');
   }
 
-  const maxHours = Math.max(...cart.map((c) => durationHours(c.durationId)));
+  // Server-side reprice for product lines
+  let expectedSubtotal = 0;
+  for (const line of cart) {
+    if (line.experienceId && !line.productId) {
+      expectedSubtotal += lineClientTotal(line);
+      continue;
+    }
+    if (!line.productId) {
+      throw new HttpsError('invalid-argument', 'Cart line missing productId');
+    }
+    const snap = await db.collection('products').doc(line.productId).get();
+    if (!snap.exists) {
+      throw new HttpsError('not-found', `Product ${line.productId} not found`);
+    }
+    const product = snap.data() as FnProduct;
+    const expected = expectedLineTotal(product, line);
+    const client = lineClientTotal(line);
+    if (Math.abs(expected - client) > 1) {
+      throw new HttpsError(
+        'failed-precondition',
+        `Price mismatch for ${line.name || line.productId}: expected ₹${expected}, got ₹${client}`
+      );
+    }
+    expectedSubtotal += expected;
+  }
+  if (typeof subtotal === 'number' && Math.abs(expectedSubtotal - subtotal) > 1) {
+    throw new HttpsError(
+      'failed-precondition',
+      `Cart subtotal mismatch: expected ₹${expectedSubtotal}, got ₹${subtotal}`
+    );
+  }
+
+  const maxHours = Math.max(...cart.map((c) => cartItemHours(c)));
   const endAt = new Date(startAt.getTime() + maxHours * 60 * 60 * 1000);
   const startMs = startAt.getTime();
   const endMs = endAt.getTime();
@@ -269,7 +297,30 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   const endIso = endAt.toISOString();
   const nowIso = new Date().toISOString();
 
-  const productLines = cart.filter((c) => c.productId);
+  // Expand combo/experience lines into product inventory holds
+  const productLines: CartItem[] = [];
+  for (const line of cart) {
+    if (line.productId) {
+      productLines.push(line);
+      continue;
+    }
+    if (line.experienceId) {
+      const expSnap = await db.collection('experiences').doc(line.experienceId).get();
+      const productIds: string[] = expSnap.exists
+        ? ((expSnap.data()?.productIds as string[]) ?? [])
+        : [];
+      if (!productIds.length) {
+        throw new HttpsError(
+          'failed-precondition',
+          `Combo ${line.name} has no linked products for inventory`
+        );
+      }
+      for (const productId of productIds) {
+        productLines.push({ ...line, productId, quantity: line.quantity || 1 });
+      }
+    }
+  }
+
   const unitAssignments: { productId: string; unitId: string }[] = [];
 
   for (const line of productLines) {
@@ -329,7 +380,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     startAt: startIso,
     endAt: endIso,
     reservationIds,
-    etaLabel: '7:45 PM',
+    etaLabel: 'Arriving soon',
     addressLabel,
     addressFull,
     items: cart.map((c) => ({
@@ -339,8 +390,13 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
       image: c.image,
       durationLabel: c.durationLabel,
       returnLabel: `Returns ${endAt.toLocaleString('en-IN')}`,
-      price: c.unitPrice * c.quantity,
-      badges: c.includesNote ? [c.includesNote.slice(0, 28)] : [],
+      price: lineClientTotal(c),
+      badges: [
+        ...(c.includesNote ? [c.includesNote.slice(0, 28)] : []),
+        ...((c.addons ?? []).length
+          ? [`+${(c.addons ?? []).reduce((s, a) => s + a.quantity, 0)} add-ons`]
+          : []),
+      ],
     })),
     subtotal,
     taxes,
@@ -349,6 +405,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     progressPercent: 10,
     setupIncluded: true,
     liveDispatch: false,
+    riderId: null,
   };
 
   batch.set(db.collection('orders').doc(id), order);
@@ -638,7 +695,7 @@ export const releaseExpiredInventoryHoldSchedule = onSchedule(
 // ——— Razorpay ———
 
 export const createRazorpayOrder = onCall(
-  { region: REGION, secrets: [razorpayKeySecret] },
+  { region: REGION },
   async (request) => {
     const uid = requireAuth(request.auth?.uid);
     const { orderId: id } = request.data as { orderId: string };
@@ -733,7 +790,7 @@ async function confirmPaidOrderAdmin(orderId: string, providerRef: string) {
 }
 
 export const razorpayWebhook = onRequest(
-  { region: REGION, secrets: [razorpayKeySecret, razorpayWebhookSecret] },
+  { region: REGION },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).send('Method not allowed');
@@ -851,3 +908,187 @@ export const checkAvailability = onCall({ region: REGION }, async (request) => {
     return { ok: false, hubId, availableUnitIds: [] as string[] };
   }
 });
+
+type PlacesSuggestion = {
+  placeId: string;
+  primaryText: string;
+  secondaryText: string;
+  fullText: string;
+};
+
+type ParsedPlaceAddress = {
+  placeId: string;
+  formattedAddress: string;
+  line1: string;
+  line2?: string;
+  area: string;
+  city: string;
+  pincode: string;
+  state?: string;
+  lat?: number;
+  lng?: number;
+};
+
+function componentLong(
+  components: Array<{ longText?: string; shortText?: string; types?: string[] }> | undefined,
+  type: string
+): string {
+  const hit = components?.find((c) => c.types?.includes(type));
+  return hit?.longText || hit?.shortText || '';
+}
+
+function parsePlaceDetails(place: Record<string, unknown>): ParsedPlaceAddress {
+  const components = (place.addressComponents || []) as Array<{
+    longText?: string;
+    shortText?: string;
+    types?: string[];
+  }>;
+  const streetNumber = componentLong(components, 'street_number');
+  const route = componentLong(components, 'route');
+  const premise = componentLong(components, 'premise');
+  const subpremise = componentLong(components, 'subpremise');
+  const neighborhood =
+    componentLong(components, 'sublocality_level_1') ||
+    componentLong(components, 'sublocality') ||
+    componentLong(components, 'neighborhood') ||
+    componentLong(components, 'sublocality_level_2');
+  const city =
+    componentLong(components, 'locality') ||
+    componentLong(components, 'administrative_area_level_2') ||
+    componentLong(components, 'postal_town');
+  const pincode = componentLong(components, 'postal_code');
+  const state = componentLong(components, 'administrative_area_level_1');
+
+  const lineParts = [subpremise, premise, streetNumber, route].filter(Boolean);
+  const line1 = lineParts.join(', ') || (place.formattedAddress as string)?.split(',')[0]?.trim() || '';
+  const location = place.location as { latitude?: number; longitude?: number } | undefined;
+
+  return {
+    placeId: (place.id as string) || '',
+    formattedAddress: (place.formattedAddress as string) || '',
+    line1,
+    line2: undefined,
+    area: neighborhood || city,
+    city: city || 'Bengaluru',
+    pincode,
+    state: state || undefined,
+    lat: location?.latitude,
+    lng: location?.longitude,
+  };
+}
+
+/** Google Places Autocomplete (New) — India-biased, auth required. */
+export const placesAutocomplete = onCall({ region: REGION }, async (request) => {
+    requireAuth(request.auth?.uid);
+    const { input, sessionToken, latitude, longitude, radiusMeters } = (request.data || {}) as {
+      input?: string;
+      sessionToken?: string;
+      latitude?: number;
+      longitude?: number;
+      radiusMeters?: number;
+    };
+    const q = (input || '').trim();
+    if (q.length < 2) return { suggestions: [] as PlacesSuggestion[] };
+
+    const key = googleMapsApiKey.value();
+    if (!key) throw new HttpsError('failed-precondition', 'Places API key not configured');
+
+    const body: Record<string, unknown> = {
+      input: q,
+      includedRegionCodes: ['in'],
+      languageCode: 'en',
+      regionCode: 'IN',
+    };
+    if (sessionToken) body.sessionToken = sessionToken;
+    if (typeof latitude === 'number' && typeof longitude === 'number') {
+      body.locationBias = {
+        circle: {
+          center: { latitude, longitude },
+          radius: radiusMeters ?? 45000,
+        },
+      };
+    } else {
+      // Bengaluru default bias
+      body.locationBias = {
+        circle: {
+          center: { latitude: 12.9716, longitude: 77.5946 },
+          radius: 50000,
+        },
+      };
+    }
+
+    const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': key,
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      logger.warn('placesAutocomplete failed', { status: res.status, text: text.slice(0, 300) });
+      throw new HttpsError('internal', 'Places autocomplete unavailable');
+    }
+    const data = (await res.json()) as {
+      suggestions?: Array<{
+        placePrediction?: {
+          placeId?: string;
+          place?: string;
+          text?: { text?: string };
+          structuredFormat?: {
+            mainText?: { text?: string };
+            secondaryText?: { text?: string };
+          };
+        };
+      }>;
+    };
+
+    const suggestions: PlacesSuggestion[] = (data.suggestions || [])
+      .map((s) => {
+        const p = s.placePrediction;
+        if (!p?.placeId) return null;
+        return {
+          placeId: p.placeId,
+          primaryText: p.structuredFormat?.mainText?.text || p.text?.text || '',
+          secondaryText: p.structuredFormat?.secondaryText?.text || '',
+          fullText: p.text?.text || '',
+        };
+      })
+      .filter((s): s is PlacesSuggestion => Boolean(s));
+
+    return { suggestions };
+  });
+
+/** Place Details (New) — resolves structured address fields for forms. */
+export const placeDetails = onCall({ region: REGION }, async (request) => {
+    requireAuth(request.auth?.uid);
+    const { placeId, sessionToken } = (request.data || {}) as {
+      placeId?: string;
+      sessionToken?: string;
+    };
+    if (!placeId) throw new HttpsError('invalid-argument', 'placeId required');
+
+    const key = googleMapsApiKey.value();
+    if (!key) throw new HttpsError('failed-precondition', 'Places API key not configured');
+
+    const params = new URLSearchParams();
+    if (sessionToken) params.set('sessionToken', sessionToken);
+    const qs = params.toString() ? `?${params}` : '';
+    const id = placeId.replace(/^places\//, '');
+    const res = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(id)}${qs}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': key,
+        'X-Goog-FieldMask': 'id,formattedAddress,addressComponents,location,displayName',
+      },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      logger.warn('placeDetails failed', { status: res.status, text: text.slice(0, 300) });
+      throw new HttpsError('internal', 'Place details unavailable');
+    }
+    const place = (await res.json()) as Record<string, unknown>;
+    return { place: parsePlaceDetails(place) };
+  });

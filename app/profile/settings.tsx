@@ -45,7 +45,10 @@ export default function SettingsScreen() {
               <Text style={styles.sub}>English</Text>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.mutedText} />
+          <View style={styles.locked}>
+            <Text style={styles.lockedText}>Locked</Text>
+            <Ionicons name="lock-closed" size={14} color={colors.mutedText} />
+          </View>
         </Card>
 
         <Text style={styles.section}>Notifications</Text>

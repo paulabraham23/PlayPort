@@ -70,13 +70,16 @@ export default function ConfirmationScreen() {
           </View>
           <Text style={styles.heroTitle}>Dropoff Confirmed</Text>
           <Text style={styles.heroSub}>
-            Your entertainment gear is being packed and pre-tested at our local Dark Hub.
+            {order.paymentStatus === 'paid'
+              ? 'Your entertainment gear is being packed and pre-tested at our local hub.'
+              : 'Payment is still processing — we’ll confirm packing once it clears.'}
           </Text>
           <View style={styles.orderPill}>
             <Text style={styles.orderPillText}>
               <Text style={styles.orderId}>#{order.id}</Text>
-              {' · Paid '}
-              {formatINR(order.total)} via {order.paymentMethodLabel}
+              {order.paymentStatus === 'paid' ? ' · Paid ' : ' · Total '}
+              {formatINR(order.total)}
+              {order.paymentMethodLabel ? ` via ${order.paymentMethodLabel}` : ''}
             </Text>
           </View>
         </View>

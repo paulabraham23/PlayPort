@@ -14,12 +14,12 @@ import type {
 } from '@/types';
 
 export const HUB: HubInfo = {
-  id: 'hyd-central',
-  name: 'PlayPort Central Hub',
-  city: 'Hyderabad',
-  state: 'Telangana',
+  id: 'indiranagar',
+  name: 'Indiranagar Dark Hub',
+  city: 'Bengaluru',
+  state: 'Karnataka',
   active: true,
-  sector: 'ACTIVE SECTOR • Dark Store #01',
+  sector: 'ACTIVE SECTOR • Dark Store #04',
   etaMinutes: 30,
   statusLabel: '30-45m dropoff active • Express gear dispatch',
 };
@@ -27,11 +27,37 @@ export const HUB: HubInfo = {
 export const LOCATION_LABEL = `${HUB.city}`;
 
 export const DURATIONS: RentalDuration[] = [
-  { id: '6h', label: '6 Hours', hours: 6, description: 'Quick match or party slot' },
-  { id: '12h', label: '12 Hours', hours: 12, description: 'All-night raid special', popular: true },
-  { id: '24h', label: '24 Hours', hours: 24, description: 'Full day marathon session' },
-  { id: 'weekend', label: 'Weekend Pass', hours: 48, description: 'Fri 7 PM - Sun 11 PM' },
+  { id: '1h', label: '1 Hour', hours: 1, description: 'Quick session' },
+  { id: '3h', label: '3 Hours', hours: 3, description: 'More time more fun', popular: true },
+  { id: '6h', label: '6 Hours', hours: 6, description: 'Bigger sessions' },
+  { id: '12h', label: '12 Hours', hours: 12, description: 'Half-day marathon' },
+  { id: '24h', label: '24 Hours', hours: 24, description: 'Full day fun' },
 ];
+
+const EXTRA_CONTROLLER = {
+  id: 'extra-controller',
+  name: 'Extra Controller',
+  description: '₹20/hr up to 6h · ₹150 flat for 12h/24h',
+  maxQuantity: 3,
+  pricing: {
+    perHour: 20,
+    perHourMaxPlanHours: 6,
+    flatPrice: 150,
+    flatMinPlanHours: 12,
+  },
+};
+
+function flyerPlans(
+  rows: Array<[string, string, number, number, boolean?]>
+): Product['plans'] {
+  return rows.map(([id, label, hours, price, popular]) => ({
+    id,
+    label,
+    hours,
+    price,
+    popular: !!popular,
+  }));
+}
 
 export const CATEGORIES: Category[] = [
   {
@@ -83,25 +109,33 @@ export const CATEGORIES: Category[] = [
 export const PRODUCTS: Product[] = [
   {
     id: 'ps5',
-    name: 'PlayStation 5 + 2 DualSense Controllers',
+    name: 'PlayStation 5 + DualSense',
     shortName: 'PS5',
     description:
-      'Sanitized PS5 console kit with twin DualSense controllers, HDMI, and ready-to-play setup.',
+      'Sanitized PS5 with DualSense, PS Plus Extra library access, HDMI, and doorstep setup.',
     categoryId: 'gaming',
     images: [
       'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=900&q=80',
       'https://images.unsplash.com/photo-1592840496694-26d035b52b48?w=900&q=80',
     ],
-    priceByDuration: { '6h': 699, '12h': 999, '24h': 1399, weekend: 2499 },
+    plans: flyerPlans([
+      ['3h', '3 Hours', 3, 449, true],
+      ['6h', '6 Hours', 6, 699],
+      ['12h', '12 Hours', 12, 1099],
+      ['24h', '24 Hours', 24, 1499],
+    ]),
+    hourly: { enabled: true, firstHourPrice: 249, extraHourPrice: 150, maxHours: 24 },
+    addons: [EXTRA_CONTROLLER],
     rating: 4.9,
     reviewCount: 210,
-    tags: ['CONSOLE', 'Zero Deposit'],
+    tags: ['CONSOLE'],
     badge: 'In stock',
     etaMinutes: 30,
     availabilityLabel: '4 units ready',
     includes: [
       { title: 'PS5 Console', detail: 'UV-sanitized and pre-tested', tag: 'Console' },
-      { title: '2 DualSense Controllers', detail: 'Fully charged', tag: 'Pair' },
+      { title: '1 DualSense Controller', detail: 'Fully charged', tag: 'Included' },
+      { title: 'PS Plus Extra', detail: 'Game library access' },
       { title: 'HDMI + Power', detail: 'Braided HDMI and power cable' },
     ],
     requirements: ['HDMI TV or monitor', 'Power outlet'],
@@ -110,12 +144,20 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'ps4',
-    name: 'PlayStation 4 + 2 Controllers',
+    name: 'PlayStation 4 + Controllers',
     shortName: 'PS4',
-    description: 'Reliable PS4 kit with two DualShock controllers — great for classic multiplayer nights.',
+    description: 'Classic PS4 kit with DualShock controllers — ready for multiplayer nights.',
     categoryId: 'gaming',
     images: ['https://images.unsplash.com/photo-1486401899868-0e435ed85128?w=900&q=80'],
-    priceByDuration: { '6h': 449, '12h': 649, '24h': 899, weekend: 1599 },
+    plans: flyerPlans([
+      ['1h', '1 Hour', 1, 199],
+      ['3h', '3 Hours', 3, 399, true],
+      ['6h', '6 Hours', 6, 599],
+      ['12h', '12 Hours', 12, 949],
+      ['24h', '24 Hours', 24, 1299],
+    ]),
+    hourly: null,
+    addons: [EXTRA_CONTROLLER],
     rating: 4.7,
     reviewCount: 164,
     tags: ['CONSOLE'],
@@ -132,10 +174,17 @@ export const PRODUCTS: Product[] = [
     id: 'meta-quest-2',
     name: 'Meta Quest 2 VR Headset',
     shortName: 'Meta Quest 2',
-    description: 'Standalone VR headset, sanitized and charged, with controllers ready for party experiences.',
+    description: 'Standalone VR headset, sanitized and charged, with controllers ready.',
     categoryId: 'vr',
     images: ['https://images.unsplash.com/photo-1622979135225-d2cd26462be2?w=900&q=80'],
-    priceByDuration: { '6h': 599, '12h': 799, '24h': 1099, weekend: 1899 },
+    plans: flyerPlans([
+      ['3h', '3 Hours', 3, 499, true],
+      ['6h', '6 Hours', 6, 799],
+      ['12h', '12 Hours', 12, 1199],
+      ['24h', '24 Hours', 24, 1599],
+    ]),
+    hourly: { enabled: true, firstHourPrice: 299, extraHourPrice: 150, maxHours: 24 },
+    addons: [],
     rating: 4.8,
     reviewCount: 98,
     tags: ['VR'],
@@ -151,12 +200,19 @@ export const PRODUCTS: Product[] = [
   {
     id: 'ferrari-thrustmaster',
     name: 'Ferrari Thrustmaster Steering Wheel',
-    shortName: 'Ferrari Thrustmaster',
-    description:
-      'Ferrari-licensed Thrustmaster racing wheel with pedals — force-feedback ready for console racing.',
+    shortName: 'Steering Wheel',
+    description: 'Ferrari-licensed Thrustmaster racing wheel with pedals — PS5 compatible.',
     categoryId: 'racing',
     images: ['https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=900&q=80'],
-    priceByDuration: { '6h': 799, '12h': 1099, '24h': 1499, weekend: 2499 },
+    plans: flyerPlans([
+      ['1h', '1 Hour', 1, 199],
+      ['3h', '3 Hours', 3, 349, true],
+      ['6h', '6 Hours', 6, 599],
+      ['12h', '12 Hours', 12, 899],
+      ['24h', '24 Hours', 24, 1299],
+    ]),
+    hourly: null,
+    addons: [],
     rating: 4.85,
     reviewCount: 54,
     tags: ['RACING'],
@@ -172,12 +228,20 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'lifelong-projector',
-    name: 'Lifelong Smart Projector',
-    shortName: 'Lifelong Smart Projector',
-    description: 'Smart portable projector for movies, sports, and presentations — sanitized and cast-ready.',
+    name: 'Lifelong Lightbeam Smart Projector',
+    shortName: 'Lifelong Projector',
+    description:
+      'HD 720p smart projector with built-in speaker, 4K support, Bluetooth 5.2, 180° rotation.',
     categoryId: 'movie-nights',
     images: ['https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=900&q=80'],
-    priceByDuration: { '6h': 549, '12h': 749, '24h': 999, weekend: 1699 },
+    plans: flyerPlans([
+      ['3h', '3 Hours', 3, 249, true],
+      ['6h', '6 Hours', 6, 399],
+      ['12h', '12 Hours', 12, 549],
+      ['24h', '24 Hours', 24, 799],
+    ]),
+    hourly: { enabled: true, firstHourPrice: 149, extraHourPrice: 70, maxHours: 24 },
+    addons: [],
     rating: 4.6,
     reviewCount: 72,
     tags: ['PROJECTOR'],
@@ -190,6 +254,92 @@ export const PRODUCTS: Product[] = [
     popular: true,
     featured: true,
   },
+  {
+    id: 'ps5-steering-wheel',
+    name: 'PS5 + Steering Wheel Combo',
+    shortName: 'PS5 + Wheel',
+    description: 'Ultimate racing experience — PS5 console kit plus Thrustmaster wheel.',
+    categoryId: 'racing',
+    images: ['https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=900&q=80'],
+    plans: flyerPlans([
+      ['1h', '1 Hour', 1, 349],
+      ['3h', '3 Hours', 3, 599, true],
+      ['6h', '6 Hours', 6, 999],
+      ['12h', '12 Hours', 12, 1499],
+      ['24h', '24 Hours', 24, 1999],
+    ]),
+    hourly: null,
+    addons: [EXTRA_CONTROLLER],
+    rating: 4.9,
+    reviewCount: 40,
+    tags: ['COMBO', 'RACING'],
+    badge: 'Combo',
+    etaMinutes: 40,
+    availabilityLabel: '2 units ready',
+    includes: [
+      { title: 'PS5 + DualSense', detail: 'Console kit with controller' },
+      { title: 'Steering Wheel + Pedals', detail: 'Thrustmaster Ferrari edition' },
+      { title: 'Professional Setup', detail: 'Doorstep install included' },
+    ],
+    popular: true,
+    featured: true,
+  },
+  {
+    id: 'ps5-projector',
+    name: 'PS5 + Lifelong Projector Combo',
+    shortName: 'PS5 + Projector',
+    description: 'Console gaming on the big screen — PS5 with Lifelong Lightbeam projector.',
+    categoryId: 'movie-nights',
+    images: ['https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=900&q=80'],
+    plans: flyerPlans([
+      ['3h', '3 Hours', 3, 599, true],
+      ['6h', '6 Hours', 6, 899],
+      ['12h', '12 Hours', 12, 1399],
+      ['24h', '24 Hours', 24, 1899],
+    ]),
+    hourly: { enabled: true, firstHourPrice: 349, extraHourPrice: 150, maxHours: 24 },
+    addons: [EXTRA_CONTROLLER],
+    rating: 4.85,
+    reviewCount: 28,
+    tags: ['COMBO', 'CINEMA'],
+    badge: 'Combo',
+    etaMinutes: 40,
+    availabilityLabel: '2 units ready',
+    includes: [
+      { title: 'PS5 Kit', detail: 'Console + DualSense + cables' },
+      { title: 'Lifelong Projector', detail: 'Smart projector with remote' },
+      { title: 'Setup & Demo', detail: 'Doorstep white-glove setup' },
+    ],
+    popular: true,
+  },
+  {
+    id: 'ps5-quest',
+    name: 'PS5 + Meta Quest 2 Combo',
+    shortName: 'PS5 + Quest',
+    description: 'Console + VR night — PS5 with Meta Quest 2 for the full PlayPort experience.',
+    categoryId: 'vr',
+    images: ['https://images.unsplash.com/photo-1622979135225-d2cd26462be2?w=900&q=80'],
+    plans: flyerPlans([
+      ['3h', '3 Hours', 3, 799, true],
+      ['6h', '6 Hours', 6, 1299],
+      ['12h', '12 Hours', 12, 1799],
+      ['24h', '24 Hours', 24, 2499],
+    ]),
+    hourly: { enabled: true, firstHourPrice: 449, extraHourPrice: 199, maxHours: 24 },
+    addons: [EXTRA_CONTROLLER],
+    rating: 4.9,
+    reviewCount: 22,
+    tags: ['COMBO', 'VR'],
+    badge: 'Combo',
+    etaMinutes: 40,
+    availabilityLabel: '2 units ready',
+    includes: [
+      { title: 'PS5 Kit', detail: 'PS Plus Extra access included' },
+      { title: 'Meta Quest 2', detail: 'Headset + touch controllers' },
+      { title: 'Home delivery & pickup', detail: 'Included' },
+    ],
+    popular: true,
+  },
 ];
 
 /** Experiences paused — catalog is product-only for now. */
@@ -201,10 +351,10 @@ export const CURRENT_USER: User = {
   phone: '+91 98765 43210',
   email: 'rahul.sharma@email.com',
   avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
-  kycVerified: true,
+  kycVerified: false,
   sessionsCount: 4,
   homeHub: 'Hyderabad',
-  homeHubId: 'hyd-central',
+  homeHubId: 'indiranagar',
 };
 
 export const ADDRESSES: Address[] = [
@@ -270,21 +420,13 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
     id: 'pay-card',
     type: 'card',
     label: 'Credit / Debit Cards',
-    subtitle: 'Tokenized & secure per RBI directives',
-    brand: 'VISA',
-    last4: '4242',
+    subtitle: 'Visa, Mastercard, RuPay — tokenized at checkout',
   },
   {
     id: 'pay-net',
     type: 'netbanking',
     label: 'Net Banking',
     subtitle: 'HDFC, ICICI, SBI, Axis & 40+ others',
-  },
-  {
-    id: 'pay-cod',
-    type: 'cod',
-    label: 'Pay on Delivery (Doorstep QR)',
-    subtitle: 'Inspect gear at arrival, then scan to pay',
   },
 ];
 
@@ -454,8 +596,8 @@ export const NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'n4',
-    title: 'KYC active',
-    body: 'DigiLocker verification keeps your deposit at ₹0.',
+    title: 'Welcome to PlayPort',
+    body: 'Browse kits, book a slot, and track delivery minutes live.',
     timeLabel: 'Yesterday',
     type: 'account',
     read: true,
@@ -481,7 +623,7 @@ export const HELP_TOPICS = [
   { id: 'orders', title: 'Orders & Tracking', subtitle: 'Status, ETA, and setup help' },
   { id: 'cancellation', title: 'Cancellation & Refunds', subtitle: 'Policies before dispatch' },
   { id: 'delivery', title: 'Delivery & Returns', subtitle: 'Dropoff, pickup, white-glove' },
-  { id: 'payments', title: 'Payments & Deposits', subtitle: 'UPI, cards, zero deposit' },
+  { id: 'payments', title: 'Payments', subtitle: 'UPI, cards, and billing' },
   { id: 'products', title: 'Product Issues', subtitle: 'Hardware, games, accessories' },
   { id: 'faqs', title: 'FAQs', subtitle: 'Common questions answered' },
 ];
@@ -489,18 +631,18 @@ export const HELP_TOPICS = [
 export const FAQS = [
   {
     q: 'How fast is delivery?',
-    a: 'Most Indiranagar & Koramangala orders arrive in 30–45 minutes with doorstep setup.',
+    a: 'Once a rider accepts, Track shows live road minutes from their location to your address.',
   },
   {
     q: 'Is there a security deposit?',
-    a: 'With DigiLocker KYC, security deposit is ₹0 for eligible customers.',
+    a: 'Deposits depend on the kit and account status. You’ll see any holds clearly at checkout.',
   },
   {
     q: 'Can I cancel?',
-    a: 'Free cancellation is supported before equipment leaves the dark hub facility.',
+    a: 'You can cancel before a rider is assigned / before the kit leaves the hub. After dispatch, contact support.',
   },
   {
     q: 'How do returns work?',
-    a: 'Leave gear assembled. Our specialist handles unhooking and pickup at your return time.',
+    a: 'Leave gear assembled. Our rider handles unhooking and pickup at the end of your rental window.',
   },
 ];

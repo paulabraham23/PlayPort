@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -7,9 +8,12 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
-import { CURRENT_USER } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
+import { checkIsAdmin } from '@/lib/adminAuth';
+import { checkIsRider } from '@/lib/riderFirestore';
 import { useAppStore } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
+import { needsOnboarding } from '@/utils/onboarding';
 
 type MenuItem = {
   label: string;
@@ -27,15 +31,93 @@ type MenuSection = {
 export default function ProfileScreen() {
   const { horizontalPadding, isDesktop, gap } = useResponsive();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-  const user = useAppStore((s) => s.user) ?? CURRENT_USER;
+  const user = useAppStore((s) => s.user);
+  const addresses = useAppStore((s) => s.addresses);
   const orders = useAppStore((s) => s.orders);
   const logout = useAppStore((s) => s.logout);
+  const hub = useCatalogStore((s) => s.hub);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isRider, setIsRider] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setIsAdmin(false);
+      setIsRider(false);
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([checkIsAdmin(true), checkIsRider()]).then(([adminOk, riderOk]) => {
+      if (!cancelled) {
+        setIsAdmin(adminOk);
+        setIsRider(riderOk);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
 
   const activeOrder = orders.find((o) =>
     ['confirmed', 'preparing', 'out_for_delivery', 'delivered', 'active', 'returning'].includes(o.status)
   );
 
-  if (!isAuthenticated) {
+  const homeHubLabel = user?.homeHub || hub?.city || hub?.name || '—';
+  const showSetup = isAuthenticated && user && needsOnboarding(user, addresses);
+
+  const sections: MenuSection[] = useMemo(() => {
+    if (!user) return [];
+    const base: MenuSection[] = [
+      {
+        title: 'My Activity',
+        items: [
+          { label: 'My Orders', icon: 'cube-outline', href: '/(tabs)/orders' },
+          { label: 'Past rentals', icon: 'time-outline', href: '/(tabs)/orders' },
+          { label: 'My Reviews', icon: 'star-outline', href: '/profile/reviews' },
+        ],
+      },
+      {
+        title: 'Account',
+        items: [
+          { label: 'Saved Addresses', icon: 'location-outline', href: '/profile/addresses' },
+          { label: 'Payment Methods', icon: 'card-outline', href: '/profile/payment-methods' },
+          { label: 'Notifications', icon: 'notifications-outline', href: '/profile/notifications' },
+        ],
+      },
+      {
+        title: 'Security',
+        items: [
+          {
+            label: user.kycVerified ? 'Account verified' : 'Account security',
+            icon: 'shield-checkmark-outline',
+            href: '/profile/settings',
+          },
+        ],
+      },
+      {
+        title: 'Support',
+        items: [
+          { label: 'Help & FAQs', icon: 'help-circle-outline', href: '/profile/help' },
+          { label: 'Sanitization Promise', icon: 'sparkles-outline', href: '/profile/help' },
+          { label: 'Settings', icon: 'settings-outline', href: '/profile/settings' },
+        ],
+      },
+    ];
+    if (isAdmin) {
+      base.unshift({
+        title: 'Ops',
+        items: [{ label: 'Admin panel', icon: 'construct-outline', href: '/admin' }],
+      });
+    }
+    if (isRider) {
+      base.unshift({
+        title: 'Delivery',
+        items: [{ label: 'Rider portal', icon: 'bicycle-outline', href: '/rider' }],
+      });
+    }
+    return base;
+  }, [isAdmin, isRider, user]);
+
+  if (!isAuthenticated || !user) {
     return (
       <Screen showCart={false}>
         <ScrollView
@@ -49,7 +131,7 @@ export default function ProfileScreen() {
           <Card style={styles.guestCard} elevated>
             <Text style={styles.guestTitle}>Browse as a guest</Text>
             <Text style={styles.guestSub}>
-              Log in to save addresses, track rentals, and unlock zero-deposit KYC.
+              Log in to save addresses, place orders, and track deliveries in real time.
             </Text>
             <Button title="Log in" fullWidth onPress={() => router.push('/(auth)/login')} />
           </Card>
@@ -57,43 +139,6 @@ export default function ProfileScreen() {
       </Screen>
     );
   }
-
-  const sections: MenuSection[] = [
-    {
-      title: 'My Activity',
-      items: [
-        { label: 'My Orders', icon: 'cube-outline', href: '/(tabs)/orders' },
-        { label: 'Past rentals', icon: 'time-outline', href: '/(tabs)/orders' },
-        { label: 'My Reviews', icon: 'star-outline', href: '/profile/reviews' },
-      ],
-    },
-    {
-      title: 'Account',
-      items: [
-        { label: 'Saved Addresses', icon: 'location-outline', href: '/profile/addresses' },
-        { label: 'Payment Methods', icon: 'card-outline', href: '/profile/payment-methods' },
-        { label: 'Notifications', icon: 'notifications-outline', href: '/profile/notifications' },
-      ],
-    },
-    {
-      title: 'Security',
-      items: [
-        {
-          label: user.kycVerified ? 'KYC Verified' : 'Complete KYC',
-          icon: 'shield-checkmark-outline',
-          href: '/profile/settings',
-        },
-      ],
-    },
-    {
-      title: 'Support',
-      items: [
-        { label: 'Help & FAQs', icon: 'help-circle-outline', href: '/profile/help' },
-        { label: 'Sanitization Promise', icon: 'sparkles-outline', href: '/profile/help' },
-        { label: 'Settings', icon: 'settings-outline', href: '/profile/settings' },
-      ],
-    },
-  ];
 
   return (
     <Screen showCart={false}>
@@ -105,6 +150,20 @@ export default function ProfileScreen() {
           <Text style={styles.eyebrow}>Account</Text>
           <Text style={styles.pageTitle}>Profile</Text>
         </View>
+
+        {showSetup ? (
+          <Card style={styles.setupCard} elevated>
+            <Text style={styles.setupTitle}>Finish your profile</Text>
+            <Text style={styles.setupSub}>
+              Add your name and a delivery address so we can route kits to you.
+            </Text>
+            <Button
+              title="Complete setup"
+              fullWidth
+              onPress={() => router.push('/(auth)/onboarding' as never)}
+            />
+          </Card>
+        ) : null}
 
         <View style={[styles.desktopSplit, isDesktop && styles.desktopSplitRow, isDesktop && { gap }]}>
           <View style={[styles.desktopCol, isDesktop && styles.desktopColLeft]}>
@@ -132,12 +191,12 @@ export default function ProfileScreen() {
 
             <View style={[styles.statsRow, isDesktop && styles.statsRowDesktop]}>
               <View style={styles.stat}>
-                <Text style={styles.statValue}>₹0</Text>
-                <Text style={styles.statLabel}>Deposit</Text>
+                <Text style={styles.statValue}>{orders.length}</Text>
+                <Text style={styles.statLabel}>Orders</Text>
               </View>
               <View style={styles.stat}>
                 <Text style={styles.statValue} numberOfLines={1}>
-                  {user.homeHub}
+                  {homeHubLabel}
                 </Text>
                 <Text style={styles.statLabel}>Home hub</Text>
               </View>
@@ -250,6 +309,14 @@ const styles = StyleSheet.create({
   guestCard: { gap: spacing.md },
   guestTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
   guestSub: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.body,
+    lineHeight: 20,
+  },
+  setupCard: { gap: spacing.md },
+  setupTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
+  setupSub: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
     fontSize: typeScale.body,

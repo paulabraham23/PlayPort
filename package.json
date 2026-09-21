@@ -11,6 +11,7 @@
     "expo-font": "~57.0.4",
     "expo-image": "~57.0.5",
     "expo-linking": "~57.0.10",
+    "expo-location": "~57.0.19",
     "expo-router": "~57.0.21",
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
@@ -42,11 +43,13 @@
     "vercel-build": "expo export -p web",
     "firebase:seed": "tsx scripts/seedFirestore.ts",
     "firebase:seed:admin": "tsx scripts/seedAdmin.ts",
-    "firebase:deploy": "npx -y firebase-tools@latest deploy --only firestore,auth --project playport-blr-2026",
-    "firebase:deploy:firestore": "npx -y firebase-tools@latest deploy --only firestore --project playport-blr-2026",
-    "firebase:deploy:functions": "npm --prefix functions run build && npx -y firebase-tools@latest deploy --only functions --project playport-blr-2026",
-    "firebase:deploy:all": "npm --prefix functions run build && npx -y firebase-tools@latest deploy --only firestore,auth,functions --project playport-blr-2026",
-    "firebase:emulators": "npm --prefix functions run build && npx -y firebase-tools@latest emulators:start --only auth,firestore,functions --project playport-blr-2026"
+    "firebase:seed:rest": "tsx scripts/seedRest.ts",
+    "firebase:admin:claim": "tsx scripts/setAdminClaim.ts",
+    "firebase:deploy": "npx -y firebase-tools@latest deploy --only firestore,auth --project playport-fd57f",
+    "firebase:deploy:firestore": "npx -y firebase-tools@latest deploy --only firestore --project playport-fd57f",
+    "firebase:deploy:functions": "npm --prefix functions run build && npx -y firebase-tools@latest deploy --only functions --project playport-fd57f",
+    "firebase:deploy:all": "npm --prefix functions run build && npx -y firebase-tools@latest deploy --only firestore,auth,functions --project playport-fd57f",
+    "firebase:emulators": "npm --prefix functions run build && npx -y firebase-tools@latest emulators:start --only auth,firestore,functions --project playport-fd57f"
   },
   "private": true
 }

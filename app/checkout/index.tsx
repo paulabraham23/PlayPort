@@ -53,7 +53,7 @@ export default function CheckoutScreen() {
           title="Nothing to checkout"
           subtitle="Add a kit to your cart first."
           actionLabel="Explore"
-          onAction={() => router.replace('/(tabs)/explore')}
+          onAction={() => router.replace('/(tabs)')}
         />
       </Screen>
     );
@@ -90,7 +90,13 @@ export default function CheckoutScreen() {
             onPress={() => router.push('/address')}
           />
         ) : (
-          <Button title="Add delivery address" onPress={() => router.push('/address')} fullWidth />
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Delivery address required</Text>
+            <Text style={styles.timingValue}>
+              Add where we should drop off the kit before you pay.
+            </Text>
+            <Button title="Add delivery address" onPress={() => router.push('/address')} fullWidth />
+          </View>
         )}
 
         <View style={styles.card}>
@@ -98,21 +104,20 @@ export default function CheckoutScreen() {
           <View style={styles.timingRow}>
             <View style={{ flex: 1 }}>
               <View style={styles.timingHeader}>
-                <Text style={styles.timingLabel}>Instant Dropoff</Text>
-                <Badge label="20-35 MINS" />
+                <Text style={styles.timingLabel}>Express dropoff</Text>
+                <Badge label="20–35 MINS" />
               </View>
-              <Text style={styles.timingValue}>Arriving by 7:45 PM tonight</Text>
+              <Text style={styles.timingValue}>
+                Rider heads out after payment — live minutes on Track once accepted.
+              </Text>
             </View>
           </View>
           <View style={styles.divider} />
           <View style={styles.timingRow}>
             <Ionicons name="calendar-outline" size={16} color={colors.secondaryText} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.timingLabel}>Automatic Return Pickup</Text>
-              <Text style={styles.timingValue}>Doorstep pickup by courier</Text>
-              <View style={styles.returnBox}>
-                <Text style={styles.returnText}>TOMORROW, 11:00 AM</Text>
-              </View>
+              <Text style={styles.timingLabel}>Automatic return pickup</Text>
+              <Text style={styles.timingValue}>Doorstep pickup when your rental window ends</Text>
             </View>
           </View>
         </View>
@@ -120,11 +125,11 @@ export default function CheckoutScreen() {
         <View style={styles.card}>
           <View style={styles.trustHeader}>
             <Ionicons name="shield-checkmark" size={18} color={colors.secondaryText} />
-            <Text style={styles.cardTitle}>Zero Deposit Verified</Text>
-            <Badge label="AADHAAR ACTIVE" />
+            <Text style={styles.cardTitle}>Secure rental</Text>
           </View>
           <Text style={styles.trustBody}>
-            No ₹10,000 hold or card security blockage required. Pre-cleared via DigiLocker token.
+            Kits are sanitized and pre-tested before dispatch. You’ll get live delivery minutes once a
+            rider accepts.
           </Text>
         </View>
 
@@ -155,7 +160,11 @@ export default function CheckoutScreen() {
         <Button
           title="Continue to Payment"
           iconRight={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
-          onPress={() => router.push('/checkout/payment')}
+          disabled={!address}
+          onPress={() => {
+            if (!address) return;
+            router.push('/checkout/payment');
+          }}
           style={styles.cta}
         />
       </StickyBottomBar>

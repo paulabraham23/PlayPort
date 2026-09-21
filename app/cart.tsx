@@ -12,38 +12,42 @@ import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/Sticky
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
-import { DURATIONS, LOCATION_LABEL, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
-import type { CartItem, RentalDurationId } from '@/types';
-
-const UPSELLS = [
-  {
-    id: 'lifelong-projector',
-    title: 'Lifelong Smart Projector',
-    subtitle: 'Movie night add-on',
-    priceLabel: '+₹749',
-  },
-  {
-    id: 'meta-quest-2',
-    title: 'Meta Quest 2',
-    subtitle: 'VR party kit',
-    priceLabel: '+₹799',
-  },
-];
+import { addonsTotal, cheapestPlanPrice, normalizeProduct } from '@/utils/rentalPricing';
+import type { CartItem } from '@/types';
 
 export default function CartScreen() {
   const { horizontalPadding, useSplitPane, isDesktop, gap } = useResponsive();
   const stickyPad = useStickyBarPadding();
   const cart = useAppStore((s) => s.cart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
-  const updateCartDuration = useAppStore((s) => s.updateCartDuration);
+  const updateCartPlan = useAppStore((s) => s.updateCartPlan);
   const removeFromCart = useAppStore((s) => s.removeFromCart);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
+  const products = useCatalogStore((s) => s.products);
+  const hub = useCatalogStore((s) => s.hub);
   const totals = useCartTotals();
   const [editingItem, setEditingItem] = useState<CartItem | null>(null);
+
+  const upsells = products
+    .filter((p) => !cart.some((c) => c.productId === p.id))
+    .slice(0, 2)
+    .map((p) => {
+      const from = cheapestPlanPrice(normalizeProduct(p)) ?? 0;
+      return {
+        id: p.id,
+        title: p.shortName,
+        subtitle: p.availabilityLabel || 'Add-on',
+        priceLabel: `+${formatINR(from)}`,
+      };
+    });
+
+  const locationLabel =
+    hub?.city && hub.city !== '—' ? hub.city : 'Your hub';
 
   if (!cart.length) {
     return (
@@ -54,14 +58,14 @@ export default function CartScreen() {
           title="Your cart is empty"
           subtitle="Browse gaming kits, projectors, and party gear near you — dropoff in ~30 mins."
           actionLabel="Explore Tonight"
-          onAction={() => router.push('/(tabs)/explore')}
+          onAction={() => router.push('/(tabs)')}
         />
       </Screen>
     );
   }
 
-  const upsellCards = UPSELLS.map((upsell) => {
-    const product = PRODUCTS.find((p) => p.id === upsell.id);
+  const upsellCards = upsells.map((upsell) => {
+    const product = products.find((p) => p.id === upsell.id);
     if (!product) return null;
     const already = cart.some((c) => c.productId === upsell.id);
     return (
@@ -75,7 +79,10 @@ export default function CartScreen() {
           size="sm"
           variant="secondary"
           disabled={already}
-          onPress={() => addProductToCart(upsell.id, '12h')}
+          onPress={() => {
+            if (!ensureLoggedIn('/cart')) return;
+            addProductToCart(upsell.id);
+          }}
         />
       </View>
     );
@@ -88,7 +95,7 @@ export default function CartScreen() {
         <View style={{ flex: 1 }}>
           <Text style={styles.promiseTitle}>30–35 Min Express Drop</Text>
           <Text style={styles.promiseSub}>
-            {LOCATION_LABEL} · Free sanitization & live setup included
+            {locationLabel} · Free sanitization & live setup included
           </Text>
         </View>
       </View>
@@ -123,7 +130,16 @@ export default function CartScreen() {
                   ) : null}
                 </View>
                 <View style={styles.priceRow}>
-                  <Text style={styles.itemPrice}>{formatINR(item.unitPrice * item.quantity)}</Text>
+                  <Text style={styles.itemPrice}>
+                    {formatINR(
+                      (item.unitPrice + (item.addonsTotal ?? addonsTotal(item.addons))) * item.quantity
+                    )}
+                  </Text>
+                  {(item.addons?.length ?? 0) > 0 ? (
+                    <Text style={styles.note}>
+                      + {item.addons!.map((a) => `${a.quantity}× ${a.name}`).join(', ')}
+                    </Text>
+                  ) : null}
                   <QuantitySelector
                     value={item.quantity}
                     onChange={(n) => updateCartQuantity(item.id, n)}
@@ -141,19 +157,27 @@ export default function CartScreen() {
       </View>
 
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Amp Up Your Session</Text>
-          <Ionicons name="sparkles" size={14} color={colors.playportOrange} />
-        </View>
-        {isDesktop ? (
-          <ResponsiveGrid columns={Math.min(3, UPSELLS.length)} gap={gap}>
-            {upsellCards}
-          </ResponsiveGrid>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.upsellRow}>
-            {upsellCards}
-          </ScrollView>
-        )}
+        {upsells.length > 0 ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Amp Up Your Session</Text>
+              <Ionicons name="sparkles" size={14} color={colors.playportOrange} />
+            </View>
+            {isDesktop ? (
+              <ResponsiveGrid columns={Math.min(3, Math.max(1, upsells.length))} gap={gap}>
+                {upsellCards}
+              </ResponsiveGrid>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.upsellRow}
+              >
+                {upsellCards}
+              </ScrollView>
+            )}
+          </>
+        ) : null}
       </View>
     </>
   );
@@ -268,26 +292,32 @@ export default function CartScreen() {
             onPress={() => setEditingItem(null)}
           />
           <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Select duration</Text>
-            {DURATIONS.map((d) => (
+            <Text style={styles.modalTitle}>Select plan</Text>
+            {(() => {
+              const product = editingItem?.productId
+                ? products.find((p) => p.id === editingItem.productId)
+                : undefined;
+              const plans = product ? normalizeProduct(product).plans : [];
+              return plans.map((d) => (
               <Pressable
                 key={d.id}
                 accessibilityRole="button"
                 style={[
                   styles.durationOption,
-                  editingItem?.durationId === d.id && styles.durationSelected,
+                  editingItem?.planId === d.id && styles.durationSelected,
                 ]}
                 onPress={() => {
                   if (editingItem) {
-                    updateCartDuration(editingItem.id, d.id as RentalDurationId);
+                    updateCartPlan(editingItem.id, { planId: d.id, pricingMode: 'package' });
                     setEditingItem(null);
                   }
                 }}
               >
                 <Text style={styles.durationOptionText}>{d.label}</Text>
-                <Text style={styles.durationOptionDesc}>{d.description}</Text>
+                <Text style={styles.durationOptionDesc}>{formatINR(d.price)} · {d.hours}h</Text>
               </Pressable>
-            ))}
+              ));
+            })()}
             <Button
               title="Done"
               variant="ghost"

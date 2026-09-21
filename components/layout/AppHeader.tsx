@@ -3,11 +3,11 @@ import { router } from 'expo-router';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PressableScale } from '@/components/motion/PressableScale';
 import { PulseOnChange } from '@/components/motion/Pulse';
-import { LOCATION_LABEL, HUB } from '@/data/mock';
 import { useAppStore, useCartCount } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { colors, fonts, layout, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
+import { ensureLoggedIn } from '@/utils/authGate';
 
 interface Props {
   showLocation?: boolean;
@@ -18,10 +18,18 @@ interface Props {
 export function AppHeader({ showLocation = true, showCart = true, rightSlot }: Props) {
   const cartCount = useCartCount();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const addresses = useAppStore((s) => s.addresses);
+  const selectedAddressId = useAppStore((s) => s.selectedAddressId);
   const hub = useCatalogStore((s) => s.hub);
   const { horizontalPadding, contentWidth, isDesktop } = useResponsive();
-  const locationLabel = hub?.city ? hub.city : LOCATION_LABEL;
-  const eta = hub?.etaMinutes ?? HUB.etaMinutes;
+  const selectedAddress =
+    addresses.find((a) => a.id === selectedAddressId) ?? addresses.find((a) => a.isDefault);
+  const locationLabel = selectedAddress
+    ? selectedAddress.area || selectedAddress.city
+    : hub?.city && hub.city !== '—'
+      ? hub.city
+      : 'Set location';
+  const eta = selectedAddress?.etaMinutes ?? hub?.etaMinutes ?? 30;
 
   return (
     <View style={styles.outer}>
@@ -40,7 +48,13 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Change delivery location"
-            onPress={() => router.push('/address')}
+            onPress={() => {
+              if (!isAuthenticated) {
+                ensureLoggedIn('/address');
+                return;
+              }
+              router.push('/address');
+            }}
             style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
               styles.left,
               (pressed || hovered) && styles.pressed,

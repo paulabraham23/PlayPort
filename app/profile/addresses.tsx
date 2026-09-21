@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AddressCard } from '@/components/address/AddressCard';
 import { Screen } from '@/components/layout/Screen';
@@ -9,12 +10,32 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 
 /** Thin profile entry that lists addresses and deep-links into /address flows. */
 export default function ProfileAddressesScreen() {
   const { horizontalPadding } = useResponsive();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const addresses = useAppStore((s) => s.addresses);
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
+
+  useEffect(() => {
+    if (!isAuthenticated) ensureLoggedIn('/profile/addresses');
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return (
+      <Screen showHeader={false}>
+        <ScreenHeader title="Saved Addresses" onBack={() => router.back()} />
+        <EmptyState
+          title="Log in required"
+          subtitle="Sign in to manage delivery addresses."
+          actionLabel="Log in"
+          onAction={() => ensureLoggedIn('/profile/addresses')}
+        />
+      </Screen>
+    );
+  }
 
   return (
     <Screen showHeader={false}>

@@ -1,10 +1,10 @@
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { FloatingCartBar } from '@/components/layout/FloatingCartBar';
 import { AmbientGlow } from '@/components/motion/AmbientGlow';
 import { FeelToast } from '@/components/motion/FeelToast';
-import { colors, layout } from '@/constants/theme';
+import { colors } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 
 interface Props {
@@ -24,7 +24,7 @@ export function Screen({
   showHeader = true,
   showCart = true,
   showFloatingCart = false,
-  showAmbient = true,
+  showAmbient = Platform.OS !== 'web',
   headerRight,
   edges = ['top'],
   narrow = false,
@@ -42,7 +42,7 @@ export function Screen({
         <View style={[styles.body, { maxWidth, width: '100%' }, isDesktop && styles.desktopBody, contentStyle]}>
           {children}
         </View>
-        {showFloatingCart ? <FloatingCartBar bottomOffset={layout.tabBarHeight + 16} /> : null}
+        {showFloatingCart ? <FloatingCartBar bottomOffset={12} /> : null}
       </View>
     </SafeAreaView>
   );

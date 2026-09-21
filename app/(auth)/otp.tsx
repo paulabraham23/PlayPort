@@ -16,6 +16,7 @@ import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { resolveAuthNext } from '@/utils/authGate';
+import { needsOnboarding } from '@/utils/onboarding';
 
 export default function OtpScreen() {
   const { next } = useLocalSearchParams<{ next?: string }>();
@@ -67,7 +68,15 @@ export default function OtpScreen() {
     setError(null);
     try {
       await login(code);
-      router.replace(returnTo as never);
+      const { user, addresses } = useAppStore.getState();
+      if (needsOnboarding(user, addresses)) {
+        router.replace({
+          pathname: '/(auth)/onboarding',
+          params: { next: returnTo },
+        } as never);
+      } else {
+        router.replace(returnTo as never);
+      }
     } catch (e) {
       const raw = e instanceof Error ? e.message : 'Invalid OTP';
       const friendly =

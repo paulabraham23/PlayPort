@@ -1,72 +1,49 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CategoryTile } from '@/components/home/CategoryTile';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { HeroBanner } from '@/components/home/HeroBanner';
 import { TrustStrip } from '@/components/home/TrustStrip';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { EnterUp } from '@/components/motion/Enter';
-import { PressableScale } from '@/components/motion/PressableScale';
 import { ProductCard } from '@/components/products/ProductCard';
 import { SearchBar } from '@/components/search/SearchBar';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
-import { CATEGORIES, HUB, PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
-
-const SHORTCUTS = [
-  { id: 'gaming', label: 'Consoles', icon: 'game-controller-outline' as const },
-  { id: 'vr', label: 'VR', icon: 'glasses-outline' as const },
-  { id: 'racing', label: 'Racing', icon: 'car-sport-outline' as const },
-  { id: 'movie-nights', label: 'Cinema', icon: 'film-outline' as const },
-];
+import { ensureLoggedIn } from '@/utils/authGate';
 
 export default function HomeScreen() {
-  const { horizontalPadding, productColumns, categoryColumns, gap } = useResponsive();
+  const { horizontalPadding, productColumns, gap } = useResponsive();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
   const cart = useAppStore((s) => s.cart);
   const showToast = useFeelStore((s) => s.showToast);
-  const catalogProducts = useCatalogStore((s) => s.products);
-  const catalogCategories = useCatalogStore((s) => s.categories);
+  const products = useCatalogStore((s) => s.products);
   const hub = useCatalogStore((s) => s.hub);
-  const products = catalogProducts.length ? catalogProducts : PRODUCTS;
-  const categories = catalogCategories.length ? catalogCategories : CATEGORIES;
+  const ready = useCatalogStore((s) => s.ready);
+  const catalogError = useCatalogStore((s) => s.error);
+  const hydrate = useCatalogStore((s) => s.hydrate);
   const gridCols = Math.max(2, productColumns);
   const featured = products[0];
-  const eta = hub?.etaMinutes ?? HUB.etaMinutes;
+  const eta = hub?.etaMinutes ?? 30;
 
   const qtyFor = (productId: string) =>
     cart.filter((c) => c.productId === productId).reduce((sum, c) => sum + c.quantity, 0);
 
   const cartItemIdFor = (productId: string) =>
-    cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
+    cart.find((c) => c.productId === productId)?.id;
 
   const addKit = (product: (typeof products)[0]) => {
-    addProductToCart(product.id, '12h');
+    if (!ensureLoggedIn('/(tabs)')) return;
+    addProductToCart(product.id);
     showToast(`Added ${product.shortName}`);
   };
-
-  const renderProductCard = (product: (typeof products)[0], index: number) => (
-    <EnterUp key={product.id} index={index} style={{ width: '100%' }}>
-      <ProductCard
-        product={product}
-        quantityInCart={qtyFor(product.id)}
-        onPress={() => router.push(`/product/${product.id}`)}
-        onAdd={() => addKit(product)}
-        onIncrement={() => addKit(product)}
-        onDecrement={() => {
-          const id = cartItemIdFor(product.id);
-          const qty = qtyFor(product.id);
-          if (id) updateCartQuantity(id, qty - 1);
-        }}
-      />
-    </EnterUp>
-  );
 
   return (
     <Screen showFloatingCart>
@@ -81,63 +58,62 @@ export default function HomeScreen() {
           <SearchBar value="" onChangeText={() => {}} onPress={() => router.push('/search')} />
         </EnterUp>
 
-        <EnterUp index={1}>
-          <HeroBanner
-            product={featured}
-            etaMinutes={eta}
-            onPress={() => router.push('/(tabs)/explore')}
-          />
-        </EnterUp>
+        {featured ? (
+          <EnterUp index={1}>
+            <HeroBanner
+              product={featured}
+              etaMinutes={eta}
+              onPress={() => router.push(`/product/${featured.id}`)}
+            />
+          </EnterUp>
+        ) : null}
 
         <EnterUp index={2}>
           <TrustStrip />
         </EnterUp>
 
-        <EnterUp index={3}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-            {SHORTCUTS.map((chip) => (
-              <PressableScale
-                key={chip.id}
-                onPress={() => router.push(`/category/${chip.id}`)}
-                scaleTo={0.94}
-                style={styles.chip}
-              >
-                <Ionicons name={chip.icon} size={16} color={colors.playportOrange} />
-                <Text style={styles.chipText}>{chip.label}</Text>
-              </PressableScale>
-            ))}
-          </ScrollView>
-        </EnterUp>
-
         <View style={styles.section}>
-          <SectionHeader
-            eyebrow="Popular"
-            title="Bestsellers near you"
-            actionLabel="See all"
-            onAction={() => router.push('/(tabs)/explore')}
-          />
-          <ResponsiveGrid columns={gridCols} gap={gap}>
-            {products.map((product, index) => renderProductCard(product, index))}
-          </ResponsiveGrid>
+          <SectionHeader eyebrow="Catalog" title="All products" />
+          {!ready ? (
+            <ActivityIndicator color={colors.playportOrange} style={{ marginTop: 24 }} />
+          ) : products.length ? (
+            <>
+              <Text style={styles.count}>{products.length} kits at your hub</Text>
+              <ResponsiveGrid columns={gridCols} gap={gap}>
+                {products.map((product, index) => (
+                  <EnterUp key={product.id} index={index} style={{ width: '100%' }}>
+                    <ProductCard
+                      product={product}
+                      quantityInCart={qtyFor(product.id)}
+                      onPress={() => router.push(`/product/${product.id}`)}
+                      onAdd={() => addKit(product)}
+                      onIncrement={() => addKit(product)}
+                      onDecrement={() => {
+                        if (!isAuthenticated) return;
+                        const id = cartItemIdFor(product.id);
+                        const qty = qtyFor(product.id);
+                        if (id) updateCartQuantity(id, qty - 1);
+                      }}
+                    />
+                  </EnterUp>
+                ))}
+              </ResponsiveGrid>
+            </>
+          ) : (
+            <EmptyState
+              icon="cube-outline"
+              title="No products yet"
+              subtitle={
+                catalogError ||
+                'The store catalog is empty. Check back soon or ask ops to add kits in Admin.'
+              }
+              actionLabel="Retry"
+              onAction={() => void hydrate()}
+            />
+          )}
         </View>
 
-        {categories.length > 0 ? (
-          <View style={styles.section}>
-            <SectionHeader eyebrow="Discover" title="Shop by vibe" />
-            <ResponsiveGrid columns={Math.min(categoryColumns, 4)} gap={10}>
-              {categories.slice(0, 8).map((cat, index) => (
-                <EnterUp key={cat.id} index={index}>
-                  <CategoryTile
-                    category={cat}
-                    onPress={() => router.push(`/category/${cat.id}`)}
-                  />
-                </EnterUp>
-              ))}
-            </ResponsiveGrid>
-          </View>
-        ) : null}
-
-        <EnterUp index={2}>
+        <EnterUp index={3}>
           <View style={styles.promiseCard}>
             <View style={styles.promiseIcon}>
               <Ionicons name="shield-checkmark" size={22} color={colors.success} />
@@ -145,7 +121,7 @@ export default function HomeScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.promiseTitle}>PlayPort Promise</Text>
               <Text style={styles.promiseBody}>
-                Every kit is sanitized, pre-tested at the hub, and delivered with white-glove setup. No deposit for verified users.
+                Every kit is sanitized, pre-tested at the hub, and delivered with setup support.
               </Text>
             </View>
           </View>
@@ -157,37 +133,26 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   scroll: { gap: spacing.xxl, paddingTop: spacing.sm },
-  chips: { gap: 10, paddingRight: 4 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: radii.full,
-  },
-  chipText: {
-    color: colors.primaryText,
-    fontFamily: fonts.bodyMedium,
+  section: { gap: spacing.md },
+  count: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
     fontSize: typeScale.body,
+    marginTop: -4,
   },
-  section: { gap: spacing.lg },
   promiseCard: {
     flexDirection: 'row',
-    gap: spacing.lg,
+    gap: 12,
     backgroundColor: colors.surfaceRaised,
-    borderRadius: radii.xl,
-    borderWidth: 1,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
-    padding: spacing.xl,
+    padding: spacing.lg,
   },
   promiseIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.md,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.successBg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -196,12 +161,12 @@ const styles = StyleSheet.create({
     color: colors.primaryText,
     fontFamily: fonts.heading,
     fontSize: typeScale.title,
-    marginBottom: 4,
   },
   promiseBody: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
     fontSize: typeScale.body,
     lineHeight: 20,
+    marginTop: 4,
   },
 });

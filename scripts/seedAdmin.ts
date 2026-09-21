@@ -29,20 +29,30 @@ function initAdmin() {
     const json = JSON.parse(readFileSync(saPath, 'utf8'));
     return initializeApp({
       credential: cert(json),
-      projectId: json.project_id || 'playport-blr-2026',
+      projectId: json.project_id || 'playport-fd57f',
     });
   }
 
   return initializeApp({
     credential: applicationDefault(),
-    projectId: process.env.GCLOUD_PROJECT || 'playport-blr-2026',
+    projectId: process.env.GCLOUD_PROJECT || 'playport-fd57f',
   });
 }
 
 async function main() {
+  const force = process.argv.includes('--force') || process.env.FORCE_SEED === '1';
   initAdmin();
   const db = getFirestore();
   const now = new Date().toISOString();
+
+  const existing = await db.collection('products').limit(1).get();
+  if (!existing.empty && !force) {
+    console.error(
+      'Products already exist in Firestore. Refusing to re-seed (this would overwrite deletes).\n' +
+        'Pass --force or FORCE_SEED=1 only if you intentionally want to restore the mock catalog.'
+    );
+    process.exit(1);
+  }
 
   const hub = {
     id: process.env.SEED_HUB_ID || HUB.id,

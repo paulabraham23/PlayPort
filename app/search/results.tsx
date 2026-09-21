@@ -11,9 +11,10 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
-import { PRODUCTS } from '@/data/mock';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
+import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR, searchProducts } from '@/utils/format';
 
 export default function SearchResultsScreen() {
@@ -25,12 +26,18 @@ export default function SearchResultsScreen() {
   const addProductToCart = useAppStore((s) => s.addProductToCart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
   const cart = useAppStore((s) => s.cart);
+  const products = useCatalogStore((s) => s.products);
 
-  const results = useMemo(() => searchProducts(query, PRODUCTS), [query]);
-  const isProjectorSearch = /projector|movie|cinema|lifelong/i.test(query);
+  const addKit = (productId: string) => {
+    if (!ensureLoggedIn('/search/results')) return;
+    addProductToCart(productId);
+  };
+
+  const results = useMemo(() => searchProducts(query, products), [query, products]);
+  const isProjectorSearch = /projector|movie|cinema|lifelong|nebula/i.test(query);
   const featured =
     isProjectorSearch
-      ? PRODUCTS.find((p) => p.id === 'lifelong-projector') ?? results[0]
+      ? products.find((p) => /projector|nebula|lifelong/i.test(p.id + p.name)) ?? results[0]
       : results[0];
   const listProducts = results.filter((p) => p.id !== featured?.id);
   const setupsReady = results.length || 0;
@@ -38,7 +45,7 @@ export default function SearchResultsScreen() {
   const qtyFor = (productId: string) =>
     cart.filter((c) => c.productId === productId).reduce((sum, c) => sum + c.quantity, 0);
   const cartItemIdFor = (productId: string) =>
-    cart.find((c) => c.productId === productId && c.durationId === '12h')?.id;
+    cart.find((c) => c.productId === productId)?.id;
 
   const submit = (value: string) => {
     const trimmed = value.trim();
@@ -131,7 +138,7 @@ export default function SearchResultsScreen() {
                 <View style={styles.featuredFooter}>
                   <View>
                     <Text style={styles.featuredPrice}>
-                      {formatINR(featured.priceByDuration['12h'])} / night
+                      {formatINR((featured.plans?.find(p=>p.popular)?.price) ?? (featured.plans?.[0]?.price) ?? 0)} / plan
                     </Text>
                     {featured.compareAtPrice ? (
                       <Text style={styles.strike}>{formatINR(featured.compareAtPrice)}</Text>
@@ -139,7 +146,7 @@ export default function SearchResultsScreen() {
                   </View>
                   <Button
                     title="Add to cart"
-                    onPress={() => addProductToCart(featured.id, '12h')}
+                    onPress={() => addKit(featured.id)}
                   />
                 </View>
               </View>
@@ -153,8 +160,8 @@ export default function SearchResultsScreen() {
                   compact={productColumns === 1}
                   quantityInCart={qtyFor(product.id)}
                   onPress={() => router.push(`/product/${product.id}`)}
-                  onAdd={() => addProductToCart(product.id, '12h')}
-                  onIncrement={() => addProductToCart(product.id, '12h')}
+                  onAdd={() => addKit(product.id)}
+                  onIncrement={() => addKit(product.id)}
                   onDecrement={() => {
                     const cartId = cartItemIdFor(product.id);
                     const qty = qtyFor(product.id);

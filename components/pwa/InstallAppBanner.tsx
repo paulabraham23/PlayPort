@@ -22,7 +22,7 @@ export function InstallAppBanner() {
         ]}
       >
         <Image
-          source={{ uri: '/icon-192.png?v=2' }}
+          source={{ uri: '/icon-192.png?v=3' }}
           style={styles.appIcon}
           contentFit="cover"
           accessibilityLabel="PlayPort"

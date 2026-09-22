@@ -28,24 +28,24 @@ export default function Root({ children }: { children: ReactNode }) {
         <meta name="format-detection" content="telephone=no" />
         <link rel="canonical" href={`${SITE}/`} />
 
-        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
-        <link rel="manifest" href="/manifest.json?v=2" />
+        <link rel="icon" href="/favicon.ico?v=3" sizes="any" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=3" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=3" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3" />
+        <link rel="manifest" href="/manifest.json?v=3" />
 
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="PlayPort" />
         <meta property="og:title" content={TITLE} />
         <meta property="og:description" content={DESCRIPTION} />
         <meta property="og:url" content={`${SITE}/`} />
-        <meta property="og:image" content={`${SITE}/icon-512.png?v=2`} />
+        <meta property="og:image" content={`${SITE}/icon-512.png?v=3`} />
         <meta property="og:locale" content="en_IN" />
 
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={TITLE} />
         <meta name="twitter:description" content={DESCRIPTION} />
-        <meta name="twitter:image" content={`${SITE}/icon-512.png?v=2`} />
+        <meta name="twitter:image" content={`${SITE}/icon-512.png?v=3`} />
 
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: globalCss }} />

@@ -94,10 +94,17 @@ export async function adminUpsertProduct(product: Product): Promise<void> {
 }
 
 export async function adminDeleteProduct(id: string): Promise<void> {
-  // Cascade inventory units for this SKU so the catalog cannot resurrect orphan stock.
+  // Cascade inventory units for this SKU so orphan stock cannot linger.
   const units = await getDocs(query(collection(db, 'inventory_units'), where('productId', '==', id)));
   await Promise.all(units.docs.map((d) => deleteDoc(d.ref)));
   await deleteDoc(doc(db, 'products', id));
+  // Verify — surface permission/rules failures instead of a silent UI-only remove.
+  const stillThere = await getDoc(doc(db, 'products', id));
+  if (stillThere.exists()) {
+    throw new Error(
+      `Delete did not stick for “${id}”. Check you are signed in as ops/admin and refresh.`
+    );
+  }
 }
 
 // ——— Hubs ———

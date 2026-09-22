@@ -44,6 +44,7 @@
     "firebase:seed": "tsx scripts/seedFirestore.ts",
     "firebase:seed:admin": "tsx scripts/seedAdmin.ts",
     "firebase:seed:rest": "tsx scripts/seedRest.ts",
+    "firebase:wipe:catalog": "tsx scripts/wipeCatalog.ts",
     "firebase:admin:claim": "tsx scripts/setAdminClaim.ts",
     "firebase:deploy": "npx -y firebase-tools@latest deploy --only firestore,auth --project playport-fd57f",
     "firebase:deploy:firestore": "npx -y firebase-tools@latest deploy --only firestore --project playport-fd57f",

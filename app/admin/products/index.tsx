@@ -13,9 +13,11 @@ export default function AdminProductsScreen() {
   const products = useAdminStore((s) => s.products);
   const error = useAdminStore((s) => s.error);
   const removeProduct = useAdminStore((s) => s.removeProduct);
+  const loadProducts = useAdminStore((s) => s.loadProducts);
   const [q, setQ] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -27,6 +29,18 @@ export default function AdminProductsScreen() {
         p.shortName.toLowerCase().includes(needle)
     );
   }, [products, q]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setLocalError(null);
+    try {
+      await loadProducts();
+    } catch (e) {
+      setLocalError(e instanceof Error ? e.message : 'Refresh failed');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const onDelete = async (id: string, label: string) => {
     if (typeof window !== 'undefined' && !window.confirm(`Permanently delete ${label}?`)) return;
@@ -49,10 +63,24 @@ export default function AdminProductsScreen() {
       <View style={adminStyles.row}>
         <View style={{ flex: 1 }}>
           <Text style={adminStyles.title}>Products</Text>
-          <Text style={adminStyles.subtitle}>{products.length} in catalog</Text>
+          <Text style={adminStyles.subtitle}>
+            {products.length} in catalog · same live data as the customer store
+          </Text>
         </View>
+        <Button
+          title={refreshing ? '…' : 'Refresh'}
+          size="sm"
+          variant="secondary"
+          disabled={refreshing}
+          onPress={() => void onRefresh()}
+        />
         <Button title="New product" size="sm" onPress={() => router.push('/admin/products/new' as never)} />
       </View>
+
+      <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
+        Deletes write straight to Firestore. Nothing auto-reseeds the catalog — if SKUs
+        reappear, a seed script was run. Add products here only.
+      </Text>
 
       {error || localError ? (
         <Text style={adminStyles.error}>{localError || error}</Text>

@@ -3,8 +3,8 @@
  *
  * Hub is data, not business logic. Override with SEED_HUB_ID / SEED_HUB_CITY etc.
  *
- * Usage: npm run firebase:seed:admin
- */
+ * Usage: npm run firebase:seed:admin -- --confirm-seed
+ * Never restores a non-empty catalog. */
 import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { readFileSync, existsSync } from 'fs';
@@ -40,16 +40,26 @@ function initAdmin() {
 }
 
 async function main() {
-  const force = process.argv.includes('--force') || process.env.FORCE_SEED === '1';
+  const confirmed =
+    process.argv.includes('--confirm-seed') || process.env.CONFIRM_SEED === '1';
   initAdmin();
   const db = getFirestore();
   const now = new Date().toISOString();
 
   const existing = await db.collection('products').limit(1).get();
-  if (!existing.empty && !force) {
+  if (!existing.empty) {
     console.error(
-      'Products already exist in Firestore. Refusing to re-seed (this would overwrite deletes).\n' +
-        'Pass --force or FORCE_SEED=1 only if you intentionally want to restore the mock catalog.'
+      'Refusing to seed: products already exist in Firestore.\n' +
+        'Admin deletes stay deleted. Manage SKUs in Admin → Products.\n' +
+        'This script never restores a non-empty catalog ( --force is ignored ).'
+    );
+    process.exit(1);
+  }
+
+  if (!confirmed) {
+    console.error(
+      'Catalog is empty, but seed requires an explicit confirm.\n' +
+        'Run: npm run firebase:seed:admin -- --confirm-seed'
     );
     process.exit(1);
   }

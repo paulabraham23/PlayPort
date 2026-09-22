@@ -1,6 +1,12 @@
 /**
- * One-shot seed for playport-fd57f via Firestore REST + Firebase CLI token.
- * Usage: npx tsx scripts/seedRest.ts
+ * Catalog seed for playport-fd57f via Firestore REST + Firebase CLI token.
+ *
+ * SAFETY: This script will NOT write products unless the catalog is empty AND you
+ * pass --confirm-seed. It will NEVER restore over an existing/non-empty catalog
+ * (even with --force). Use Admin → Products to manage live SKUs.
+ *
+ * Usage (empty project only):
+ *   npx tsx scripts/seedRest.ts --confirm-seed
  */
 import { readFileSync } from 'fs';
 import { homedir } from 'os';
@@ -66,21 +72,35 @@ async function upsert(collection: string, id: string, data: Record<string, unkno
   }
 }
 
+async function productCount(tok: string): Promise<number> {
+  const listUrl = `https://firestore.googleapis.com/v1/${parent}/products?pageSize=1`;
+  const res = await fetch(listUrl, { headers: { Authorization: `Bearer ${tok}` } });
+  const body = (await res.json()) as { documents?: unknown[] };
+  return body.documents?.length ?? 0;
+}
+
 async function main() {
-  const force = process.argv.includes('--force') || process.env.FORCE_SEED === '1';
+  const confirmed =
+    process.argv.includes('--confirm-seed') || process.env.CONFIRM_SEED === '1';
   const tok = token();
-  // Guard: don't silently restore deleted catalogs
-  if (!force) {
-    const listUrl = `https://firestore.googleapis.com/v1/${parent}/products?pageSize=1`;
-    const res = await fetch(listUrl, { headers: { Authorization: `Bearer ${tok}` } });
-    const body = (await res.json()) as { documents?: unknown[] };
-    if (body.documents?.length) {
-      console.error(
-        'Products already exist. Refusing to re-seed.\n' +
-          'Pass --force only if you intentionally want to restore the mock catalog.'
-      );
-      process.exit(1);
-    }
+  const existing = await productCount(tok);
+
+  if (existing > 0) {
+    console.error(
+      'Refusing to seed: products already exist in Firestore.\n' +
+        'Admin deletes stay deleted. Manage the catalog in Admin → Products.\n' +
+        'This script never overwrites or restores a non-empty catalog.'
+    );
+    process.exit(1);
+  }
+
+  if (!confirmed) {
+    console.error(
+      'Catalog is empty, but seed still requires an explicit confirm.\n' +
+        'Run: npx tsx scripts/seedRest.ts --confirm-seed\n' +
+        'Only do this for a brand-new empty environment — never to “refresh” live SKUs.'
+    );
+    process.exit(1);
   }
 
   const now = new Date().toISOString();
@@ -105,7 +125,7 @@ async function main() {
     }
     console.log('experiences', combos.length);
   } else {
-    console.log('experiences skipped (empty — no fallback demo combos)');
+    console.log('experiences skipped (empty)');
   }
 
   let units = 0;

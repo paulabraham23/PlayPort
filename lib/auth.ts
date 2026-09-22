@@ -153,15 +153,25 @@ async function finalizePhoneSession(
   };
 
   // Only write auth/contact fields on login — never reset onboarding or a chosen name.
-  await upsertUserProfile(firebaseUser.uid, {
+  const patch: Record<string, unknown> = {
     id: user.id,
     phone: user.phone,
     email: user.email,
     avatar: user.avatar,
     homeHub: user.homeHub,
     homeHubId: user.homeHubId,
-    ...(existing ? {} : { name: user.name, onboardingComplete: false, kycVerified: false, sessionsCount: 0 }),
-  });
+  };
+  if (!existing) {
+    patch.name = user.name;
+    patch.onboardingComplete = false;
+    patch.kycVerified = false;
+    patch.sessionsCount = 0;
+  } else {
+    // Keep completion sticky; re-assert true so a parallel bootstrap can't demote it.
+    if (existing.onboardingComplete) patch.onboardingComplete = true;
+    if (existing.name && !isPlaceholderName(existing.name)) patch.name = existing.name;
+  }
+  await upsertUserProfile(firebaseUser.uid, patch);
 
   return user;
 }
@@ -174,10 +184,24 @@ export async function mapFirebaseUserToAppUser(firebaseUser: FirebaseUser): Prom
       id: firebaseUser.uid,
       phone: existing.phone || firebaseUser.phoneNumber || '',
       email: existing.email || firebaseUser.email || '',
+      // Never demote a completed profile during auth bootstrap.
+      onboardingComplete: Boolean(existing.onboardingComplete),
     };
   }
+  // Brand-new UID only — do not overwrite an existing doc with placeholder defaults.
   const user = profileFromAuth(firebaseUser);
-  await upsertUserProfile(firebaseUser.uid, user);
+  await upsertUserProfile(firebaseUser.uid, {
+    id: user.id,
+    name: user.name,
+    phone: user.phone,
+    email: user.email,
+    avatar: user.avatar,
+    kycVerified: false,
+    sessionsCount: 0,
+    homeHub: user.homeHub,
+    homeHubId: user.homeHubId,
+    onboardingComplete: false,
+  });
   return user;
 }
 

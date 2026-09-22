@@ -66,57 +66,6 @@ async function upsert(collection: string, id: string, data: Record<string, unkno
   }
 }
 
-const FALLBACK_COMBOS = [
-  {
-    id: 'ps5-dual-battles',
-    name: 'PS5 Dual Battles Kit',
-    description: 'PS5 + 2 DualSense controllers ready for co-op nights.',
-    categoryId: 'gaming',
-    image: PRODUCTS[0]?.images?.[0] ?? '',
-    price: 899,
-    durationLabel: '/ 4 hrs',
-    etaMinutes: 30,
-    tag: 'VERSUS GAMING',
-    chips: ['2 Controllers', 'Instant Play'],
-    people: '2–4 players',
-    includes: ['PS5', '2 DualSense', 'HDMI + Power'],
-    productIds: ['ps5'],
-    howItWorks: ['Book your slot', 'Doorstep setup', 'We handle pickup'],
-  },
-  {
-    id: 'cinema-popup',
-    name: 'Cinema Pop-up Combo',
-    description: 'Projector night kit for movies and sports.',
-    categoryId: 'movie-nights',
-    image: PRODUCTS.find((p) => p.id === 'lifelong-projector')?.images?.[0] ?? '',
-    price: 1499,
-    durationLabel: '/ night',
-    etaMinutes: 35,
-    tag: 'CINEMA',
-    chips: ['Projector', 'Setup Included'],
-    people: 'Up to 6 people',
-    includes: ['Smart Projector', 'Doorstep setup'],
-    productIds: ['lifelong-projector'],
-    howItWorks: ['Book', 'We set up', 'Enjoy the night'],
-  },
-  {
-    id: 'vr-party',
-    name: 'VR Party Combo',
-    description: 'Meta Quest kit for immersive party sessions.',
-    categoryId: 'vr',
-    image: PRODUCTS.find((p) => p.id === 'meta-quest-2')?.images?.[0] ?? '',
-    price: 1299,
-    durationLabel: '/ night',
-    etaMinutes: 35,
-    tag: 'VR',
-    chips: ['Headset', 'Controllers'],
-    people: '1–2 players',
-    includes: ['Meta Quest 2', 'Touch Controllers', 'Charging cable'],
-    productIds: ['meta-quest-2'],
-    howItWorks: ['Book', 'Sanitized delivery', 'Pickup after your slot'],
-  },
-];
-
 async function main() {
   const force = process.argv.includes('--force') || process.env.FORCE_SEED === '1';
   const tok = token();
@@ -149,11 +98,15 @@ async function main() {
   }
   console.log('products', PRODUCTS.length);
 
-  const combos = EXPERIENCES.length ? EXPERIENCES : FALLBACK_COMBOS;
-  for (const e of combos) {
-    await upsert('experiences', e.id, e as unknown as Record<string, unknown>);
+  const combos = EXPERIENCES;
+  if (combos.length) {
+    for (const e of combos) {
+      await upsert('experiences', e.id, e as unknown as Record<string, unknown>);
+    }
+    console.log('experiences', combos.length);
+  } else {
+    console.log('experiences skipped (empty — no fallback demo combos)');
   }
-  console.log('experiences', combos.length);
 
   let units = 0;
   for (const p of PRODUCTS) {

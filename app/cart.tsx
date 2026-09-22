@@ -185,46 +185,6 @@ export default function CartScreen() {
   const sideColumn = (
     <>
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Handover Schedule</Text>
-          <View style={styles.doorBadge}>
-            <Text style={styles.doorText}>DOORSTEP WHITE-GLOVE</Text>
-          </View>
-        </View>
-        <View style={styles.scheduleCard}>
-          <View style={styles.scheduleRow}>
-            <View style={[styles.dot, { backgroundColor: colors.playportOrange }]} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.scheduleLabel}>Dropoff</Text>
-              <Text style={styles.scheduleTime}>Tonight, 7:30 PM</Text>
-              <Text style={styles.scheduleSub}>Technician unboxing + HDMI verification</Text>
-            </View>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>in 32 min</Text>
-            </View>
-          </View>
-          <View style={styles.scheduleDivider} />
-          <View style={styles.scheduleRow}>
-            <View style={[styles.dot, { backgroundColor: colors.mutedText }]} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.scheduleLabel}>Return</Text>
-              <Text style={styles.scheduleTime}>Tomorrow, 11:00 AM</Text>
-              <Text style={styles.scheduleSub}>Professional packing by the technician</Text>
-            </View>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>Hassle-free</Text>
-            </View>
-          </View>
-          <View style={styles.guarantee}>
-            <Ionicons name="shield-checkmark" size={16} color={colors.secondaryText} />
-            <Text style={styles.guaranteeText}>
-              Technician Test Guarantee — sign-off after live sync check.
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Transparent Bill Details</Text>
         <View style={styles.billCard}>
           <PriceBreakdown

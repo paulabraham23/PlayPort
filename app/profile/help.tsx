@@ -7,7 +7,7 @@ import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors, fonts, spacing } from '@/constants/theme';
-import { FAQS, HELP_TOPICS } from '@/data/mock';
+import { FAQS, HELP_TOPICS } from '@/constants/helpContent';
 import { useResponsive } from '@/hooks/useResponsive';
 
 export default function HelpScreen() {

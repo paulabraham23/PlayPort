@@ -16,7 +16,7 @@ import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { resolveAuthNext } from '@/utils/authGate';
-import { needsOnboarding } from '@/utils/onboarding';
+import { onboardingRoute } from '@/utils/onboarding';
 
 export default function OtpScreen() {
   const { next } = useLocalSearchParams<{ next?: string }>();
@@ -69,10 +69,16 @@ export default function OtpScreen() {
     try {
       await login(code);
       const { user, addresses } = useAppStore.getState();
-      if (needsOnboarding(user, addresses)) {
+      const route = onboardingRoute(user, addresses);
+      if (route === 'name') {
         router.replace({
           pathname: '/(auth)/onboarding',
           params: { next: returnTo },
+        } as never);
+      } else if (route === 'address') {
+        router.replace({
+          pathname: '/address/add',
+          params: { onboarding: '1', next: returnTo },
         } as never);
       } else {
         router.replace(returnTo as never);

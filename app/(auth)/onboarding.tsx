@@ -86,7 +86,12 @@ export default function OnboardingScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Skip for now"
-              onPress={() => router.replace(returnTo as never)}
+              onPress={() => {
+                // Skipping once dismisses the name gate; address can be added later from profile.
+                void updateUserProfile({ onboardingComplete: true }).finally(() => {
+                  router.replace(returnTo as never);
+                });
+              }}
               style={styles.skipBtn}
             >
               <Text style={styles.skipText}>Skip</Text>

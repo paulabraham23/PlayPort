@@ -7,13 +7,29 @@ export function isPlaceholderName(name?: string | null): boolean {
   return PLACEHOLDER_NAMES.test(name.trim());
 }
 
-/** New users need a real name + at least one delivery address. */
+/**
+ * Gate post-login onboarding.
+ * Once `onboardingComplete` is set it stays done — never re-prompt on every OTP.
+ * Incomplete profiles still need a real name and at least one address.
+ */
 export function needsOnboarding(user: User | null, addresses: Address[]): boolean {
   if (!user) return false;
-  if (user.onboardingComplete) return false;
+  if (user.onboardingComplete === true) return false;
   const hasName = !isPlaceholderName(user.name);
   const hasAddress = addresses.length > 0;
-  // Already set up (even if the flag was never persisted) — treat as done.
   if (hasName && hasAddress) return false;
   return !hasName || !hasAddress;
+}
+
+/** After OTP: name screen vs address vs home. */
+export function onboardingRoute(
+  user: User | null,
+  addresses: Address[]
+): 'home' | 'name' | 'address' {
+  if (!user || user.onboardingComplete === true) return 'home';
+  const hasName = !isPlaceholderName(user.name);
+  const hasAddress = addresses.length > 0;
+  if (hasName && hasAddress) return 'home';
+  if (!hasName) return 'name';
+  return 'address';
 }

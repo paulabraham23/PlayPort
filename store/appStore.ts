@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { PAYMENT_METHODS } from '@/data/mock';
+import { PAYMENT_METHODS } from '@/constants/paymentMethods';
 import {
   confirmPhoneLogin,
   mapFirebaseUserToAppUser,
@@ -17,6 +17,7 @@ import {
   fetchUserCart,
   fetchUserNotifications,
   fetchUserOrders,
+  fetchUserProfile,
   markAllNotificationsReadRemote,
   markNotificationReadRemote,
   replaceUserCart,
@@ -299,6 +300,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       phoneDraft: user.phone.replace(/\D/g, '').slice(-10),
     });
     await get().hydrateUserData(user.id);
+    // Re-read profile after hydrate heal so OTP routing sees sticky onboardingComplete.
+    const fresh = await fetchUserProfile(user.id);
+    if (fresh) {
+      set({
+        user: {
+          ...get().user!,
+          ...fresh,
+          id: user.id,
+          onboardingComplete: Boolean(fresh.onboardingComplete || get().user?.onboardingComplete),
+        },
+      });
+    }
     attachListeners(user.id, set);
 
     // Push any local cart built while guest

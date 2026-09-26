@@ -1,13 +1,12 @@
 import { create } from 'zustand';
 import {
   fetchActiveHubs,
-  fetchCategories,
   fetchExperiences,
   fetchInventoryUnitsForHub,
   fetchProducts,
   resolveDefaultHub,
 } from '@/lib/firestore';
-import type { Category, Experience, HubInfo, InventoryUnit, Product } from '@/types';
+import type { Experience, HubInfo, InventoryUnit, Product } from '@/types';
 import { normalizeProduct } from '@/utils/rentalPricing';
 
 const EMPTY_HUB: HubInfo = {
@@ -22,7 +21,6 @@ const EMPTY_HUB: HubInfo = {
 interface CatalogState {
   ready: boolean;
   source: 'firestore' | 'empty' | 'error';
-  categories: Category[];
   products: Product[];
   experiences: Experience[];
   hub: HubInfo;
@@ -58,7 +56,6 @@ function enrichProducts(products: Product[], units: InventoryUnit[]): Product[] 
 export const useCatalogStore = create<CatalogState>((set, get) => ({
   ready: false,
   source: 'empty',
-  categories: [],
   products: [],
   experiences: [],
   hub: EMPTY_HUB,
@@ -88,8 +85,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
 
   hydrate: async () => {
     try {
-      const [categories, products, experiences, hubs] = await Promise.all([
-        fetchCategories(),
+      const [products, experiences, hubs] = await Promise.all([
         fetchProducts(),
         fetchExperiences(),
         fetchActiveHubs(),
@@ -102,7 +98,6 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       set({
         ready: true,
         source: products.length || experiences.length ? 'firestore' : 'empty',
-        categories,
         products: enrichProducts(products, units),
         experiences,
         hubs: hubList,
@@ -117,7 +112,6 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       set({
         ready: true,
         source: 'error',
-        categories: [],
         products: [],
         experiences: [],
         hubs: [],

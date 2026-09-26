@@ -1,6 +1,6 @@
 /**
  * PlayPort — corporate quick-commerce design system.
- * Deep "ink" canvas + luminous amber brand, engineered for premium consistency.
+ * Deep "ink" canvas + matte neutral orange brand.
  */
 export const colors = {
   // ── Surfaces — deep ink with cool undertone ────────────────────────────
@@ -12,24 +12,24 @@ export const colors = {
   surfaceHover: '#242A3D',
   border: '#2A3042',
   borderSubtle: '#1E2331',
-  borderFocus: 'rgba(232, 146, 58, 0.45)',
+  borderFocus: 'rgba(180, 100, 48, 0.40)',
 
   // ── Text ───────────────────────────────────────────────────────────────
   primaryText: '#F4F6FB',
   secondaryText: '#9AA3B8',
   mutedText: '#69748C',
 
-  // ── Brand — luminous amber, warm authority ────────────────────────────
-  playportOrange: '#E8923A',
-  ctaPrimary: '#E8923A',
-  ctaPrimaryText: '#10131B',
-  ctaPrimaryHover: '#F5A85C',
-  orangeSoft: '#B46E22',
-  orangeDeep: '#8F5517',
-  orangeTint: 'rgba(232, 146, 58, 0.14)',
-  orangeTintStrong: 'rgba(232, 146, 58, 0.24)',
-  orangeGlow: 'rgba(232, 146, 58, 0.30)',
-  orangeBorder: 'rgba(232, 146, 58, 0.55)',
+  // ── Brand — matte neutral orange (desaturated clay, not neon) ─────────
+  playportOrange: '#B86A32',
+  ctaPrimary: '#B86A32',
+  ctaPrimaryText: '#FFFFFF',
+  ctaPrimaryHover: '#C87A42',
+  orangeSoft: '#945528',
+  orangeDeep: '#73401E',
+  orangeTint: 'rgba(184, 106, 50, 0.12)',
+  orangeTintStrong: 'rgba(184, 106, 50, 0.20)',
+  orangeGlow: 'rgba(184, 106, 50, 0.18)',
+  orangeBorder: 'rgba(184, 106, 50, 0.42)',
 
   // ── Status ─────────────────────────────────────────────────────────────
   success: '#3DD68C',
@@ -57,7 +57,7 @@ export const colors = {
     gaming: '#A78BFA',
     movieNights: '#F0A6CA',
     musicKaraoke: '#5EA8FF',
-    partySocial: '#E8923A',
+    partySocial: '#B86A32',
     family: '#3DD68C',
     kids: '#F5C242',
     dateNight: '#F27E7E',
@@ -69,12 +69,12 @@ export const colors = {
 
 /** Signature vertical gradients (module-level: shared style objects). */
 export const gradients = {
-  brand: ['#F5A85C', '#E8923A', '#B46E22'] as const,
-  brandSubtle: ['#E8923A', '#B46E22'] as const,
+  brand: ['#C87A42', '#B86A32', '#945528'] as const,
+  brandSubtle: ['#B86A32', '#945528'] as const,
   heroScrim: ['rgba(7,8,12,0)', 'rgba(7,8,12,0.82)', 'rgba(7,8,12,0.97)'] as const,
   heroVeil: ['rgba(7,8,12,0.45)', 'rgba(7,8,12,0.35)'] as const,
   cardSheen: ['rgba(255,255,255,0.045)', 'rgba(255,255,255,0)'] as const,
-  cta: ['#F5A85C', '#D97F26'] as const,
+  cta: ['#C87A42', '#A35A28'] as const,
   statusbar: ['rgba(11,13,18,0.92)', 'rgba(11,13,18,0.75)', 'rgba(11,13,18,0.92)'] as const,
 } as const;
 
@@ -148,9 +148,9 @@ export const shadows = {
   glow: {
     shadowColor: colors.playportOrange,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 3,
   },
   /** Hover-lift on web (paired with boxShadow). */
   lift: {
@@ -166,6 +166,6 @@ export const shadows = {
 export const webShadows = {
   card: '0 1px 0 rgba(255,255,255,0.03) inset, 0 10px 30px rgba(4,6,10,0.35)',
   soft: '0 1px 0 rgba(255,255,255,0.025) inset, 0 6px 18px rgba(4,6,10,0.30)',
-  glow: '0 8px 26px rgba(232,146,58,0.28)',
+  glow: '0 6px 18px rgba(184,106,50,0.18)',
   lift: '0 18px 44px rgba(4,6,10,0.45)',
 } as const;

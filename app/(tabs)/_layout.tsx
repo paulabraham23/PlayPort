@@ -36,7 +36,7 @@ function TabIcon({ name, color, focused }: { name: IconName; color: string; focu
   return (
     <Animated.View style={styles.glowWrap}>
       <LinearGradient
-        colors={['rgba(232,146,58,0.16)', 'rgba(232,146,58,0)']}
+        colors={['rgba(184,106,50,0.14)', 'rgba(184,106,50,0)']}
         style={styles.glowGradient}
         pointerEvents="none"
       />

@@ -94,7 +94,7 @@ input, textarea, select {
   max-width: 100%;
 }
 ::selection {
-  background: rgba(232, 146, 58, 0.30);
+  background: rgba(184, 106, 50, 0.28);
   color: #fff;
 }
 ::-webkit-scrollbar {

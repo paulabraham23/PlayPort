@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { HeroBanner } from '@/components/home/HeroBanner';
-import { CategoryRail } from '@/components/home/CategoryRail';
 import { StatsBand } from '@/components/home/StatsBand';
 import { TrustStrip } from '@/components/home/TrustStrip';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
@@ -27,7 +26,6 @@ export default function HomeScreen() {
   const cart = useAppStore((s) => s.cart);
   const showToast = useFeelStore((s) => s.showToast);
   const products = useCatalogStore((s) => s.products);
-  const categories = useCatalogStore((s) => s.categories);
   const hub = useCatalogStore((s) => s.hub);
   const ready = useCatalogStore((s) => s.ready);
   const catalogError = useCatalogStore((s) => s.error);
@@ -74,21 +72,7 @@ export default function HomeScreen() {
           </EnterUp>
         ) : null}
 
-        {categories.length ? (
-          <View style={styles.section}>
-            <SectionHeader
-              eyebrow="Explore"
-              title="Shop by category"
-              actionLabel="View all"
-              onAction={() => router.push('/(tabs)/combos')}
-            />
-            <EnterUp index={2}>
-              <CategoryRail categories={categories} />
-            </EnterUp>
-          </View>
-        ) : null}
-
-        <EnterUp index={3}>
+        <EnterUp index={2}>
           <TrustStrip />
         </EnterUp>
 

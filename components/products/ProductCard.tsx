@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
   },
   popularBadgeText: {
-    color: colors.baseBlack,
+    color: colors.ctaPrimaryText,
     fontFamily: fonts.heading,
     fontSize: 9,
     letterSpacing: 0.8,

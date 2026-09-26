@@ -59,7 +59,7 @@ export function FloatingCartBar({ bottomOffset = 12 }: Props) {
           </View>
           <View style={styles.cta}>
             <Text style={styles.ctaText}>View cart</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.baseBlack} />
+            <Ionicons name="chevron-forward" size={16} color={colors.ctaPrimaryText} />
           </View>
         </PressableScale>
       </Animated.View>
@@ -93,10 +93,10 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         cursor: 'pointer' as unknown as undefined,
-        boxShadow: '0 14px 34px rgba(232,146,58,0.32)',
+        boxShadow: '0 12px 28px rgba(184,106,50,0.22)',
       } as object,
       default: {
-        shadowColor: '#D97F26',
+        shadowColor: '#945528',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.4,
         shadowRadius: 16,
@@ -116,17 +116,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   countText: {
-    color: colors.baseBlack,
+    color: colors.ctaPrimaryText,
     fontFamily: fonts.heading,
     fontSize: typeScale.body,
   },
   label: {
-    color: 'rgba(7,8,12,0.72)',
+    color: 'rgba(255,255,255,0.85)',
     fontFamily: fonts.bodyMedium,
     fontSize: typeScale.caption,
   },
   total: {
-    color: colors.baseBlack,
+    color: colors.ctaPrimaryText,
     fontFamily: fonts.heading,
     fontSize: typeScale.title,
   },
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   ctaText: {
-    color: colors.baseBlack,
+    color: colors.ctaPrimaryText,
     fontFamily: fonts.headingMedium,
     fontSize: typeScale.body,
   },

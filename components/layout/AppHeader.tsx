@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { PressableScale } from '@/components/motion/PressableScale';
 import { PulseOnChange } from '@/components/motion/Pulse';
 import { useAppStore, useCartCount } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
-import { colors, fonts, gradients, layout, radii, spacing, typeScale, webShadows } from '@/constants/theme';
+import { colors, fonts, layout, radii, spacing, typeScale, webShadows } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ensureLoggedIn } from '@/utils/authGate';
 
@@ -62,16 +62,7 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
             ]}
           >
             <View style={styles.brandRow}>
-              <LinearGradient
-                colors={[...gradients.brandSubtle]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.brandTile}
-              >
-                <Ionicons name="game-controller" size={14} color={colors.baseBlack} />
-              </LinearGradient>
-              <Text style={styles.brandMark}>Play</Text>
-              <Text style={styles.brandAccent}>Port</Text>
+              <BrandLogo size={compactChrome ? 30 : 34} />
             </View>
             {showLocation ? (
               <View style={styles.locationRow}>
@@ -170,30 +161,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pressed: { opacity: 0.85 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  brandTile: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      web: { boxShadow: webShadows.glow } as object,
-      default: {},
-    }),
-  },
-  brandMark: {
-    color: colors.primaryText,
-    fontFamily: fonts.heading,
-    fontSize: typeScale.title,
-    letterSpacing: -0.4,
-  },
-  brandAccent: {
-    color: colors.playportOrange,
-    fontFamily: fonts.heading,
-    fontSize: typeScale.title,
-    letterSpacing: -0.4,
-  },
+  brandRow: { flexDirection: 'row', alignItems: 'center' },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -289,5 +257,5 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.page,
   },
-  badgeText: { color: colors.baseBlack, fontSize: 9, fontFamily: fonts.heading },
+  badgeText: { color: colors.ctaPrimaryText, fontSize: 9, fontFamily: fonts.heading },
 });

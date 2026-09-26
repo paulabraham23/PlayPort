@@ -62,7 +62,7 @@ export function HeroBanner({ product, etaMinutes = 30, onPress }: Props) {
 
         <View style={styles.ctaRow}>
           <Text style={styles.cta}>Browse kits</Text>
-          <Ionicons name="arrow-forward" size={15} color={colors.baseBlack} />
+          <Ionicons name="arrow-forward" size={15} color={colors.ctaPrimaryText} />
         </View>
       </View>
     </PressableScale>
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     }),
   },
   cta: {
-    color: colors.baseBlack,
+    color: colors.ctaPrimaryText,
     fontFamily: fonts.heading,
     fontSize: typeScale.body,
     letterSpacing: 0.2,

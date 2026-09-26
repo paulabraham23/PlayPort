@@ -1,6 +1,14 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { connectAuthEmulator, getAuth } from 'firebase/auth';
+import {
+  connectAuthEmulator,
+  getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  type Auth,
+} from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+import { Platform } from 'react-native';
 
 /**
  * Firebase web config for PlayPort.
@@ -18,9 +26,67 @@ const firebaseConfig = {
 };
 
 export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const auth = getAuth(firebaseApp);
+
+/**
+ * Persist auth across reloads / days.
+ * Web: IndexedDB (durable) with localStorage fallback.
+ * Native: AsyncStorage — without this, sessions are memory-only and vanish on restart.
+ */
+function createAuth(): Auth {
+  if (Platform.OS === 'web') {
+    try {
+      return initializeAuth(firebaseApp, {
+        persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+      });
+    } catch {
+      return getAuth(firebaseApp);
+    }
+  }
+
+  try {
+    // RN-only export; not present on the web Auth bundle.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getReactNativePersistence } = require('firebase/auth') as {
+      getReactNativePersistence: (storage: unknown) => unknown;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    return initializeAuth(firebaseApp, {
+      persistence: getReactNativePersistence(AsyncStorage) as never,
+    });
+  } catch {
+    return getAuth(firebaseApp);
+  }
+}
+
+export const auth = createAuth();
 export const db = getFirestore(firebaseApp);
 export const isFirebaseConfigured = Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
+
+/** Keep the refresh token warm when the tab/app becomes active again. */
+export function startAuthSessionKeepAlive() {
+  const refresh = () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    void user.getIdToken(/* forceRefresh */ false).catch(() => {});
+  };
+
+  if (Platform.OS === 'web' && typeof document !== 'undefined') {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    // Periodic soft refresh (~every 45m) so long-lived PWAs don't go cold.
+    const interval = setInterval(refresh, 45 * 60 * 1000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      clearInterval(interval);
+    };
+  }
+
+  const interval = setInterval(refresh, 45 * 60 * 1000);
+  return () => clearInterval(interval);
+}
 
 /** Connect to local emulators when EXPO_PUBLIC_USE_EMULATORS=1 (no Blaze needed). */
 const useEmulators = process.env.EXPO_PUBLIC_USE_EMULATORS === '1';

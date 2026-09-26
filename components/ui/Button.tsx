@@ -105,7 +105,7 @@ export function Button({
         style={[
           styles.text,
           variant !== 'primary' && styles[`text_${variant}`],
-          variant === 'primary' && { color: colors.baseBlack },
+          variant === 'primary' && { color: colors.ctaPrimaryText },
           styles[`textSize_${size}`],
         ]}
       >

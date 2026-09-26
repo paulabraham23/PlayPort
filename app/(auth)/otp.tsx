@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { Button } from '@/components/ui/Button';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -123,10 +124,7 @@ export default function OtpScreen() {
             >
               <Ionicons name="arrow-back" size={20} color={colors.secondaryText} />
             </Pressable>
-            <Text style={styles.brand}>
-              <Text style={styles.brandPlay}>Play</Text>
-              <Text style={styles.brandPort}>Port</Text>
-            </Text>
+            <BrandLogo size="md" />
             <View style={styles.backSpacer} />
           </View>
 
@@ -227,13 +225,6 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
   },
   backSpacer: { width: 40, height: 40 },
-  brand: {
-    fontFamily: fonts.heading,
-    fontSize: typeScale.title,
-    letterSpacing: -0.3,
-  },
-  brandPlay: { color: colors.primaryText },
-  brandPort: { color: colors.playportOrange },
   hero: { gap: spacing.sm },
   eyebrow: {
     color: colors.playportOrange,

@@ -78,14 +78,8 @@ export default function ProductDetailScreen() {
     [reviews, product?.id]
   );
   const related = useMemo(
-    () =>
-      products
-        .filter(
-          (p) =>
-            p.categoryId === product?.categoryId && p.id !== product?.id && p.id !== 'screen-addon'
-        )
-        .slice(0, 4),
-    [product, products]
+    () => products.filter((p) => p.id !== product?.id && p.id !== 'screen-addon').slice(0, 4),
+    [product?.id, products]
   );
 
   const qtyFor = (productId: string) =>
@@ -313,10 +307,7 @@ export default function ProductDetailScreen() {
 
         {related.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader
-              eyebrow="More like this"
-              title={`Related in ${product.categoryId.replace(/-/g, ' ')}`}
-            />
+            <SectionHeader eyebrow="More like this" title="Other kits" />
             <ResponsiveGrid columns={productColumns} gap={gap}>
               {related.map((item) => (
                 <ProductCard

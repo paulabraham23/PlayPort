@@ -1,5 +1,5 @@
-import { Image } from 'expo-image';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -21,12 +21,7 @@ export function InstallAppBanner() {
           { marginHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%' },
         ]}
       >
-        <Image
-          source={{ uri: '/icon-192.png?v=3' }}
-          style={styles.appIcon}
-          contentFit="cover"
-          accessibilityLabel="PlayPort"
-        />
+        <BrandLogo size={44} />
         <View style={styles.copy}>
           <Text style={styles.title}>Install PlayPort</Text>
           <Text style={styles.body}>
@@ -86,12 +81,6 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
-  },
-  appIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.md,
-    backgroundColor: colors.page,
   },
   copy: { flex: 1, gap: 2, minWidth: 0 },
   title: {

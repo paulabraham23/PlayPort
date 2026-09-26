@@ -20,7 +20,6 @@ export default function SearchDiscoveryScreen() {
   const clearRecentSearches = useAppStore((s) => s.clearRecentSearches);
   const hub = useCatalogStore((s) => s.hub);
   const products = useCatalogStore((s) => s.products);
-  const categories = useCatalogStore((s) => s.categories);
 
   const popular = useMemo(
     () => products.filter((p) => p.popular || p.featured).slice(0, 6),
@@ -80,24 +79,6 @@ export default function SearchDiscoveryScreen() {
                 >
                   <Ionicons name="time-outline" size={14} color={colors.secondaryText} />
                   <Text style={styles.chipText}>{item}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        {categories.length > 0 ? (
-          <View style={styles.section}>
-            <SectionHeader eyebrow="Browse" title="Categories" />
-            <View style={styles.chips}>
-              {categories.map((cat) => (
-                <Pressable
-                  key={cat.id}
-                  accessibilityRole="button"
-                  onPress={() => router.push(`/category/${cat.id}`)}
-                  style={styles.chip}
-                >
-                  <Text style={styles.chipText}>{cat.shortName || cat.name}</Text>
                 </Pressable>
               ))}
             </View>

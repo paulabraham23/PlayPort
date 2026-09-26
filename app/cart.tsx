@@ -119,7 +119,6 @@ export default function CartScreen() {
                     <Ionicons name="trash-outline" size={18} color={colors.secondaryText} />
                   </Pressable>
                 </View>
-                <Text style={styles.category}>{item.categoryLabel}</Text>
                 <View style={styles.durationRow}>
                   <Ionicons name="time-outline" size={14} color={colors.secondaryText} />
                   <Text style={styles.durationText}>{item.durationLabel}</Text>
@@ -326,7 +325,6 @@ const styles = StyleSheet.create({
   itemBody: { flex: 1, gap: 4, minWidth: 180 },
   itemHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   itemTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body, flex: 1 },
-  category: { color: colors.mutedText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption, letterSpacing: 0.5 },
   durationRow: {
     flexDirection: 'row',
     alignItems: 'center',

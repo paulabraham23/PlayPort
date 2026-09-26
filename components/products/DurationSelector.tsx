@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     marginBottom: 4,
   },
-  popularText: { color: colors.baseBlack, fontSize: 10, fontFamily: fonts.headingMedium },
+  popularText: { color: colors.ctaPrimaryText, fontSize: 10, fontFamily: fonts.headingMedium },
   label: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
   labelActive: { color: colors.playportOrange },
   price: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 18 },

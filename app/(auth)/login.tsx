@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { Button } from '@/components/ui/Button';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -73,10 +74,7 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.topRow}>
-            <Text style={styles.brand}>
-              <Text style={styles.brandPlay}>Play</Text>
-              <Text style={styles.brandPort}>Port</Text>
-            </Text>
+            <BrandLogo size="lg" />
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close and keep browsing"
@@ -165,13 +163,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  brand: {
-    fontFamily: fonts.heading,
-    fontSize: typeScale.headline,
-    letterSpacing: -0.4,
-  },
-  brandPlay: { color: colors.primaryText },
-  brandPort: { color: colors.playportOrange },
   closeBtn: {
     width: 40,
     height: 40,

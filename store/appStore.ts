@@ -199,8 +199,36 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ isAuthenticated: true, user, authReady: true });
         await get().hydrateUserData(user.id);
         attachListeners(user.id, set);
-      } catch {
-        set({ authReady: true });
+      } catch (err) {
+        // Don't wipe a valid Firebase session if profile hydrate flaked — keep signed in.
+        console.warn('Auth bootstrap profile sync failed:', err);
+        const phone = firebaseUser.phoneNumber ?? '';
+        const signedIn = !firebaseUser.isAnonymous || phone.replace(/\D/g, '').length >= 10;
+        if (!signedIn) {
+          set({ authReady: true });
+          return;
+        }
+        const existing = get().user;
+        set({
+          authReady: true,
+          isAuthenticated: true,
+          user:
+            existing?.id === firebaseUser.uid
+              ? existing
+              : {
+                  id: firebaseUser.uid,
+                  name: firebaseUser.displayName || 'PlayPort Member',
+                  phone,
+                  email: firebaseUser.email ?? '',
+                  avatar:
+                    firebaseUser.photoURL ||
+                    `https://api.dicebear.com/7.x/avataaars/png?seed=${firebaseUser.uid}`,
+                  kycVerified: false,
+                  sessionsCount: 0,
+                  homeHub: 'PlayPort',
+                  onboardingComplete: false,
+                },
+        });
       }
     });
     return () => {

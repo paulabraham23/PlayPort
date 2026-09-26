@@ -17,6 +17,7 @@ import { colors } from '@/constants/theme';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { registerWebPushIfAvailable } from '@/lib/fcm';
+import { startAuthSessionKeepAlive } from '@/lib/firebase';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -68,7 +69,11 @@ export default function RootLayout() {
 
   useEffect(() => {
     const unsub = bootstrapAuth();
-    return unsub;
+    const stopKeepAlive = startAuthSessionKeepAlive();
+    return () => {
+      unsub();
+      stopKeepAlive();
+    };
   }, [bootstrapAuth]);
 
   useEffect(() => {
@@ -103,7 +108,6 @@ export default function RootLayout() {
         <Stack.Screen name="search/results" />
         <Stack.Screen name="product/[id]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="experience/[id]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="category/[id]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="cart" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="checkout/index" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="checkout/payment" options={{ animation: 'slide_from_right' }} />

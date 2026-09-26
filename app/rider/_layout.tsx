@@ -11,6 +11,7 @@ import {
 import { Stack, router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, spacing, typeScale } from '@/constants/theme';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { checkIsRider, resolveRiderProfile } from '@/lib/riderFirestore';
 import { useAppStore } from '@/store/appStore';
 import { useRiderStore } from '@/store/riderStore';
@@ -114,7 +115,10 @@ export default function RiderLayout() {
       <View style={[styles.shell, desktop && styles.shellRow]}>
         <View style={[styles.nav, desktop && styles.navSide]}>
           <View style={styles.brandRow}>
-            <Text style={styles.brand}>PlayPort Rider</Text>
+            <View style={styles.brandLockup}>
+              <BrandLogo size={28} />
+              <Text style={styles.brand}>Rider</Text>
+            </View>
             <Pressable onPress={() => router.push('/(tabs)')}>
               <Text style={styles.exit}>Exit</Text>
             </Pressable>
@@ -175,6 +179,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing.md,
+  },
+  brandLockup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   brand: {
     fontFamily: fonts.heading,

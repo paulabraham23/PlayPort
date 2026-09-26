@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PressableScale } from '@/components/motion/PressableScale';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 
@@ -92,12 +92,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: colors.surface,
     borderRadius: radii.full,
     borderWidth: 1,
-    borderColor: colors.borderSubtle,
+    borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    minHeight: 50,
+    minHeight: 52,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset',
+      } as object,
+      default: {},
+    }),
   },
   searchIcon: {
     width: 32,
@@ -120,13 +126,13 @@ const styles = StyleSheet.create({
     fontSize: typeScale.bodyLg,
   },
   sideBtn: {
-    width: 46,
-    height: 46,
+    width: 48,
+    height: 48,
     borderRadius: radii.full,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.borderSubtle,
+    borderColor: colors.border,
   },
 });

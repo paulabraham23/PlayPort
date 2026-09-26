@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { HeroBanner } from '@/components/home/HeroBanner';
+import { CategoryRail } from '@/components/home/CategoryRail';
+import { StatsBand } from '@/components/home/StatsBand';
 import { TrustStrip } from '@/components/home/TrustStrip';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
@@ -18,18 +20,18 @@ import { useFeelStore } from '@/store/feelStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 
 export default function HomeScreen() {
-  const { horizontalPadding, productColumns, gap } = useResponsive();
+  const { horizontalPadding, productColumns, gap, sectionGap, isMobile } = useResponsive();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
   const cart = useAppStore((s) => s.cart);
   const showToast = useFeelStore((s) => s.showToast);
   const products = useCatalogStore((s) => s.products);
+  const categories = useCatalogStore((s) => s.categories);
   const hub = useCatalogStore((s) => s.hub);
   const ready = useCatalogStore((s) => s.ready);
   const catalogError = useCatalogStore((s) => s.error);
   const hydrate = useCatalogStore((s) => s.hydrate);
-  const gridCols = Math.max(2, productColumns);
   const featured = products[0];
   const eta = hub?.etaMinutes ?? 30;
 
@@ -45,13 +47,17 @@ export default function HomeScreen() {
     showToast(`Added ${product.shortName}`);
   };
 
+  const availableCount = products.filter(
+    (p) => p.availabilityLabel && !p.availabilityLabel.startsWith('No')
+  ).length;
+
   return (
     <Screen showFloatingCart>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scroll,
-          { paddingHorizontal: horizontalPadding, paddingBottom: spacing.huge + 120 },
+          { paddingHorizontal: horizontalPadding, paddingBottom: spacing.huge + 120, gap: sectionGap },
         ]}
       >
         <EnterUp index={0}>
@@ -68,7 +74,21 @@ export default function HomeScreen() {
           </EnterUp>
         ) : null}
 
-        <EnterUp index={2}>
+        {categories.length ? (
+          <View style={styles.section}>
+            <SectionHeader
+              eyebrow="Explore"
+              title="Shop by category"
+              actionLabel="View all"
+              onAction={() => router.push('/(tabs)/combos')}
+            />
+            <EnterUp index={2}>
+              <CategoryRail categories={categories} />
+            </EnterUp>
+          </View>
+        ) : null}
+
+        <EnterUp index={3}>
           <TrustStrip />
         </EnterUp>
 
@@ -78,8 +98,11 @@ export default function HomeScreen() {
             <ActivityIndicator color={colors.playportOrange} style={{ marginTop: 24 }} />
           ) : products.length ? (
             <>
-              <Text style={styles.count}>{products.length} kits at your hub</Text>
-              <ResponsiveGrid columns={gridCols} gap={gap}>
+              <Text style={styles.count}>
+                {products.length} kits at your hub
+                {availableCount > 0 ? ` · ${availableCount} ready now` : ''}
+              </Text>
+              <ResponsiveGrid columns={productColumns} gap={gap}>
                 {products.map((product, index) => (
                   <EnterUp key={product.id} index={index} style={{ width: '100%' }}>
                     <ProductCard
@@ -113,7 +136,20 @@ export default function HomeScreen() {
           )}
         </View>
 
-        <EnterUp index={3}>
+        {!isMobile ? (
+          <EnterUp index={4}>
+            <StatsBand
+              stats={[
+                { value: '30 min', label: 'Avg. delivery' },
+                { value: '100%', label: 'Sanitized kits' },
+                { value: '4.8★', label: 'Rider rating' },
+                { value: '24×7', label: 'Support' },
+              ]}
+            />
+          </EnterUp>
+        ) : null}
+
+        <EnterUp index={5}>
           <View style={styles.promiseCard}>
             <View style={styles.promiseIcon}>
               <Ionicons name="shield-checkmark" size={22} color={colors.success} />

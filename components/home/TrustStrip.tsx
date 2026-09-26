@@ -37,11 +37,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: colors.surface,
     borderRadius: radii.full,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 7,
+    paddingHorizontal: 11,
+    borderWidth: 1,
     borderColor: colors.borderSubtle,
   },
   iconWrap: {
@@ -52,6 +52,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   label: {
     color: colors.secondaryText,
     fontFamily: fonts.bodyMedium,

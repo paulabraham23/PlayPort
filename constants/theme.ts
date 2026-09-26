@@ -1,66 +1,81 @@
 /**
- * PlayPort — premium quick-commerce UI (Blinkit / Zepto inspired), dark mode.
+ * PlayPort — corporate quick-commerce design system.
+ * Deep "ink" canvas + luminous amber brand, engineered for premium consistency.
  */
 export const colors = {
-  // Surfaces
-  baseBlack: '#0A0A0B',
-  page: '#0A0A0B',
-  surface: '#141416',
-  surfaceRaised: '#1A1A1E',
-  surfaceAlt: '#222228',
-  surfaceHover: '#2A2A32',
-  border: '#2E2E36',
-  borderSubtle: '#232328',
-  borderFocus: 'rgba(196, 94, 26, 0.40)',
+  // ── Surfaces — deep ink with cool undertone ────────────────────────────
+  baseBlack: '#07080C',
+  page: '#0B0D12',
+  surface: '#10131B',
+  surfaceRaised: '#151926',
+  surfaceAlt: '#1C2130',
+  surfaceHover: '#242A3D',
+  border: '#2A3042',
+  borderSubtle: '#1E2331',
+  borderFocus: 'rgba(232, 146, 58, 0.45)',
 
-  // Text
-  primaryText: '#FAFAFA',
-  secondaryText: '#A1A1AA',
-  mutedText: '#71717A',
+  // ── Text ───────────────────────────────────────────────────────────────
+  primaryText: '#F4F6FB',
+  secondaryText: '#9AA3B8',
+  mutedText: '#69748C',
 
-  // Brand — matte carrot orange (desaturated, not neon)
-  playportOrange: '#C45E1A',
-  ctaPrimary: '#C45E1A',
-  ctaPrimaryText: '#FFFFFF',
-  ctaPrimaryHover: '#D96B2E',
-  orangeSoft: '#A34E16',
-  orangeTint: 'rgba(196, 94, 26, 0.14)',
-  orangeTintStrong: 'rgba(196, 94, 26, 0.22)',
-  orangeGlow: 'rgba(196, 94, 26, 0.22)',
+  // ── Brand — luminous amber, warm authority ────────────────────────────
+  playportOrange: '#E8923A',
+  ctaPrimary: '#E8923A',
+  ctaPrimaryText: '#10131B',
+  ctaPrimaryHover: '#F5A85C',
+  orangeSoft: '#B46E22',
+  orangeDeep: '#8F5517',
+  orangeTint: 'rgba(232, 146, 58, 0.14)',
+  orangeTintStrong: 'rgba(232, 146, 58, 0.24)',
+  orangeGlow: 'rgba(232, 146, 58, 0.30)',
+  orangeBorder: 'rgba(232, 146, 58, 0.55)',
 
-  // Status
-  success: '#4ADE80',
-  successBg: 'rgba(74,222,128,0.12)',
-  info: '#60A5FA',
-  infoBg: 'rgba(96,165,250,0.12)',
-  warning: '#FBBF24',
-  danger: '#F87171',
-  dangerBg: 'rgba(248,113,113,0.12)',
+  // ── Status ─────────────────────────────────────────────────────────────
+  success: '#3DD68C',
+  successBg: 'rgba(61, 214, 140, 0.12)',
+  info: '#5EA8FF',
+  infoBg: 'rgba(94, 168, 255, 0.12)',
+  warning: '#F5C242',
+  danger: '#F26D6D',
+  dangerBg: 'rgba(242, 109, 109, 0.12)',
 
+  // ── Primitives ─────────────────────────────────────────────────────────
   white: '#FFFFFF',
   black: '#000000',
   badgeRed: '#EF4444',
-  overlay: 'rgba(0,0,0,0.72)',
-  heroScrim: 'rgba(10,10,11,0.55)',
-  heroScrimStrong: 'rgba(10,10,11,0.82)',
+  overlay: 'rgba(4, 6, 10, 0.72)',
+  heroScrim: 'rgba(7, 8, 12, 0.55)',
+  heroScrimStrong: 'rgba(7, 8, 12, 0.85)',
 
-  // Delivery
-  etaBg: 'rgba(74,222,128,0.14)',
-  etaText: '#4ADE80',
+  // ── Delivery ───────────────────────────────────────────────────────────
+  etaBg: 'rgba(61, 214, 140, 0.12)',
+  etaText: '#3DD68C',
 
-  // Category accents — subtle, not neon
+  // ── Category accents — muted corporate jewel tones ────────────────────
   categories: {
     gaming: '#A78BFA',
-    movieNights: '#F472B6',
-    musicKaraoke: '#38BDF8',
-    partySocial: '#D96B2E',
-    family: '#34D399',
-    kids: '#FBBF24',
-    dateNight: '#F87171',
-    racing: '#60A5FA',
+    movieNights: '#F0A6CA',
+    musicKaraoke: '#5EA8FF',
+    partySocial: '#E8923A',
+    family: '#3DD68C',
+    kids: '#F5C242',
+    dateNight: '#F27E7E',
+    racing: '#5EA8FF',
     vr: '#C084FC',
     boardGames: '#94A3B8',
   },
+} as const;
+
+/** Signature vertical gradients (module-level: shared style objects). */
+export const gradients = {
+  brand: ['#F5A85C', '#E8923A', '#B46E22'] as const,
+  brandSubtle: ['#E8923A', '#B46E22'] as const,
+  heroScrim: ['rgba(7,8,12,0)', 'rgba(7,8,12,0.82)', 'rgba(7,8,12,0.97)'] as const,
+  heroVeil: ['rgba(7,8,12,0.45)', 'rgba(7,8,12,0.35)'] as const,
+  cardSheen: ['rgba(255,255,255,0.045)', 'rgba(255,255,255,0)'] as const,
+  cta: ['#F5A85C', '#D97F26'] as const,
+  statusbar: ['rgba(11,13,18,0.92)', 'rgba(11,13,18,0.75)', 'rgba(11,13,18,0.92)'] as const,
 } as const;
 
 export const spacing = {
@@ -75,18 +90,18 @@ export const spacing = {
 } as const;
 
 export const radii = {
-  xs: 6,
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 24,
-  xxl: 32,
+  xs: 8,
+  sm: 12,
+  md: 16,
+  lg: 20,
+  xl: 26,
+  xxl: 34,
   full: 999,
 } as const;
 
 export const fonts = {
-  heading: 'Inter_600SemiBold',
-  headingMedium: 'Inter_500Medium',
+  heading: 'Inter_700Bold',
+  headingMedium: 'Inter_600SemiBold',
   body: 'Inter_400Regular',
   bodyMedium: 'Inter_500Medium',
   mono: 'Inter_500Medium',
@@ -101,38 +116,56 @@ export const typeScale = {
   title: 17,
   headline: 22,
   display: 28,
-  hero: 32,
+  hero: 34,
 } as const;
 
 export const layout = {
   maxContentWidth: 840,
-  desktopMaxWidth: 1120,
-  headerHeight: 60,
+  desktopMaxWidth: 1200,
+  ultrawideMaxWidth: 1320,
+  headerHeight: 64,
   tabBarHeight: 64,
   bottomBarHeight: 76,
   floatingCartHeight: 56,
 } as const;
 
+/** Signature multi-layer shadow recipes — corporate depth, zero neon. */
 export const shadows = {
   card: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowColor: '#04060A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.45,
+    shadowRadius: 20,
+    elevation: 7,
   },
   soft: {
-    shadowColor: '#000',
+    shadowColor: '#04060A',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.32,
+    shadowRadius: 12,
+    elevation: 4,
   },
   glow: {
     shadowColor: colors.playportOrange,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 4,
   },
+  /** Hover-lift on web (paired with boxShadow). */
+  lift: {
+    shadowColor: '#04060A',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.5,
+    shadowRadius: 26,
+    elevation: 9,
+  },
+} as const;
+
+/** Web-only hairline + lift recipe (boxShadow unsupported in RN StyleSheet typings). */
+export const webShadows = {
+  card: '0 1px 0 rgba(255,255,255,0.03) inset, 0 10px 30px rgba(4,6,10,0.35)',
+  soft: '0 1px 0 rgba(255,255,255,0.025) inset, 0 6px 18px rgba(4,6,10,0.30)',
+  glow: '0 8px 26px rgba(232,146,58,0.28)',
+  lift: '0 18px 44px rgba(4,6,10,0.45)',
 } as const;

@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PressableScale } from '@/components/motion/PressableScale';
 import { PulseOnChange } from '@/components/motion/Pulse';
 import { useAppStore, useCartCount } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
-import { colors, fonts, layout, radii, spacing, typeScale } from '@/constants/theme';
+import { colors, fonts, gradients, layout, radii, spacing, typeScale, webShadows } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ensureLoggedIn } from '@/utils/authGate';
 
@@ -21,7 +22,7 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
   const addresses = useAppStore((s) => s.addresses);
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
   const hub = useCatalogStore((s) => s.hub);
-  const { horizontalPadding, contentWidth, isDesktop } = useResponsive();
+  const { horizontalPadding, contentWidth, isDesktop, compactChrome } = useResponsive();
   const selectedAddress =
     addresses.find((a) => a.id === selectedAddressId) ?? addresses.find((a) => a.isDefault);
   const locationLabel = selectedAddress
@@ -61,6 +62,14 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
             ]}
           >
             <View style={styles.brandRow}>
+              <LinearGradient
+                colors={[...gradients.brandSubtle]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.brandTile}
+              >
+                <Ionicons name="game-controller" size={14} color={colors.baseBlack} />
+              </LinearGradient>
               <Text style={styles.brandMark}>Play</Text>
               <Text style={styles.brandAccent}>Port</Text>
             </View>
@@ -81,10 +90,12 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
           </Pressable>
 
           <View style={styles.actions}>
-            <View style={styles.etaPill} accessibilityLabel={`Delivery in ${eta} minutes`}>
-              <Ionicons name="flash" size={12} color={colors.etaText} />
-              <Text style={styles.etaPillText}>{eta} mins</Text>
-            </View>
+            {!compactChrome ? (
+              <View style={styles.etaPill} accessibilityLabel={`Delivery in ${eta} minutes`}>
+                <Ionicons name="flash" size={12} color={colors.etaText} />
+                <Text style={styles.etaPillText}>{eta} mins</Text>
+              </View>
+            ) : null}
 
             {!isAuthenticated ? (
               <Pressable
@@ -93,10 +104,11 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
                 onPress={() => router.push('/(auth)/login')}
                 style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
                   styles.loginBtn,
+                  compactChrome && styles.loginBtnCompact,
                   (pressed || hovered) && styles.pressed,
                 ]}
               >
-                <Text style={styles.loginText}>Login</Text>
+                <Text style={styles.loginText}>{compactChrome ? 'In' : 'Login'}</Text>
               </Pressable>
             ) : null}
 
@@ -109,7 +121,7 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
                 scaleTo={0.92}
                 style={styles.cartBtn}
               >
-                <Ionicons name="bag-outline" size={20} color={colors.primaryText} />
+                <Ionicons name="bag-outline" size={19} color={colors.primaryText} />
                 {cartCount > 0 ? (
                   <PulseOnChange pulseKey={cartCount} style={styles.badge}>
                     <Text style={styles.badgeText}>{cartCount > 9 ? '9+' : cartCount}</Text>
@@ -133,15 +145,16 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderSubtle,
     ...Platform.select({
       web: {
-        backdropFilter: 'blur(12px)',
-        backgroundColor: 'rgba(10,10,11,0.92)',
+        backdropFilter: 'blur(14px)',
+        backgroundColor: 'rgba(11,13,18,0.88)',
+        boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset',
       } as object,
       default: {},
     }),
   },
   wrap: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing.sm + 2,
+    paddingBottom: spacing.sm + 2,
     justifyContent: 'center',
   },
   row: {
@@ -157,18 +170,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pressed: { opacity: 0.85 },
-  brandRow: { flexDirection: 'row', alignItems: 'baseline' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  brandTile: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: { boxShadow: webShadows.glow } as object,
+      default: {},
+    }),
+  },
   brandMark: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
     fontSize: typeScale.title,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   brandAccent: {
     color: colors.playportOrange,
     fontFamily: fonts.heading,
     fontSize: typeScale.title,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   locationRow: {
     flexDirection: 'row',
@@ -180,10 +204,10 @@ const styles = StyleSheet.create({
     color: colors.secondaryText,
     fontFamily: fonts.bodyMedium,
     fontSize: typeScale.small,
-    maxWidth: 160,
+    maxWidth: 140,
     flexShrink: 1,
   },
-  locationTextWide: { maxWidth: 280 },
+  locationTextWide: { maxWidth: 360 },
   tagline: {
     color: colors.mutedText,
     fontFamily: fonts.body,
@@ -204,6 +228,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.etaBg,
     paddingHorizontal: 10,
     borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(61,214,140,0.22)',
   },
   etaPillText: {
     color: colors.etaText,
@@ -224,6 +250,9 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
+  loginBtnCompact: {
+    paddingHorizontal: 10,
+  },
   loginText: {
     color: colors.primaryText,
     fontFamily: fonts.bodyMedium,
@@ -239,7 +268,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      web: { cursor: 'pointer' as unknown as undefined },
+      web: {
+        cursor: 'pointer' as unknown as undefined,
+        boxShadow: webShadows.soft,
+      } as object,
       default: {},
     }),
   },
@@ -257,5 +289,5 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.page,
   },
-  badgeText: { color: colors.white, fontSize: 9, fontFamily: fonts.bodyMedium },
+  badgeText: { color: colors.baseBlack, fontSize: 9, fontFamily: fonts.heading },
 });

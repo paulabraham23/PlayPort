@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform, StyleSheet } from 'react-native';
@@ -8,7 +9,8 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, fonts, layout, radii } from '@/constants/theme';
+import { colors, fonts, gradients, layout, radii, webShadows } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -21,18 +23,31 @@ function TabIcon({ name, color, focused }: { name: IconName; color: string; focu
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    backgroundColor: focused ? colors.orangeTint : 'transparent',
   }));
 
-  return (
+  const icon = (
     <Animated.View style={[styles.iconWrap, animatedStyle]}>
       <Ionicons name={name} size={focused ? 22 : 21} color={color} />
+    </Animated.View>
+  );
+
+  if (!focused) return icon;
+
+  return (
+    <Animated.View style={styles.glowWrap}>
+      <LinearGradient
+        colors={['rgba(232,146,58,0.16)', 'rgba(232,146,58,0)']}
+        style={styles.glowGradient}
+        pointerEvents="none"
+      />
+      {icon}
     </Animated.View>
   );
 }
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { contentWidth, isDesktop } = useResponsive();
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 10 : 0);
 
   return (
@@ -46,6 +61,9 @@ export default function TabsLayout() {
           {
             height: layout.tabBarHeight + bottomInset,
             paddingBottom: bottomInset > 0 ? bottomInset : 10,
+            maxWidth: isDesktop ? contentWidth : undefined,
+            alignSelf: isDesktop ? 'center' : undefined,
+            width: '100%',
           },
           Platform.OS === 'web' && styles.tabBarWeb,
         ],
@@ -109,8 +127,10 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     ...Platform.select({
       web: {
-        backdropFilter: 'blur(16px)',
-        backgroundColor: 'rgba(20,20,22,0.95)',
+        backdropFilter: 'blur(18px)',
+        backgroundColor: 'rgba(16,19,27,0.94)',
+        borderTopWidth: 1,
+        borderTopColor: colors.borderSubtle,
       } as object,
       default: {},
     }),
@@ -132,5 +152,19 @@ const styles = StyleSheet.create({
     width: 36,
     height: 28,
     borderRadius: radii.sm,
+  },
+  glowWrap: {
+    width: 48,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glowGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: radii.md,
   },
 });

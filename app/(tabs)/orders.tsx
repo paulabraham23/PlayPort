@@ -28,11 +28,11 @@ const ACTIVE_STATUSES = new Set([
 type TabKey = 'active' | 'past';
 
 export default function OrdersScreen() {
-  const { horizontalPadding, isDesktop, gap } = useResponsive();
+  const { horizontalPadding, orderColumns, gap } = useResponsive();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const orders = useAppStore((s) => s.orders);
   const [tab, setTab] = useState<TabKey>('active');
-  const orderColumns = isDesktop ? 2 : 1;
+  const columns = orderColumns;
 
   const { active, past } = useMemo(() => {
     const activeOrders = orders.filter((o) => ACTIVE_STATUSES.has(o.status));
@@ -82,6 +82,7 @@ export default function OrdersScreen() {
         <View style={styles.tabs}>
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ selected: tab === 'active' }}
             onPress={() => setTab('active')}
             style={[styles.tab, tab === 'active' && styles.tabActive]}
           >
@@ -91,6 +92,7 @@ export default function OrdersScreen() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ selected: tab === 'past' }}
             onPress={() => setTab('past')}
             style={[styles.tab, tab === 'past' && styles.tabActive]}
           >
@@ -117,7 +119,7 @@ export default function OrdersScreen() {
             onAction={() => router.push('/(tabs)')}
           />
         ) : (
-          <ResponsiveGrid columns={orderColumns} gap={gap}>
+          <ResponsiveGrid columns={columns} gap={gap}>
             {visibleList.map((order) => (
               <OrderCard
                 key={order.id}
@@ -220,9 +222,9 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: colors.surface,
     borderRadius: radii.full,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.borderSubtle,
     padding: 4,
   },
@@ -232,7 +234,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     alignItems: 'center',
   },
-  tabActive: { backgroundColor: colors.orangeTint },
+  tabActive: {
+    backgroundColor: colors.orangeTintStrong,
+    borderWidth: 1,
+    borderColor: colors.orangeBorder,
+  },
   tabText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
   tabTextActive: { color: colors.playportOrange },
   sectionLabel: {
@@ -248,7 +254,7 @@ const styles = StyleSheet.create({
   },
   liveTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   pulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
-  liveId: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
+  liveId: { color: colors.mutedText, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
   liveRow: { flexDirection: 'row', gap: 12 },
   liveImage: {
     width: 76,
@@ -276,8 +282,8 @@ const styles = StyleSheet.create({
     fontSize: typeScale.small,
   },
   progressTrack: {
-    height: 4,
-    borderRadius: 2,
+    height: 5,
+    borderRadius: radii.full,
     backgroundColor: colors.surfaceAlt,
     overflow: 'hidden',
   },

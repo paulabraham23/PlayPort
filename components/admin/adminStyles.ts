@@ -9,6 +9,7 @@ export const adminStyles = StyleSheet.create({
   scroll: {
     paddingBottom: spacing.huge,
     gap: spacing.lg,
+    width: '100%',
   },
   title: {
     fontFamily: fonts.heading,
@@ -31,7 +32,7 @@ export const adminStyles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: spacing.sm,
   },
@@ -49,7 +50,7 @@ export const adminStyles = StyleSheet.create({
     backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: radii.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
     color: colors.primaryText,

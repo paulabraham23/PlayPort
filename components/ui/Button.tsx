@@ -14,8 +14,9 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable } from 'react-native';
-import { colors, fonts, radii, shadows, typeScale } from '@/constants/theme';
+import { colors, fonts, gradients, radii, shadows, typeScale, webShadows } from '@/constants/theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -81,7 +82,7 @@ export function Button({
       }
       style={[
         styles.base,
-        styles[variant],
+        variant !== 'primary' && styles[variant],
         styles[`size_${size}`],
         fullWidth && styles.fullWidth,
         Platform.OS === 'web' && styles.webCursor,
@@ -91,8 +92,25 @@ export function Button({
       ]}
       {...rest}
     >
+      {variant === 'primary' && !disabled ? (
+        <LinearGradient
+          colors={[...gradients.cta]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       {icon ? <View style={styles.icon}>{icon}</View> : null}
-      <Text style={[styles.text, styles[`text_${variant}`], styles[`textSize_${size}`]]}>{title}</Text>
+      <Text
+        style={[
+          styles.text,
+          variant !== 'primary' && styles[`text_${variant}`],
+          variant === 'primary' && { color: colors.baseBlack },
+          styles[`textSize_${size}`],
+        ]}
+      >
+        {title}
+      </Text>
       {iconRight ? <View style={styles.icon}>{iconRight}</View> : null}
     </AnimatedPressable>
   );
@@ -105,10 +123,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    overflow: 'hidden',
   },
   primary: {
-    backgroundColor: colors.playportOrange,
+    backgroundColor: colors.ctaPrimary,
     ...shadows.glow,
+    ...Platform.select({
+      web: { boxShadow: webShadows.glow } as object,
+      default: {},
+    }),
   },
   secondary: {
     backgroundColor: colors.surfaceRaised,
@@ -128,10 +151,9 @@ const styles = StyleSheet.create({
   webCursor: {
     cursor: 'pointer' as unknown as undefined,
   },
-  disabled: { opacity: 0.45 },
+  disabled: { opacity: 0.4 },
   icon: { marginRight: 0 },
-  text: { fontFamily: fonts.bodyMedium },
-  text_primary: { color: colors.ctaPrimaryText },
+  text: { fontFamily: fonts.headingMedium },
   text_secondary: { color: colors.primaryText },
   text_ghost: { color: colors.primaryText },
   text_danger: { color: colors.danger },

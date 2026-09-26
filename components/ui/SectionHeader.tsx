@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, typeScale } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, fonts, radii, typeScale } from '@/constants/theme';
 
 interface Props {
   eyebrow?: string;
@@ -16,8 +17,14 @@ export function SectionHeader({ eyebrow, title, actionLabel, onAction }: Props) 
         <Text style={styles.title}>{title}</Text>
       </View>
       {actionLabel && onAction ? (
-        <Pressable accessibilityRole="button" onPress={onAction} hitSlop={8}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAction}
+          hitSlop={8}
+          style={({ pressed }: { pressed: boolean }) => [styles.actionBtn, pressed && styles.actionPressed]}
+        >
           <Text style={styles.action}>{actionLabel}</Text>
+          <Ionicons name="chevron-forward" size={13} color={colors.playportOrange} />
         </Pressable>
       ) : null}
     </View>
@@ -45,6 +52,14 @@ const styles = StyleSheet.create({
     fontSize: typeScale.headline,
     letterSpacing: -0.3,
   },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 1,
+    borderRadius: radii.full,
+    ...Platform.select({ web: { cursor: 'pointer' as unknown as undefined } as object, default: {} }),
+  },
+  actionPressed: { opacity: 0.7 },
   action: {
     color: colors.playportOrange,
     fontFamily: fonts.bodyMedium,

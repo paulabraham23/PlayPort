@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   orbGreen: {
     top: 220,
     left: -120,
-    backgroundColor: colors.etaText,
+    backgroundColor: colors.info,
     width: 220,
     height: 220,
     borderRadius: 110,

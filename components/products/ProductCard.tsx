@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -11,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { PressableScale } from '@/components/motion/PressableScale';
 import { ValuePop } from '@/components/motion/ValuePop';
-import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
+import { colors, fonts, gradients, radii, shadows, spacing, typeScale, webShadows } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
 import { cheapestPlanPrice, defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
 import type { Product } from '@/types';
@@ -88,10 +89,11 @@ function CartAction({
 function RatingRow({ rating, count }: { rating: number; count: number }) {
   return (
     <View style={styles.ratingRow}>
-      <Ionicons name="star" size={11} color={colors.warning} />
-      <Text style={styles.ratingText}>
-        {rating.toFixed(1)} · {count}+
-      </Text>
+      <View style={styles.ratingChip}>
+        <Ionicons name="star" size={10} color={colors.warning} />
+        <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text>
+      </View>
+      <Text style={styles.ratingCount}>{count}+ reviews</Text>
     </View>
   );
 }
@@ -136,6 +138,11 @@ export function ProductCard({
   const plan = defaultPlan(normalized);
   const price = cheapestPlanPrice(normalized) ?? plan?.price ?? 0;
   const planLabel = plan?.label ?? 'plan';
+  const savings =
+    product.compareAtPrice && product.compareAtPrice > price
+      ? Math.round(((product.compareAtPrice - price) / product.compareAtPrice) * 100)
+      : 0;
+  const soldOut = product.availabilityLabel?.startsWith('No');
   const handleAdd = onAdd ?? onRent;
 
   if (compact) {
@@ -174,14 +181,28 @@ export function ProductCard({
   }
 
   return (
-    <Animated.View entering={FadeIn.duration(320)} style={styles.card}>
+    <Animated.View entering={FadeIn.duration(320)} style={[styles.card, soldOut && styles.cardDim]}>
       <PressableScale accessibilityLabel={product.name} onPress={onPress} scaleTo={0.985}>
         <View style={styles.imageWrap}>
           <ZoomImage uri={product.images[0]} style={styles.image} />
+          <LinearGradient
+            colors={[...gradients.cardSheen]}
+            style={StyleSheet.absoluteFill}
+          />
           <View style={styles.etaBadge}>
             <Ionicons name="flash" size={10} color={colors.etaText} />
             <Text style={styles.etaBadgeText}>{product.etaMinutes} min</Text>
           </View>
+          {product.popular ? (
+            <View style={styles.popularBadge}>
+              <Text style={styles.popularBadgeText}>POPULAR</Text>
+            </View>
+          ) : null}
+          {soldOut ? (
+            <View style={styles.soldOutBadge}>
+              <Text style={styles.soldOutText}>SOLD OUT</Text>
+            </View>
+          ) : null}
         </View>
         <View style={styles.body}>
           <RatingRow rating={product.rating} count={product.reviewCount} />
@@ -193,7 +214,14 @@ export function ProductCard({
       </PressableScale>
       <View style={styles.footer}>
         <View style={styles.priceCol}>
-          <Text style={styles.price}>{formatINR(price)}</Text>
+          <View style={styles.priceRow}>
+            <Text style={styles.price}>{formatINR(price)}</Text>
+            {savings > 0 ? (
+              <View style={styles.saveChip}>
+                <Text style={styles.saveText}>{savings}% off</Text>
+              </View>
+            ) : null}
+          </View>
           {product.compareAtPrice ? (
             <Text style={styles.mrp}>{formatINR(product.compareAtPrice)}</Text>
           ) : null}
@@ -219,7 +247,15 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
     overflow: 'hidden',
     ...shadows.soft,
+    ...Platform.select({
+      web: {
+        boxShadow: webShadows.soft,
+        transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+      } as object,
+      default: {},
+    }),
   },
+  cardDim: { opacity: 0.62 },
   imageWrap: {
     backgroundColor: colors.surfaceAlt,
     position: 'relative',
@@ -227,6 +263,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1.05,
   },
   image: { width: '100%', height: '100%' },
+  sheen: { ...StyleSheet.absoluteFill },
   etaBadge: {
     position: 'absolute',
     top: 10,
@@ -234,17 +271,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: 'rgba(10,10,11,0.72)',
+    backgroundColor: 'rgba(7,8,12,0.78)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: radii.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(74,222,128,0.25)',
+    borderColor: 'rgba(61,214,140,0.28)',
   },
   etaBadgeText: {
     color: colors.etaText,
     fontFamily: fonts.bodyMedium,
     fontSize: typeScale.caption,
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: colors.ctaPrimary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radii.full,
+  },
+  popularBadgeText: {
+    color: colors.baseBlack,
+    fontFamily: fonts.heading,
+    fontSize: 9,
+    letterSpacing: 0.8,
+  },
+  soldOutBadge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(7,8,12,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soldOutText: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.small,
+    letterSpacing: 1.4,
   },
   floatingAction: {
     position: 'absolute',
@@ -253,15 +321,29 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   body: { paddingHorizontal: spacing.md, paddingTop: spacing.md, gap: 4 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  ratingText: {
-    color: colors.secondaryText,
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ratingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radii.xs,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  ratingValue: {
+    color: colors.primaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+  },
+  ratingCount: {
+    color: colors.mutedText,
     fontFamily: fonts.body,
     fontSize: typeScale.caption,
   },
   title: {
     color: colors.primaryText,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.headingMedium,
     fontSize: typeScale.bodyLg,
     lineHeight: 20,
   },
@@ -274,17 +356,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
     paddingTop: spacing.sm,
     gap: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.borderSubtle,
   },
   priceCol: { flex: 1, minWidth: 0 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   price: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
     fontSize: typeScale.title,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
+  },
+  saveChip: {
+    backgroundColor: colors.successBg,
+    borderRadius: radii.full,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  saveText: {
+    color: colors.success,
+    fontFamily: fonts.headingMedium,
+    fontSize: 10,
   },
   mrp: {
     color: colors.mutedText,
@@ -302,12 +399,12 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     borderWidth: 1.5,
-    borderColor: colors.playportOrange,
+    borderColor: colors.orangeBorder,
     backgroundColor: colors.orangeTint,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: radii.sm,
-    minWidth: 72,
+    minWidth: 64,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -318,7 +415,7 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     color: colors.playportOrange,
-    fontFamily: fonts.heading,
+    fontFamily: fonts.headingMedium,
     fontSize: typeScale.body,
     letterSpacing: 0.8,
   },
@@ -326,10 +423,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: colors.playportOrange,
+    borderColor: colors.orangeBorder,
     backgroundColor: colors.orangeTint,
     borderRadius: radii.sm,
-    minWidth: 96,
+    minWidth: 84,
     height: 36,
   },
   qtyWrapFloating: {
@@ -377,7 +474,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     left: 6,
-    backgroundColor: 'rgba(10,10,11,0.75)',
+    backgroundColor: 'rgba(7,8,12,0.78)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radii.xs,
@@ -385,7 +482,7 @@ const styles = StyleSheet.create({
   compactBody: { flex: 1, gap: 3 },
   compactTitle: {
     color: colors.primaryText,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.headingMedium,
     fontSize: typeScale.bodyLg,
     lineHeight: 20,
   },

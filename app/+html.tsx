@@ -18,7 +18,7 @@ export default function Root({ children }: { children: ReactNode }) {
         />
         <title>{TITLE}</title>
         <meta name="description" content={DESCRIPTION} />
-        <meta name="theme-color" content="#0A0A0B" />
+        <meta name="theme-color" content="#0B0D12" />
         <meta name="color-scheme" content="dark" />
         <meta name="application-name" content="PlayPort" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -66,9 +66,10 @@ if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
 
 const globalCss = `
 html, body, #root {
-  background-color: #0A0A0B;
+  background-color: #0B0D12;
   min-height: 100%;
   width: 100%;
+  max-width: 100vw;
   overflow-x: hidden;
   touch-action: manipulation;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -79,7 +80,7 @@ html, body, #root {
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
 }
-img, video {
+img, video, canvas, svg {
   max-width: 100%;
   height: auto;
 }
@@ -87,12 +88,13 @@ img, video {
   cursor: pointer;
   transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease;
 }
-input, textarea {
+input, textarea, select {
   outline: none;
   font-size: 16px;
+  max-width: 100%;
 }
 ::selection {
-  background: rgba(196, 94, 26, 0.28);
+  background: rgba(232, 146, 58, 0.30);
   color: #fff;
 }
 ::-webkit-scrollbar {
@@ -100,11 +102,20 @@ input, textarea {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3A3A40;
+  background: #2A3042;
   border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3A4256;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+@media (max-width: 379px) {
+  html { font-size: 15px; }
+}
+@media (min-width: 1280px) {
+  html { font-size: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

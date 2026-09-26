@@ -49,9 +49,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...Platform.select({
       web: {
-        boxShadow: '0 -8px 32px rgba(0,0,0,0.45)',
-        backdropFilter: 'blur(16px)',
-        backgroundColor: 'rgba(20,20,22,0.95)',
+        boxShadow: '0 -10px 36px rgba(4,6,10,0.5)',
+        backdropFilter: 'blur(18px)',
+        backgroundColor: 'rgba(16,19,27,0.94)',
       } as object,
       default: {},
     }),
@@ -61,6 +61,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.md,
     flexWrap: 'wrap',
   },

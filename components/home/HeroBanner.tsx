@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { PressableScale } from '@/components/motion/PressableScale';
 import { SoftPulse } from '@/components/motion/Pulse';
-import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
+import { colors, fonts, gradients, radii, shadows, spacing, typeScale, webShadows } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import type { Product } from '@/types';
 
 interface Props {
@@ -13,22 +15,30 @@ interface Props {
 }
 
 export function HeroBanner({ product, etaMinutes = 30, onPress }: Props) {
+  const { heroMinHeight, isDesktop, isTablet } = useResponsive();
   const imageUri =
     product?.images[0] ??
     'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=1200&q=80';
+
+  const titleSize = isDesktop ? 40 : isTablet ? 32 : typeScale.hero;
+  const titleLine = isDesktop ? 47 : isTablet ? 38 : 40;
 
   return (
     <PressableScale
       accessibilityLabel="Browse tonight's kits"
       onPress={onPress}
-      scaleTo={0.985}
-      style={styles.wrap}
+      scaleTo={0.988}
+      style={[styles.wrap, { minHeight: heroMinHeight }]}
     >
       <Image source={{ uri: imageUri }} style={styles.image} contentFit="cover" />
       <View style={styles.scrimTop} />
-      <View style={styles.scrimBottom} />
+      <LinearGradient
+        colors={[...gradients.heroScrim]}
+        locations={[0.15, 0.62, 1]}
+        style={StyleSheet.absoluteFill}
+      />
 
-      <View style={styles.content}>
+      <View style={[styles.content, { minHeight: heroMinHeight, padding: isDesktop ? spacing.xxl + 4 : spacing.xl }]}>
         <View style={styles.badgeRow}>
           <View style={styles.livePill}>
             <SoftPulse>
@@ -38,17 +48,21 @@ export function HeroBanner({ product, etaMinutes = 30, onPress }: Props) {
           </View>
           <View style={styles.etaPill}>
             <Ionicons name="flash" size={12} color={colors.etaText} />
-            <Text style={styles.etaText}>{etaMinutes} min delivery</Text>
+            <Text style={styles.etaPillText}>{etaMinutes} min delivery</Text>
           </View>
         </View>
 
         <Text style={styles.kicker}>Tonight's entertainment</Text>
-        <Text style={styles.title}>Premium kits at your door</Text>
-        <Text style={styles.sub}>Consoles · VR · Cinema · Racing — sanitized and setup-ready.</Text>
+        <Text style={[styles.title, { fontSize: titleSize, lineHeight: titleLine }]}>
+          Premium kits at{'\n'}your door
+        </Text>
+        <Text style={[styles.sub, isDesktop && styles.subWide]}>
+          Consoles · VR · Cinema · Racing — sanitized and setup-ready.
+        </Text>
 
         <View style={styles.ctaRow}>
           <Text style={styles.cta}>Browse kits</Text>
-          <Ionicons name="arrow-forward" size={16} color={colors.white} />
+          <Ionicons name="arrow-forward" size={15} color={colors.baseBlack} />
         </View>
       </View>
     </PressableScale>
@@ -59,39 +73,41 @@ const styles = StyleSheet.create({
   wrap: {
     borderRadius: radii.xl,
     overflow: 'hidden',
-    minHeight: 220,
+    width: '100%',
     backgroundColor: colors.surfaceAlt,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     ...shadows.card,
+    ...Platform.select({
+      web: { boxShadow: webShadows.card } as object,
+      default: {},
+    }),
   },
   image: { ...StyleSheet.absoluteFill },
   scrimTop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(10,10,11,0.35)',
-  },
-  scrimBottom: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'transparent',
+    backgroundColor: gradients.heroVeil[0],
   },
   content: {
     flex: 1,
     justifyContent: 'flex-end',
-    padding: spacing.xl,
-    gap: 6,
-    backgroundColor: 'rgba(10,10,11,0.55)',
-    minHeight: 220,
+    gap: 7,
+    backgroundColor: 'transparent',
   },
   badgeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   livePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.14)',
+    paddingHorizontal: 11,
     paddingVertical: 5,
     borderRadius: radii.full,
   },
@@ -105,17 +121,20 @@ const styles = StyleSheet.create({
     color: colors.primaryText,
     fontFamily: fonts.bodyMedium,
     fontSize: typeScale.caption,
+    letterSpacing: 0.2,
   },
   etaPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     backgroundColor: colors.etaBg,
-    paddingHorizontal: 10,
+    paddingHorizontal: 11,
     paddingVertical: 5,
     borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(61,214,140,0.22)',
   },
-  etaText: {
+  etaPillText: {
     color: colors.etaText,
     fontFamily: fonts.bodyMedium,
     fontSize: typeScale.caption,
@@ -124,38 +143,46 @@ const styles = StyleSheet.create({
     color: colors.playportOrange,
     fontFamily: fonts.bodyMedium,
     fontSize: typeScale.small,
-    letterSpacing: 0.4,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   title: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: typeScale.display,
-    letterSpacing: -0.5,
-    lineHeight: 34,
+    letterSpacing: -1,
   },
   sub: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
     fontSize: typeScale.body,
-    lineHeight: 20,
+    lineHeight: 21,
     maxWidth: 320,
+  },
+  subWide: {
+    maxWidth: 480,
+    fontSize: typeScale.bodyLg,
+    lineHeight: 23,
   },
   ctaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
+    gap: 7,
+    marginTop: 10,
     alignSelf: 'flex-start',
-    backgroundColor: colors.playportOrange,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    backgroundColor: colors.ctaPrimary,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
     borderRadius: radii.full,
     ...shadows.glow,
+    ...Platform.select({
+      web: { boxShadow: webShadows.glow } as object,
+      default: {},
+    }),
   },
   cta: {
-    color: colors.white,
+    color: colors.baseBlack,
     fontFamily: fonts.heading,
     fontSize: typeScale.body,
+    letterSpacing: 0.2,
   },
 });

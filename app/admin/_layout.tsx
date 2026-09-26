@@ -37,6 +37,7 @@ export default function AdminLayout() {
   const hydrateAll = useAdminStore((s) => s.hydrateAll);
   const [checking, setChecking] = useState(true);
   const [allowed, setAllowed] = useState(false);
+  const [checkTick, setCheckTick] = useState(0);
   const desktop = width >= 960;
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export default function AdminLayout() {
         }
         return;
       }
+      if (!cancelled) setChecking(true);
       const ok = await checkIsAdmin(true);
       if (!cancelled) {
         setAllowed(ok);
@@ -59,7 +61,7 @@ export default function AdminLayout() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, hydrateAll]);
+  }, [isAuthenticated, hydrateAll, checkTick]);
 
   if (checking) {
     return (
@@ -92,10 +94,18 @@ export default function AdminLayout() {
       <View style={[styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.deniedTitle}>Admin only</Text>
         <Text style={styles.hint}>
-          Your account is not an admin. Ask an owner to run{' '}
-          <Text style={styles.mono}>npm run firebase:admin:claim -- &lt;uid&gt;</Text>, then sign out
-          and back in.
+          Your account is not an admin yet, or your session is stale. If access was just granted, tap
+          Retry access, or sign out and sign in again.
         </Text>
+        <Pressable
+          style={styles.linkBtn}
+          onPress={() => {
+            setChecking(true);
+            setCheckTick((n) => n + 1);
+          }}
+        >
+          <Text style={styles.linkText}>Retry access</Text>
+        </Pressable>
         <Pressable style={styles.linkBtn} onPress={() => router.replace('/(tabs)')}>
           <Text style={styles.linkText}>Back to app</Text>
         </Pressable>
@@ -133,22 +143,24 @@ export default function AdminLayout() {
           </ScrollView>
         </View>
         <View style={styles.content}>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="products/index" />
-            <Stack.Screen name="products/[id]" />
-            <Stack.Screen name="combos/index" />
-            <Stack.Screen name="combos/[id]" />
-            <Stack.Screen name="categories/index" />
-            <Stack.Screen name="inventory/index" />
-            <Stack.Screen name="hubs/index" />
-            <Stack.Screen name="orders/index" />
-            <Stack.Screen name="orders/[id]" />
-            <Stack.Screen name="customers/index" />
-            <Stack.Screen name="riders/index" />
-            <Stack.Screen name="reviews/index" />
-            <Stack.Screen name="settings/index" />
-          </Stack>
+          <View style={styles.contentInner}>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="products/index" />
+              <Stack.Screen name="products/[id]" />
+              <Stack.Screen name="combos/index" />
+              <Stack.Screen name="combos/[id]" />
+              <Stack.Screen name="categories/index" />
+              <Stack.Screen name="inventory/index" />
+              <Stack.Screen name="hubs/index" />
+              <Stack.Screen name="orders/index" />
+              <Stack.Screen name="orders/[id]" />
+              <Stack.Screen name="customers/index" />
+              <Stack.Screen name="riders/index" />
+              <Stack.Screen name="reviews/index" />
+              <Stack.Screen name="settings/index" />
+            </Stack>
+          </View>
         </View>
       </View>
     </View>
@@ -175,6 +187,8 @@ const styles = StyleSheet.create({
   },
   navSide: {
     width: 220,
+    maxWidth: '32%',
+    minWidth: 180,
     borderBottomWidth: 0,
     borderRightWidth: 1,
     borderRightColor: colors.border,
@@ -223,6 +237,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    minWidth: 0,
+  },
+  contentInner: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 1120,
+    alignSelf: 'center',
   },
   center: {
     flex: 1,

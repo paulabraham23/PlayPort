@@ -39,7 +39,14 @@ export function Screen({
       {showHeader ? <AppHeader showCart={showCart} rightSlot={headerRight} /> : null}
       <FeelToast />
       <View style={styles.center}>
-        <View style={[styles.body, { maxWidth, width: '100%' }, isDesktop && styles.desktopBody, contentStyle]}>
+        <View
+          style={[
+            styles.body,
+            { maxWidth, width: '100%' },
+            isDesktop && styles.desktopBody,
+            contentStyle,
+          ]}
+        >
           {children}
         </View>
         {showFloatingCart ? <FloatingCartBar bottomOffset={12} /> : null}
@@ -50,8 +57,8 @@ export function Screen({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.page, overflow: 'hidden' },
-  center: { flex: 1, width: '100%', alignItems: 'center' },
-  body: { flex: 1 },
+  center: { flex: 1, width: '100%', alignItems: 'center', minWidth: 0 },
+  body: { flex: 1, minWidth: 0, width: '100%' },
   desktopBody: {
     position: 'relative',
   },

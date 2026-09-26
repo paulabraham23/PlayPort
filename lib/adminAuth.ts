@@ -11,8 +11,14 @@ function normalizePhone(value?: string | null): string {
 export async function checkIsAdmin(forceRefresh = false): Promise<boolean> {
   const user = auth.currentUser;
   if (!user) return false;
+
+  // Force a network refresh so newly granted custom claims show up without a full re-login.
+  if (forceRefresh) {
+    await user.getIdToken(true);
+  }
   const token = await user.getIdTokenResult(forceRefresh);
-  if (token.claims.admin === true) return true;
+  const claim = token.claims.admin;
+  if (claim === true || claim === 'true' || claim === 1) return true;
 
   const email = (user.email || (token.claims.email as string | undefined) || '').toLowerCase();
   if (OPS_EMAILS.has(email)) return true;

@@ -169,6 +169,7 @@ const styles = StyleSheet.create({
   topBlock: { gap: spacing.lg },
   topBlockSplit: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'stretch',
     gap: spacing.xl,
   },
@@ -183,7 +184,8 @@ const styles = StyleSheet.create({
     flex: 1,
     width: undefined,
     height: undefined,
-    minHeight: 280,
+    minHeight: 260,
+    maxWidth: 560,
     aspectRatio: 4 / 3,
   },
   heroImage: { ...StyleSheet.absoluteFill },

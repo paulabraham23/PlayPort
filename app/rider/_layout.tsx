@@ -139,11 +139,13 @@ export default function RiderLayout() {
           </ScrollView>
         </View>
         <View style={styles.content}>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="mine" />
-            <Stack.Screen name="order/[id]" />
-          </Stack>
+          <View style={styles.contentInner}>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="mine" />
+              <Stack.Screen name="order/[id]" />
+            </Stack>
+          </View>
         </View>
       </View>
     </View>
@@ -194,7 +196,13 @@ const styles = StyleSheet.create({
     color: colors.secondaryText,
   },
   navLabelActive: { color: colors.playportOrange },
-  content: { flex: 1 },
+  content: { flex: 1, minWidth: 0 },
+  contentInner: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 960,
+    alignSelf: 'center',
+  },
   center: {
     flex: 1,
     backgroundColor: colors.page,

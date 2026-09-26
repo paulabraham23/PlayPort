@@ -1,4 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { EnterUp } from '@/components/motion/Enter';
+import { SoftPulse } from '@/components/motion/Pulse';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 
 interface Stat {
@@ -15,11 +17,13 @@ export function StatsBand({ stats }: { stats: Stat[] }) {
   return (
     <View style={styles.band}>
       {stats.map((stat, i) => (
-        <View key={stat.label} style={styles.cell}>
+        <EnterUp key={stat.label} index={i} style={styles.cell}>
           {i > 0 ? <View style={styles.divider} /> : null}
-          <Text style={styles.value}>{stat.value}</Text>
+          <SoftPulse minOpacity={0.85} scaleAmount={0.02} delay={i * 200}>
+            <Text style={styles.value}>{stat.value}</Text>
+          </SoftPulse>
           <Text style={styles.label}>{stat.label}</Text>
-        </View>
+        </EnterUp>
       ))}
     </View>
   );

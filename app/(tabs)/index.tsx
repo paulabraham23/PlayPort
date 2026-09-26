@@ -7,6 +7,7 @@ import { TrustStrip } from '@/components/home/TrustStrip';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { EnterUp } from '@/components/motion/Enter';
+import { SoftPulse } from '@/components/motion/Pulse';
 import { ProductCard } from '@/components/products/ProductCard';
 import { SearchBar } from '@/components/search/SearchBar';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -135,9 +136,9 @@ export default function HomeScreen() {
 
         <EnterUp index={5}>
           <View style={styles.promiseCard}>
-            <View style={styles.promiseIcon}>
+            <SoftPulse minOpacity={0.75} scaleAmount={0.04} style={styles.promiseIcon}>
               <Ionicons name="shield-checkmark" size={22} color={colors.success} />
-            </View>
+            </SoftPulse>
             <View style={{ flex: 1 }}>
               <Text style={styles.promiseTitle}>PlayPort Promise</Text>
               <Text style={styles.promiseBody}>

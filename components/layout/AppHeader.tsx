@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { PressableScale } from '@/components/motion/PressableScale';
-import { PulseOnChange } from '@/components/motion/Pulse';
+import { PulseOnChange, SoftPulse } from '@/components/motion/Pulse';
 import { useAppStore, useCartCount } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { colors, fonts, layout, radii, spacing, typeScale, webShadows } from '@/constants/theme';
@@ -83,7 +83,9 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
           <View style={styles.actions}>
             {!compactChrome ? (
               <View style={styles.etaPill} accessibilityLabel={`Delivery in ${eta} minutes`}>
-                <Ionicons name="flash" size={12} color={colors.etaText} />
+                <SoftPulse minOpacity={0.5} scaleAmount={0.1}>
+                  <Ionicons name="flash" size={12} color={colors.etaText} />
+                </SoftPulse>
                 <Text style={styles.etaPillText}>{eta} mins</Text>
               </View>
             ) : null}

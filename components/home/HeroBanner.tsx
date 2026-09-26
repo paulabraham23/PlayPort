@@ -2,8 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { KenBurns } from '@/components/motion/KenBurns';
+import { LiveDot } from '@/components/motion/LiveDot';
+import { NudgeX } from '@/components/motion/Nudge';
 import { PressableScale } from '@/components/motion/PressableScale';
-import { SoftPulse } from '@/components/motion/Pulse';
+import { Shimmer } from '@/components/motion/Shimmer';
 import { colors, fonts, gradients, radii, shadows, spacing, typeScale, webShadows } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import type { Product } from '@/types';
@@ -30,7 +33,9 @@ export function HeroBanner({ product, etaMinutes = 30, onPress }: Props) {
       scaleTo={0.988}
       style={[styles.wrap, { minHeight: heroMinHeight }]}
     >
-      <Image source={{ uri: imageUri }} style={styles.image} contentFit="cover" />
+      <KenBurns scaleTo={1.1} duration={16000}>
+        <Image source={{ uri: imageUri }} style={styles.image} contentFit="cover" />
+      </KenBurns>
       <View style={styles.scrimTop} />
       <LinearGradient
         colors={[...gradients.heroScrim]}
@@ -41,9 +46,7 @@ export function HeroBanner({ product, etaMinutes = 30, onPress }: Props) {
       <View style={[styles.content, { minHeight: heroMinHeight, padding: isDesktop ? spacing.xxl + 4 : spacing.xl }]}>
         <View style={styles.badgeRow}>
           <View style={styles.livePill}>
-            <SoftPulse>
-              <View style={styles.liveDot} />
-            </SoftPulse>
+            <LiveDot size={6} />
             <Text style={styles.liveText}>Live at your hub</Text>
           </View>
           <View style={styles.etaPill}>
@@ -60,10 +63,12 @@ export function HeroBanner({ product, etaMinutes = 30, onPress }: Props) {
           Consoles · VR · Cinema · Racing — sanitized and setup-ready.
         </Text>
 
-        <View style={styles.ctaRow}>
+        <Shimmer style={styles.ctaRow} delay={600} duration={2600}>
           <Text style={styles.cta}>Browse kits</Text>
-          <Ionicons name="arrow-forward" size={15} color={colors.ctaPrimaryText} />
-        </View>
+          <NudgeX distance={5} duration={800}>
+            <Ionicons name="arrow-forward" size={15} color={colors.ctaPrimaryText} />
+          </NudgeX>
+        </Shimmer>
       </View>
     </PressableScale>
   );
@@ -83,7 +88,7 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  image: { ...StyleSheet.absoluteFill },
+  image: { width: '100%', height: '100%' },
   scrimTop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: gradients.heroVeil[0],
@@ -110,12 +115,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     paddingVertical: 5,
     borderRadius: radii.full,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.success,
   },
   liveText: {
     color: colors.primaryText,

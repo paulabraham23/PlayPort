@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
 import { type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
+  withRepeat,
   withSequence,
   withSpring,
   withTiming,
@@ -41,32 +44,41 @@ export function SoftPulse({
   children,
   style,
   active = true,
+  minOpacity = 0.45,
+  scaleAmount = 0.06,
+  delay = 0,
 }: {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   active?: boolean;
+  minOpacity?: number;
+  scaleAmount?: number;
+  delay?: number;
 }) {
-  const opacity = useSharedValue(1);
+  const progress = useSharedValue(0);
 
   useEffect(() => {
     if (!active) {
-      opacity.value = 1;
+      progress.value = 0;
       return;
     }
-    opacity.value = withSequence(
-      withTiming(0.55, { duration: 900 }),
-      withTiming(1, { duration: 900 })
+    progress.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        false
+      )
     );
-    const id = setInterval(() => {
-      opacity.value = withSequence(
-        withTiming(0.55, { duration: 900 }),
-        withTiming(1, { duration: 900 })
-      );
-    }, 1800);
-    return () => clearInterval(id);
-  }, [active, opacity]);
+  }, [active, delay, progress]);
 
-  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: minOpacity + (1 - minOpacity) * (1 - progress.value),
+    transform: [{ scale: 1 + progress.value * scaleAmount }],
+  }));
 
   return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
 }

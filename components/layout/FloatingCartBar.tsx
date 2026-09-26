@@ -2,7 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
+import { NudgeX } from '@/components/motion/Nudge';
 import { PressableScale } from '@/components/motion/PressableScale';
+import { PulseOnChange } from '@/components/motion/Pulse';
+import { Shimmer } from '@/components/motion/Shimmer';
+import { ValuePop } from '@/components/motion/ValuePop';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useCartCount, useCartTotals } from '@/store/appStore';
@@ -36,32 +40,42 @@ export function FloatingCartBar({ bottomOffset = 12 }: Props) {
       ]}
     >
       <Animated.View
-        entering={FadeInDown.duration(220)}
+        entering={FadeInDown.springify().damping(14).stiffness(200)}
         exiting={FadeOutDown.duration(160)}
         style={[styles.barShell, { maxWidth: isMobile ? contentWidth : Math.min(520, contentWidth) }]}
       >
-        <PressableScale
-          accessibilityLabel={`View cart, ${cartCount} items, ${formatINR(totals.total)}`}
-          onPress={() => router.push('/cart')}
-          scaleTo={0.98}
-          style={styles.bar}
-        >
-          <View style={styles.left}>
-            <View style={styles.countBadge}>
-              <Text style={styles.countText}>{cartCount > 9 ? '9+' : cartCount}</Text>
+        <Shimmer delay={800} duration={2800} style={{ borderRadius: radii.lg }}>
+          <PressableScale
+            accessibilityLabel={`View cart, ${cartCount} items, ${formatINR(totals.total)}`}
+            onPress={() => router.push('/cart')}
+            scaleTo={0.98}
+            style={styles.bar}
+          >
+            <View style={styles.left}>
+              <PulseOnChange pulseKey={cartCount}>
+                <View style={styles.countBadge}>
+                  <ValuePop value={cartCount}>
+                    <Text style={styles.countText}>{cartCount > 9 ? '9+' : cartCount}</Text>
+                  </ValuePop>
+                </View>
+              </PulseOnChange>
+              <View style={styles.meta}>
+                <Text style={styles.label} numberOfLines={1}>
+                  {cartCount} {cartCount === 1 ? 'item' : 'items'}
+                </Text>
+                <ValuePop value={totals.total}>
+                  <Text style={styles.total}>{formatINR(totals.total)}</Text>
+                </ValuePop>
+              </View>
             </View>
-            <View style={styles.meta}>
-              <Text style={styles.label} numberOfLines={1}>
-                {cartCount} {cartCount === 1 ? 'item' : 'items'}
-              </Text>
-              <Text style={styles.total}>{formatINR(totals.total)}</Text>
+            <View style={styles.cta}>
+              <Text style={styles.ctaText}>View cart</Text>
+              <NudgeX distance={3} duration={700}>
+                <Ionicons name="chevron-forward" size={16} color={colors.ctaPrimaryText} />
+              </NudgeX>
             </View>
-          </View>
-          <View style={styles.cta}>
-            <Text style={styles.ctaText}>View cart</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.ctaPrimaryText} />
-          </View>
-        </PressableScale>
+          </PressableScale>
+        </Shimmer>
       </Animated.View>
     </View>
   );

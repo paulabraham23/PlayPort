@@ -1,4 +1,4 @@
-import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { FloatingCartBar } from '@/components/layout/FloatingCartBar';
@@ -24,7 +24,7 @@ export function Screen({
   showHeader = true,
   showCart = true,
   showFloatingCart = false,
-  showAmbient = Platform.OS !== 'web',
+  showAmbient = true,
   headerRight,
   edges = ['top'],
   narrow = false,

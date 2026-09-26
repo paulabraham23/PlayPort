@@ -1,16 +1,11 @@
-import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  FadeIn,
-  ZoomIn,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
+import { KenBurns } from '@/components/motion/KenBurns';
 import { PressableScale } from '@/components/motion/PressableScale';
+import { SoftPulse } from '@/components/motion/Pulse';
 import { ValuePop } from '@/components/motion/ValuePop';
 import { colors, fonts, gradients, radii, shadows, spacing, typeScale, webShadows } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
@@ -99,28 +94,10 @@ function RatingRow({ rating, count }: { rating: number; count: number }) {
 }
 
 function ZoomImage({ uri, style }: { uri: string; style: object }) {
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const loop = () => {
-      scale.value = withTiming(1.04, { duration: 6000 }, () => {
-        scale.value = withTiming(1, { duration: 6000 });
-      });
-    };
-    loop();
-    const id = setInterval(loop, 12000);
-    return () => clearInterval(id);
-  }, [scale]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: Platform.OS === 'web' ? 1 : scale.value }],
-  }));
-
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, animatedStyle]}>
+    <KenBurns scaleTo={1.06} duration={12000}>
       <Image source={{ uri }} style={style} contentFit="cover" />
-    </Animated.View>
+    </KenBurns>
   );
 }
 
@@ -190,7 +167,9 @@ export function ProductCard({
             style={StyleSheet.absoluteFill}
           />
           <View style={styles.etaBadge}>
-            <Ionicons name="flash" size={10} color={colors.etaText} />
+            <SoftPulse minOpacity={0.55} scaleAmount={0.08}>
+              <Ionicons name="flash" size={10} color={colors.etaText} />
+            </SoftPulse>
             <Text style={styles.etaBadgeText}>{product.etaMinutes} min</Text>
           </View>
           {product.popular ? (

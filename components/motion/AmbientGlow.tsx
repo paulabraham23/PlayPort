@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -53,7 +53,7 @@ export function AmbientGlow() {
   }, [a, b, c]);
 
   const orbA = useAnimatedStyle(() => ({
-    opacity: 0.08 + a.value * 0.06,
+    opacity: 0.1 + a.value * 0.08,
     transform: [
       { translateX: a.value * 40 - 20 },
       { translateY: a.value * 28 - 14 },
@@ -62,7 +62,7 @@ export function AmbientGlow() {
   }));
 
   const orbB = useAnimatedStyle(() => ({
-    opacity: 0.1 + b.value * 0.08,
+    opacity: 0.08 + b.value * 0.07,
     transform: [
       { translateX: -b.value * 36 + 10 },
       { translateY: b.value * 42 - 20 },
@@ -71,7 +71,7 @@ export function AmbientGlow() {
   }));
 
   const orbC = useAnimatedStyle(() => ({
-    opacity: 0.08 + c.value * 0.07,
+    opacity: 0.09 + c.value * 0.07,
     transform: [
       { translateX: c.value * 24 },
       { translateY: -c.value * 30 },
@@ -82,38 +82,44 @@ export function AmbientGlow() {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <Animated.View style={[styles.orb, styles.orbOrange, orbA]} />
-      <Animated.View style={[styles.orb, styles.orbGreen, orbB]} />
+      <Animated.View style={[styles.orb, styles.orbCool, orbB]} />
       <Animated.View style={[styles.orb, styles.orbWarm, orbC]} />
     </View>
   );
 }
 
+const blurWeb =
+  Platform.OS === 'web'
+    ? ({ filter: 'blur(72px)', WebkitFilter: 'blur(72px)' } as object)
+    : {};
+
 const styles = StyleSheet.create({
   orb: {
     position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    ...blurWeb,
   },
   orbOrange: {
-    top: -60,
-    right: -80,
+    top: -80,
+    right: -100,
     backgroundColor: colors.playportOrange,
   },
-  orbGreen: {
-    top: 220,
-    left: -120,
+  orbCool: {
+    top: 200,
+    left: -140,
     backgroundColor: colors.info,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
   },
   orbWarm: {
-    bottom: 80,
-    right: -40,
+    bottom: 40,
+    right: -60,
     backgroundColor: colors.orangeSoft,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
   },
 });

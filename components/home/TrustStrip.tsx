@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import { EnterUp } from '@/components/motion/Enter';
+import { SoftPulse } from '@/components/motion/Pulse';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 
 const ITEMS = [
@@ -16,9 +17,9 @@ export function TrustStrip() {
       {ITEMS.map((item, index) => (
         <EnterUp key={item.label} index={index}>
           <View style={styles.item}>
-            <View style={styles.iconWrap}>
+            <SoftPulse minOpacity={0.72} scaleAmount={0.05} delay={index * 280} style={styles.iconWrap}>
               <Ionicons name={item.icon} size={16} color={colors.playportOrange} />
-            </View>
+            </SoftPulse>
             <Text style={styles.label}>{item.label}</Text>
           </View>
         </EnterUp>

@@ -39,7 +39,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <Screen showCart showFloatingCart>
+    <Screen showCart showFloatingCart showSearch>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[

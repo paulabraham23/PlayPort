@@ -46,7 +46,7 @@ export default function OrdersScreen() {
 
   if (!isAuthenticated) {
     return (
-      <Screen showCart={false} pageTitle="Orders">
+      <Screen showCart={false} pageTitle="Orders" showDelivery={false}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
@@ -63,7 +63,7 @@ export default function OrdersScreen() {
   }
 
   return (
-    <Screen showCart={false} pageTitle="Orders">
+      <Screen showCart={false} pageTitle="Orders" showDelivery={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}

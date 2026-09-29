@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: typeScale.headline,
+    fontSize: 32,
     letterSpacing: -0.3,
   },
   actionBtn: {

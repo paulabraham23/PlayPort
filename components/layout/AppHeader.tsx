@@ -6,6 +6,7 @@ import { FeedbackSheet } from '@/components/feedback/FeedbackSheet';
 import { PressableScale } from '@/components/motion/PressableScale';
 import { PulseOnChange } from '@/components/motion/Pulse';
 import { SearchBar } from '@/components/search/SearchBar';
+import { ClayPot } from '@/components/brand/ClayPot';
 import { colors, fonts, layout, radii, spacing, typeScale, webShadows } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartCount } from '@/store/appStore';
@@ -15,11 +16,20 @@ import { ensureLoggedIn } from '@/utils/authGate';
 interface Props {
   showCart?: boolean;
   showSearch?: boolean;
+  showDelivery?: boolean;
+  showFeedback?: boolean;
   pageTitle?: string;
   rightSlot?: React.ReactNode;
 }
 
-export function AppHeader({ showCart = false, showSearch = true, pageTitle, rightSlot }: Props) {
+export function AppHeader({
+  showCart = false,
+  showSearch = false,
+  showDelivery = true,
+  showFeedback = true,
+  pageTitle,
+  rightSlot,
+}: Props) {
   const cartCount = useCartCount();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const addresses = useAppStore((s) => s.addresses);
@@ -30,10 +40,13 @@ export function AppHeader({ showCart = false, showSearch = true, pageTitle, righ
   const selectedAddress =
     addresses.find((a) => a.id === selectedAddressId) ?? addresses.find((a) => a.isDefault);
   const place = selectedAddress
-    ? selectedAddress.area || selectedAddress.city
+    ? [selectedAddress.line1, selectedAddress.line2, selectedAddress.area, selectedAddress.city]
+        .map((part) => part?.trim())
+        .filter((part, index, all): part is string => Boolean(part) && all.indexOf(part) === index)
+        .join(', ')
     : hub?.city && hub.city !== '—'
       ? hub.city
-      : 'Place';
+      : 'your address';
 
   return (
     <View style={styles.outer}>
@@ -44,45 +57,40 @@ export function AppHeader({ showCart = false, showSearch = true, pageTitle, righ
         ]}
       >
         <View style={styles.topRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Change delivery location"
-            onPress={() => {
-              if (!isAuthenticated) {
-                ensureLoggedIn('/address');
-                return;
-              }
-              router.push('/address');
-            }}
-            style={styles.placeBtn}
-          >
-            <Ionicons name="location" size={16} color={colors.playportOrange} />
-            <View style={styles.placeText}>
-              <Text style={styles.delivering}>Delivering to</Text>
-              <Text style={styles.place} numberOfLines={1}>
-                {place}
+          {showDelivery ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Delivering to ${place}`}
+              onPress={() => {
+                if (!isAuthenticated) {
+                  ensureLoggedIn('/address');
+                  return;
+                }
+                router.push('/address');
+              }}
+              style={[styles.placeBtn, !pageTitle && styles.placeBtnWide]}
+            >
+              {!pageTitle ? <ClayPot size={28} /> : null}
+              <Text style={styles.delivering} numberOfLines={2}>
+                Delivering to <Text style={styles.place}>{place}</Text>
               </Text>
-            </View>
-          </Pressable>
-
-          {pageTitle ? (
-            <View pointerEvents="none" style={styles.titleSlot}>
-              <Text style={styles.pageTitle} numberOfLines={1}>
-                {pageTitle}
-              </Text>
-            </View>
-          ) : null}
+            </Pressable>
+          ) : (
+            <View style={styles.sideSpacer} />
+          )}
 
           <View style={styles.actions}>
             {rightSlot}
-            <PressableScale
-              accessibilityLabel="Send feedback"
-              onPress={() => setFeedbackOpen(true)}
-              scaleTo={0.94}
-              style={styles.iconBtn}
-            >
-              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primaryText} />
-            </PressableScale>
+            {showFeedback ? (
+              <PressableScale
+                accessibilityLabel="Send feedback"
+                onPress={() => setFeedbackOpen(true)}
+                scaleTo={0.94}
+                style={styles.iconBtn}
+              >
+                <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primaryText} />
+              </PressableScale>
+            ) : null}
             {showCart ? (
               <PressableScale
                 accessibilityLabel={`Cart with ${cartCount} items`}
@@ -100,6 +108,15 @@ export function AppHeader({ showCart = false, showSearch = true, pageTitle, righ
             ) : null}
           </View>
         </View>
+
+        {pageTitle ? (
+          <View style={styles.titleRow}>
+            <ClayPot size={34} />
+            <Text style={styles.pageTitle} numberOfLines={1}>
+              {pageTitle}
+            </Text>
+          </View>
+        ) : null}
 
         {showSearch ? (
           <View style={styles.searchSlot}>
@@ -140,31 +157,42 @@ const styles = StyleSheet.create({
   placeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    maxWidth: '46%',
+    gap: 8,
+    maxWidth: '72%',
     zIndex: 2,
+    flexShrink: 1,
   },
-  placeText: { minWidth: 0 },
+  placeBtnWide: {
+    maxWidth: '78%',
+  },
   delivering: {
-    color: colors.mutedText,
-    fontFamily: fonts.bodyMedium,
-    fontSize: 11,
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.body,
+    flexShrink: 1,
   },
   place: {
     color: colors.primaryText,
     fontFamily: fonts.headingMedium,
-    fontSize: typeScale.small,
+    fontSize: typeScale.body,
   },
-  titleSlot: {
-    ...StyleSheet.absoluteFill,
+  titleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
   },
   pageTitle: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: typeScale.title,
-    letterSpacing: -0.3,
+    fontSize: 36,
+    letterSpacing: -0.8,
+  },
+  sideSpacer: {
+    width: 40,
+    height: 40,
   },
   actions: {
     flexDirection: 'row',

@@ -117,7 +117,7 @@ export default function ProfileScreen() {
 
   if (!isAuthenticated || !user) {
     return (
-      <Screen showCart={false} pageTitle="Profile">
+      <Screen showCart={false} pageTitle="Profile" showDelivery={false}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
@@ -135,7 +135,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <Screen showCart={false} pageTitle="Profile">
+      <Screen showCart={false} pageTitle="Profile" showDelivery={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}

@@ -1,17 +1,15 @@
-import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
+import { ClayPot } from '@/components/brand/ClayPot';
 import { Screen } from '@/components/layout/Screen';
 import { colors, fonts, spacing, typeScale } from '@/constants/theme';
 
 export default function ExperiencesScreen() {
   return (
-    <Screen pageTitle="Experiences" showCart={false}>
+    <Screen showHeader={false}>
       <View style={styles.wrap}>
-        <View style={styles.icon}>
-          <Ionicons name="sparkles-outline" size={28} color={colors.playportOrange} />
-        </View>
-        <Text style={styles.title}>Coming soon</Text>
-        <Text style={styles.body}>Experiences are launching soon. Check back for hosted nights and events.</Text>
+        <ClayPot size={96} />
+        <Text style={styles.title}>Something's cooking.</Text>
+        <Text style={styles.body}>We'll be back with experiences worth the wait.</Text>
       </View>
     </Screen>
   );
@@ -26,26 +24,19 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     backgroundColor: colors.page,
   },
-  icon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.orangeTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
   title: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: typeScale.headline,
+    fontSize: 40,
+    letterSpacing: -1,
+    textAlign: 'center',
   },
   body: {
     color: colors.secondaryText,
     fontFamily: fonts.body,
-    fontSize: typeScale.body,
+    fontSize: typeScale.title,
     textAlign: 'center',
-    lineHeight: 22,
-    maxWidth: 320,
+    lineHeight: 26,
+    maxWidth: 340,
   },
 });

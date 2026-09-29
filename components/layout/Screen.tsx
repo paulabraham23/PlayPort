@@ -12,6 +12,8 @@ interface Props {
   showHeader?: boolean;
   showCart?: boolean;
   showSearch?: boolean;
+  showDelivery?: boolean;
+  showFeedback?: boolean;
   pageTitle?: string;
   showFloatingCart?: boolean;
   showAmbient?: boolean;
@@ -25,7 +27,9 @@ export function Screen({
   children,
   showHeader = true,
   showCart = false,
-  showSearch = true,
+  showSearch = false,
+  showDelivery = true,
+  showFeedback = true,
   pageTitle,
   showFloatingCart = false,
   showAmbient = false,
@@ -44,6 +48,8 @@ export function Screen({
         <AppHeader
           showCart={showCart}
           showSearch={showSearch}
+          showDelivery={showDelivery}
+          showFeedback={showFeedback}
           pageTitle={pageTitle}
           rightSlot={headerRight}
         />

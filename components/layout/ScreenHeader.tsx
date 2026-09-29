@@ -49,8 +49,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderSubtle,
     ...Platform.select({
       web: {
-        backdropFilter: 'blur(12px)',
-        backgroundColor: 'rgba(10,10,11,0.92)',
+        backgroundColor: colors.page,
       } as object,
       default: {},
     }),

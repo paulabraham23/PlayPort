@@ -147,6 +147,9 @@ export interface CartItem {
   unitPrice: number;
   addons?: CartAddonLine[];
   addonsTotal?: number;
+  /** Chosen physical unit (e.g. PS4 #1 vs PS4 #2). */
+  inventoryUnitId?: string;
+  unitLabel?: string;
   quantity: number;
   includesNote?: string;
 }
@@ -198,6 +201,8 @@ export interface InventoryUnit {
   hubId: string;
   skuLabel: string;
   status: InventoryUnitStatus;
+  /** Games installed on this physical unit. */
+  games?: string[];
   createdAt: string;
   updatedAt: string;
 }

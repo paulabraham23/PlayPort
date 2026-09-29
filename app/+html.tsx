@@ -18,11 +18,11 @@ export default function Root({ children }: { children: ReactNode }) {
         />
         <title>{TITLE}</title>
         <meta name="description" content={DESCRIPTION} />
-        <meta name="theme-color" content="#0B0D12" />
-        <meta name="color-scheme" content="dark" />
+        <meta name="theme-color" content="#FFFFFF" />
+        <meta name="color-scheme" content="light" />
         <meta name="application-name" content="PlayPort" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="PlayPort" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="format-detection" content="telephone=no" />
@@ -66,14 +66,14 @@ if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
 
 const globalCss = `
 html, body, #root {
-  background-color: #0B0D12;
+  background-color: #FFFFFF;
   min-height: 100%;
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
   touch-action: manipulation;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color-scheme: dark;
+  font-family: 'Nunito Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color-scheme: light;
   scroll-behavior: smooth;
 }
 * {

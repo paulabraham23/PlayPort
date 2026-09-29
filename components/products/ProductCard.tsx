@@ -21,6 +21,8 @@ interface Props {
   quantityInCart?: number;
   onRent?: () => void;
   compact?: boolean;
+  wished?: boolean;
+  onToggleWishlist?: () => void;
 }
 
 function CartAction({
@@ -110,6 +112,8 @@ export function ProductCard({
   onRent,
   quantityInCart = 0,
   compact,
+  wished,
+  onToggleWishlist,
 }: Props) {
   const normalized = normalizeProduct(product);
   const plan = defaultPlan(normalized);
@@ -181,6 +185,20 @@ export function ProductCard({
             <View style={styles.soldOutBadge}>
               <Text style={styles.soldOutText}>SOLD OUT</Text>
             </View>
+          ) : null}
+          {onToggleWishlist ? (
+            <PressableScale
+              accessibilityLabel={wished ? 'Remove from wishlist' : 'Add to wishlist'}
+              onPress={onToggleWishlist}
+              scaleTo={0.9}
+              style={styles.heartBtn}
+            >
+              <Ionicons
+                name={wished ? 'heart' : 'heart-outline'}
+                size={18}
+                color={wished ? '#E31C5F' : colors.primaryText}
+              />
+            </PressableScale>
           ) : null}
         </View>
         <View style={styles.body}>
@@ -276,6 +294,23 @@ const styles = StyleSheet.create({
     fontFamily: fonts.heading,
     fontSize: 9,
     letterSpacing: 0.8,
+  },
+  heartBtn: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3,
+    ...shadows.soft,
+    ...Platform.select({
+      web: { boxShadow: webShadows.soft } as object,
+      default: {},
+    }),
   },
   soldOutBadge: {
     position: 'absolute',

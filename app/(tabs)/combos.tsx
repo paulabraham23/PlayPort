@@ -1,12 +1,11 @@
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { EnterUp } from '@/components/motion/Enter';
 import { ExperienceCard } from '@/components/products/ExperienceCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { SectionHeader } from '@/components/ui/SectionHeader';
-import { colors, fonts, spacing, typeScale } from '@/constants/theme';
+import { colors, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
@@ -29,7 +28,7 @@ export default function CombosScreen() {
   };
 
   return (
-    <Screen showFloatingCart>
+    <Screen showFloatingCart pageTitle="Combos" showCart={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
@@ -37,15 +36,6 @@ export default function CombosScreen() {
           { paddingHorizontal: horizontalPadding, paddingBottom: spacing.huge + 120 },
         ]}
       >
-        <EnterUp index={0}>
-          <View>
-            <SectionHeader eyebrow="Bundles" title="Combos" />
-            <Text style={styles.sub}>
-              Curated kits with everything included — {experiences.length} ready to book
-            </Text>
-          </View>
-        </EnterUp>
-
         {experiences.length ? (
           <ResponsiveGrid columns={cols} gap={gap}>
             {experiences.map((experience, index) => (
@@ -77,12 +67,5 @@ export default function CombosScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { gap: spacing.xl, paddingTop: spacing.sm },
-  sub: {
-    color: colors.secondaryText,
-    fontFamily: fonts.body,
-    fontSize: typeScale.body,
-    marginTop: 4,
-    lineHeight: 20,
-  },
+  scroll: { gap: spacing.xl, paddingTop: spacing.lg, backgroundColor: colors.surfaceAlt, flexGrow: 1 },
 });

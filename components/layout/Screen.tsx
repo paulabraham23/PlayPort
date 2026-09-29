@@ -11,6 +11,8 @@ interface Props {
   children: React.ReactNode;
   showHeader?: boolean;
   showCart?: boolean;
+  showSearch?: boolean;
+  pageTitle?: string;
   showFloatingCart?: boolean;
   showAmbient?: boolean;
   headerRight?: React.ReactNode;
@@ -22,9 +24,11 @@ interface Props {
 export function Screen({
   children,
   showHeader = true,
-  showCart = true,
+  showCart = false,
+  showSearch = true,
+  pageTitle,
   showFloatingCart = false,
-  showAmbient = true,
+  showAmbient = false,
   headerRight,
   edges = ['top'],
   narrow = false,
@@ -36,7 +40,14 @@ export function Screen({
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
       {showAmbient ? <AmbientGlow /> : null}
-      {showHeader ? <AppHeader showCart={showCart} rightSlot={headerRight} /> : null}
+      {showHeader ? (
+        <AppHeader
+          showCart={showCart}
+          showSearch={showSearch}
+          pageTitle={pageTitle}
+          rightSlot={headerRight}
+        />
+      ) : null}
       <FeelToast />
       <View style={styles.center}>
         <View

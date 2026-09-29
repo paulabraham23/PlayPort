@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     ...Platform.select({
       web: {
-        boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.08)',
       } as object,
       default: {},
     }),

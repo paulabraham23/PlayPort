@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "playport",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
     },
@@ -26,8 +26,8 @@
       "name": "PlayPort",
       "shortName": "PlayPort",
       "description": "Entertainment kits delivered fast — consoles, cinema, VR and more.",
-  "themeColor": "#0B0D12",
-  "backgroundColor": "#0B0D12"
+  "themeColor": "#FFFFFF",
+  "backgroundColor": "#FFFFFF"
     },
     "plugins": [
       "expo-router",
@@ -36,7 +36,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#0A0A0B"
+          "backgroundColor": "#FFFFFF"
         }
       ],
       "expo-image"

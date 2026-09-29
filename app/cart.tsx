@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
 import { QuantitySelector } from '@/components/cart/QuantitySelector';
-import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
@@ -17,34 +16,20 @@ import { useAppStore, useCartTotals } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
-import { addonsTotal, cheapestPlanPrice, normalizeProduct } from '@/utils/rentalPricing';
+import { addonsTotal, normalizeProduct } from '@/utils/rentalPricing';
 import type { CartItem } from '@/types';
 
 export default function CartScreen() {
-  const { horizontalPadding, useSplitPane, isDesktop, gap } = useResponsive();
+  const { horizontalPadding, useSplitPane } = useResponsive();
   const stickyPad = useStickyBarPadding();
   const cart = useAppStore((s) => s.cart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
   const updateCartPlan = useAppStore((s) => s.updateCartPlan);
   const removeFromCart = useAppStore((s) => s.removeFromCart);
-  const addProductToCart = useAppStore((s) => s.addProductToCart);
   const products = useCatalogStore((s) => s.products);
   const hub = useCatalogStore((s) => s.hub);
   const totals = useCartTotals();
   const [editingItem, setEditingItem] = useState<CartItem | null>(null);
-
-  const upsells = products
-    .filter((p) => !cart.some((c) => c.productId === p.id))
-    .slice(0, 2)
-    .map((p) => {
-      const from = cheapestPlanPrice(normalizeProduct(p)) ?? 0;
-      return {
-        id: p.id,
-        title: p.shortName,
-        subtitle: p.availabilityLabel || 'Add-on',
-        priceLabel: `+${formatINR(from)}`,
-      };
-    });
 
   const locationLabel =
     hub?.city && hub.city !== '—' ? hub.city : 'Your hub';
@@ -63,30 +48,6 @@ export default function CartScreen() {
       </Screen>
     );
   }
-
-  const upsellCards = upsells.map((upsell) => {
-    const product = products.find((p) => p.id === upsell.id);
-    if (!product) return null;
-    const already = cart.some((c) => c.productId === upsell.id);
-    return (
-      <View key={upsell.id} style={[styles.upsellCard, !isDesktop && styles.upsellCardMobile]}>
-        <Image source={{ uri: product.images[0] }} style={styles.upsellImage} contentFit="cover" />
-        <Text style={styles.upsellPrice}>{upsell.priceLabel}</Text>
-        <Text style={styles.upsellTitle}>{upsell.title}</Text>
-        <Text style={styles.upsellSub}>{upsell.subtitle}</Text>
-        <Button
-          title={already ? 'Added' : '+ Add Extra'}
-          size="sm"
-          variant="secondary"
-          disabled={already}
-          onPress={() => {
-            if (!ensureLoggedIn('/cart')) return;
-            addProductToCart(upsell.id);
-          }}
-        />
-      </View>
-    );
-  }).filter(Boolean);
 
   const itemsColumn = (
     <>
@@ -122,6 +83,9 @@ export default function CartScreen() {
                 <View style={styles.durationRow}>
                   <Ionicons name="time-outline" size={14} color={colors.secondaryText} />
                   <Text style={styles.durationText}>{item.durationLabel}</Text>
+                  {item.unitLabel ? (
+                    <Text style={styles.durationText}>{item.unitLabel}</Text>
+                  ) : null}
                   {item.productId ? (
                     <Pressable onPress={() => setEditingItem(item)}>
                       <Text style={styles.edit}>Edit</Text>
@@ -156,27 +120,44 @@ export default function CartScreen() {
       </View>
 
       <View style={styles.section}>
-        {upsells.length > 0 ? (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Amp Up Your Session</Text>
-              <Ionicons name="sparkles" size={14} color={colors.playportOrange} />
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Extra controllers</Text>
+        </View>
+        {cart.map((item) => {
+          if (!item.productId) return null;
+          const product = products.find((p) => p.id === item.productId);
+          const addon = product
+            ? normalizeProduct(product).addons?.find((a) => a.id === 'extra-controller' || /controller/i.test(a.name))
+            : undefined;
+          if (!product || !addon) return null;
+          const current = item.addons?.find((a) => a.id === addon.id)?.quantity ?? 0;
+          const setQty = (quantity: number) => {
+            const next = (item.addons ?? [])
+              .filter((a) => a.id !== addon.id)
+              .map((a) => ({ id: a.id, quantity: a.quantity }));
+            if (quantity > 0) next.push({ id: addon.id, quantity });
+            updateCartPlan(item.id, { addons: next });
+          };
+          return (
+            <View key={item.id} style={styles.itemCard}>
+              <Text style={styles.itemTitle}>{item.name}</Text>
+              <Text style={styles.note}>
+                {addon.name} · {formatINR(addon.pricing.flatPrice || addon.pricing.perHour)} each
+              </Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.itemPrice}>{current} added</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Button title="−" size="sm" variant="secondary" onPress={() => setQty(Math.max(0, current - 1))} />
+                  <Button
+                    title="+"
+                    size="sm"
+                    onPress={() => setQty(Math.min(addon.maxQuantity, current + 1))}
+                  />
+                </View>
+              </View>
             </View>
-            {isDesktop ? (
-              <ResponsiveGrid columns={Math.min(3, Math.max(1, upsells.length))} gap={gap}>
-                {upsellCards}
-              </ResponsiveGrid>
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.upsellRow}
-              >
-                {upsellCards}
-              </ScrollView>
-            )}
-          </>
-        ) : null}
+          );
+        })}
       </View>
     </>
   );

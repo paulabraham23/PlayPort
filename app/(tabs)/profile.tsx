@@ -12,7 +12,6 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { checkIsAdmin } from '@/lib/adminAuth';
 import { checkIsRider } from '@/lib/riderFirestore';
 import { useAppStore } from '@/store/appStore';
-import { useCatalogStore } from '@/store/catalogStore';
 import { needsOnboarding } from '@/utils/onboarding';
 
 type MenuItem = {
@@ -35,7 +34,6 @@ export default function ProfileScreen() {
   const addresses = useAppStore((s) => s.addresses);
   const orders = useAppStore((s) => s.orders);
   const logout = useAppStore((s) => s.logout);
-  const hub = useCatalogStore((s) => s.hub);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isRider, setIsRider] = useState(false);
 
@@ -61,7 +59,6 @@ export default function ProfileScreen() {
     ['confirmed', 'preparing', 'out_for_delivery', 'delivered', 'active', 'returning'].includes(o.status)
   );
 
-  const homeHubLabel = user?.homeHub || hub?.city || hub?.name || '—';
   const showSetup = isAuthenticated && user && needsOnboarding(user, addresses);
 
   const sections: MenuSection[] = useMemo(() => {
@@ -70,6 +67,7 @@ export default function ProfileScreen() {
       {
         title: 'My Activity',
         items: [
+          { label: 'Wishlist', icon: 'heart-outline', href: '/wishlist' },
           { label: 'My Orders', icon: 'cube-outline', href: '/(tabs)/orders' },
           { label: 'Past rentals', icon: 'time-outline', href: '/(tabs)/orders' },
           { label: 'My Reviews', icon: 'star-outline', href: '/profile/reviews' },
@@ -119,15 +117,11 @@ export default function ProfileScreen() {
 
   if (!isAuthenticated || !user) {
     return (
-      <Screen showCart={false}>
+      <Screen showCart={false} pageTitle="Profile">
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
         >
-          <View style={styles.titleBlock}>
-            <Text style={styles.eyebrow}>Account</Text>
-            <Text style={styles.pageTitle}>Profile</Text>
-          </View>
           <Card style={styles.guestCard} elevated>
             <Text style={styles.guestTitle}>Browse as a guest</Text>
             <Text style={styles.guestSub}>
@@ -141,16 +135,11 @@ export default function ProfileScreen() {
   }
 
   return (
-    <Screen showCart={false}>
+    <Screen showCart={false} pageTitle="Profile">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
       >
-        <View style={styles.titleBlock}>
-          <Text style={styles.eyebrow}>Account</Text>
-          <Text style={styles.pageTitle}>Profile</Text>
-        </View>
-
         {showSetup ? (
           <Card style={styles.setupCard} elevated>
             <Text style={styles.setupTitle}>Finish your profile</Text>
@@ -188,19 +177,6 @@ export default function ProfileScreen() {
                 ) : null}
               </View>
             </Card>
-
-            <View style={[styles.statsRow, isDesktop && styles.statsRowDesktop]}>
-              <View style={styles.stat}>
-                <Text style={styles.statValue}>{orders.length}</Text>
-                <Text style={styles.statLabel}>Orders</Text>
-              </View>
-              <View style={styles.stat}>
-                <Text style={styles.statValue} numberOfLines={1}>
-                  {homeHubLabel}
-                </Text>
-                <Text style={styles.statLabel}>Home hub</Text>
-              </View>
-            </View>
 
             {activeOrder ? (
               <Pressable

@@ -162,6 +162,19 @@ export default function AdminInventoryScreen() {
             <Text style={adminStyles.cardMeta}>
               {u.id} · {u.productId} · hub {u.hubId} · {u.status}
             </Text>
+            <TextInput
+              style={adminStyles.input}
+              defaultValue={(u.games ?? []).join(', ')}
+              placeholder="Games on this unit, comma separated"
+              placeholderTextColor={colors.mutedText}
+              onEndEditing={(e) => {
+                const games = e.nativeEvent.text
+                  .split(',')
+                  .map((g) => g.trim())
+                  .filter(Boolean);
+                void saveUnit({ ...u, games, updatedAt: new Date().toISOString() });
+              }}
+            />
             <View style={adminStyles.row}>
               {STATUSES.map((s) => (
                 <Button

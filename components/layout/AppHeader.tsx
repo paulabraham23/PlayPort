@@ -1,51 +1,49 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { BrandLogo } from '@/components/brand/BrandLogo';
+import { FeedbackSheet } from '@/components/feedback/FeedbackSheet';
 import { PressableScale } from '@/components/motion/PressableScale';
-import { PulseOnChange, SoftPulse } from '@/components/motion/Pulse';
-import { useAppStore, useCartCount } from '@/store/appStore';
-import { useCatalogStore } from '@/store/catalogStore';
+import { PulseOnChange } from '@/components/motion/Pulse';
+import { SearchBar } from '@/components/search/SearchBar';
 import { colors, fonts, layout, radii, spacing, typeScale, webShadows } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useAppStore, useCartCount } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 
 interface Props {
-  showLocation?: boolean;
   showCart?: boolean;
+  showSearch?: boolean;
+  pageTitle?: string;
   rightSlot?: React.ReactNode;
 }
 
-export function AppHeader({ showLocation = true, showCart = true, rightSlot }: Props) {
+export function AppHeader({ showCart = false, showSearch = true, pageTitle, rightSlot }: Props) {
   const cartCount = useCartCount();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const addresses = useAppStore((s) => s.addresses);
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
   const hub = useCatalogStore((s) => s.hub);
-  const { horizontalPadding, contentWidth, isDesktop, compactChrome } = useResponsive();
+  const { horizontalPadding, contentWidth } = useResponsive();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const selectedAddress =
     addresses.find((a) => a.id === selectedAddressId) ?? addresses.find((a) => a.isDefault);
-  const locationLabel = selectedAddress
+  const place = selectedAddress
     ? selectedAddress.area || selectedAddress.city
     : hub?.city && hub.city !== '—'
       ? hub.city
-      : 'Set location';
-  const eta = selectedAddress?.etaMinutes ?? hub?.etaMinutes ?? 30;
+      : 'Place';
 
   return (
     <View style={styles.outer}>
       <View
         style={[
           styles.wrap,
-          {
-            paddingHorizontal: horizontalPadding,
-            maxWidth: contentWidth,
-            width: '100%',
-            minHeight: layout.headerHeight,
-          },
+          { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%' },
         ]}
       >
-        <View style={styles.row}>
+        <View style={styles.topRow}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Change delivery location"
@@ -56,65 +54,43 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
               }
               router.push('/address');
             }}
-            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-              styles.left,
-              (pressed || hovered) && styles.pressed,
-            ]}
+            style={styles.placeBtn}
           >
-            <View style={styles.brandRow}>
-              <BrandLogo size={compactChrome ? 30 : 34} />
+            <Ionicons name="location" size={16} color={colors.playportOrange} />
+            <View style={styles.placeText}>
+              <Text style={styles.delivering}>Delivering to</Text>
+              <Text style={styles.place} numberOfLines={1}>
+                {place}
+              </Text>
             </View>
-            {showLocation ? (
-              <View style={styles.locationRow}>
-                <Ionicons name="location" size={12} color={colors.playportOrange} />
-                <Text
-                  style={[styles.locationText, isDesktop && styles.locationTextWide]}
-                  numberOfLines={1}
-                >
-                  Delivery to {locationLabel}
-                </Text>
-                <Ionicons name="chevron-down" size={12} color={colors.mutedText} />
-              </View>
-            ) : (
-              <Text style={styles.tagline}>Entertainment on demand</Text>
-            )}
           </Pressable>
 
+          {pageTitle ? (
+            <View pointerEvents="none" style={styles.titleSlot}>
+              <Text style={styles.pageTitle} numberOfLines={1}>
+                {pageTitle}
+              </Text>
+            </View>
+          ) : null}
+
           <View style={styles.actions}>
-            {!compactChrome ? (
-              <View style={styles.etaPill} accessibilityLabel={`Delivery in ${eta} minutes`}>
-                <SoftPulse minOpacity={0.5} scaleAmount={0.1}>
-                  <Ionicons name="flash" size={12} color={colors.etaText} />
-                </SoftPulse>
-                <Text style={styles.etaPillText}>{eta} mins</Text>
-              </View>
-            ) : null}
-
-            {!isAuthenticated ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Log in"
-                onPress={() => router.push('/(auth)/login')}
-                style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-                  styles.loginBtn,
-                  compactChrome && styles.loginBtnCompact,
-                  (pressed || hovered) && styles.pressed,
-                ]}
-              >
-                <Text style={styles.loginText}>{compactChrome ? 'In' : 'Login'}</Text>
-              </Pressable>
-            ) : null}
-
             {rightSlot}
-
+            <PressableScale
+              accessibilityLabel="Send feedback"
+              onPress={() => setFeedbackOpen(true)}
+              scaleTo={0.94}
+              style={styles.iconBtn}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primaryText} />
+            </PressableScale>
             {showCart ? (
               <PressableScale
                 accessibilityLabel={`Cart with ${cartCount} items`}
                 onPress={() => router.push('/cart')}
-                scaleTo={0.92}
-                style={styles.cartBtn}
+                scaleTo={0.94}
+                style={styles.iconBtn}
               >
-                <Ionicons name="bag-outline" size={19} color={colors.primaryText} />
+                <Ionicons name="bag-outline" size={18} color={colors.primaryText} />
                 {cartCount > 0 ? (
                   <PulseOnChange pulseKey={cartCount} style={styles.badge}>
                     <Text style={styles.badgeText}>{cartCount > 9 ? '9+' : cartCount}</Text>
@@ -124,7 +100,14 @@ export function AppHeader({ showLocation = true, showCart = true, rightSlot }: P
             ) : null}
           </View>
         </View>
+
+        {showSearch ? (
+          <View style={styles.searchSlot}>
+            <SearchBar value="" onChangeText={() => {}} onPress={() => router.push('/search')} />
+          </View>
+        ) : null}
       </View>
+      <FeedbackSheet visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </View>
   );
 }
@@ -135,120 +118,81 @@ const styles = StyleSheet.create({
     backgroundColor: colors.page,
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderSubtle,
+    borderBottomColor: colors.border,
+    zIndex: 20,
     ...Platform.select({
-      web: {
-        backdropFilter: 'blur(14px)',
-        backgroundColor: 'rgba(11,13,18,0.88)',
-        boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset',
-      } as object,
+      web: { boxShadow: webShadows.soft } as object,
       default: {},
     }),
   },
   wrap: {
-    paddingTop: spacing.sm + 2,
-    paddingBottom: spacing.sm + 2,
-    justifyContent: 'center',
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+    minHeight: layout.headerHeight,
   },
-  row: {
+  topRow: {
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
   },
-  left: {
-    flex: 1,
-    minWidth: 0,
-    gap: 3,
-    justifyContent: 'center',
-  },
-  pressed: { opacity: 0.85 },
-  brandRow: { flexDirection: 'row', alignItems: 'center' },
-  locationRow: {
+  placeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    maxWidth: '100%',
+    gap: 6,
+    maxWidth: '46%',
+    zIndex: 2,
   },
-  locationText: {
-    color: colors.secondaryText,
-    fontFamily: fonts.bodyMedium,
-    fontSize: typeScale.small,
-    maxWidth: 140,
-    flexShrink: 1,
-  },
-  locationTextWide: { maxWidth: 360 },
-  tagline: {
+  placeText: { minWidth: 0 },
+  delivering: {
     color: colors.mutedText,
-    fontFamily: fonts.body,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 11,
+  },
+  place: {
+    color: colors.primaryText,
+    fontFamily: fonts.headingMedium,
     fontSize: typeScale.small,
+  },
+  titleSlot: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pageTitle: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.title,
+    letterSpacing: -0.3,
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexShrink: 0,
+    zIndex: 2,
+  },
+  iconBtn: {
+    width: 40,
     height: 40,
-  },
-  etaPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    height: 36,
-    backgroundColor: colors.etaBg,
-    paddingHorizontal: 10,
     borderRadius: radii.full,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(61,214,140,0.22)',
-  },
-  etaPillText: {
-    color: colors.etaText,
-    fontFamily: fonts.bodyMedium,
-    fontSize: typeScale.small,
-  },
-  loginBtn: {
-    height: 36,
-    paddingHorizontal: 14,
-    borderRadius: radii.full,
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      web: { cursor: 'pointer' as unknown as undefined },
+      web: { boxShadow: webShadows.soft, cursor: 'pointer' } as object,
       default: {},
     }),
   },
-  loginBtnCompact: {
-    paddingHorizontal: 10,
-  },
-  loginText: {
-    color: colors.primaryText,
-    fontFamily: fonts.bodyMedium,
-    fontSize: typeScale.small,
-  },
-  cartBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.full,
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      web: {
-        cursor: 'pointer' as unknown as undefined,
-        boxShadow: webShadows.soft,
-      } as object,
-      default: {},
-    }),
+  searchSlot: {
+    marginTop: 2,
   },
   badge: {
     position: 'absolute',
-    top: -3,
-    right: -3,
+    top: -4,
+    right: -4,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
@@ -259,5 +203,5 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.page,
   },
-  badgeText: { color: colors.ctaPrimaryText, fontSize: 9, fontFamily: fonts.heading },
+  badgeText: { color: colors.white, fontSize: 9, fontFamily: fonts.heading },
 });

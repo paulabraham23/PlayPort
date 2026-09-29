@@ -55,6 +55,7 @@ export default function AdminProductEditScreen() {
     EMPTY.hourly ?? { enabled: false, firstHourPrice: 0, extraHourPrice: 0, maxHours: 24 }
   );
   const [addons, setAddons] = useState<ProductAddon[]>([]);
+  const [controllerPrice, setControllerPrice] = useState('');
   const [tagsText, setTagsText] = useState('');
   const [requirementsText, setRequirementsText] = useState('');
   const [includes, setIncludes] = useState<IncludeRow[]>([]);
@@ -67,6 +68,7 @@ export default function AdminProductEditScreen() {
       setPlans(EMPTY.plans);
       setHourly(EMPTY.hourly!);
       setAddons([]);
+      setControllerPrice('');
       setTagsText('');
       setRequirementsText('');
       setIncludes([]);
@@ -81,7 +83,9 @@ export default function AdminProductEditScreen() {
         setHourly(
           n.hourly ?? { enabled: false, firstHourPrice: 0, extraHourPrice: 0, maxHours: 24 }
         );
-        setAddons(n.addons ?? []);
+        const ctrl = (n.addons ?? []).find((a) => a.id === 'extra-controller');
+        setControllerPrice(ctrl ? String(ctrl.pricing.flatPrice) : '');
+        setAddons((n.addons ?? []).filter((a) => a.id !== 'extra-controller'));
         setTagsText((n.tags ?? []).join(', '));
         setRequirementsText((n.requirements ?? []).join('\n'));
         setIncludes((n.includes ?? []).map((i) => ({ ...i })));
@@ -121,6 +125,20 @@ export default function AdminProductEditScreen() {
       setError('Add at least one rental plan');
       return;
     }
+    const controllerAddon =
+      num(controllerPrice) > 0
+        ? [
+            {
+              ...defaultExtraControllerAddon(),
+              pricing: {
+                perHour: 0,
+                perHourMaxPlanHours: 1,
+                flatPrice: num(controllerPrice),
+                flatMinPlanHours: 1,
+              },
+            },
+          ]
+        : [];
     setSaving(true);
     try {
       const product: Product = {
@@ -138,8 +156,10 @@ export default function AdminProductEditScreen() {
               maxHours: Math.max(1, hourly.maxHours ?? 24),
             }
           : { enabled: false, firstHourPrice: 0, extraHourPrice: 0, maxHours: 24 },
-        addons: addons
-          .filter((a) => a.id.trim() && a.name.trim())
+        addons: [
+          ...controllerAddon,
+          ...addons
+          .filter((a) => a.id.trim() && a.name.trim() && a.id.trim() !== 'extra-controller')
           .map((a) => ({
             ...a,
             id: a.id.trim(),
@@ -152,6 +172,7 @@ export default function AdminProductEditScreen() {
               flatMinPlanHours: Math.max(1, a.pricing.flatMinPlanHours),
             },
           })),
+        ],
         tags: tagsText
           .split(',')
           .map((t) => t.trim())
@@ -417,6 +438,19 @@ export default function AdminProductEditScreen() {
             const n = num(t);
             setField('compareAtPrice', n || undefined);
           }}
+          placeholderTextColor={colors.mutedText}
+        />
+      </View>
+
+      <Text style={adminStyles.cardTitle}>Extra controller price</Text>
+      <View style={adminStyles.field}>
+        <Text style={adminStyles.label}>Flat price per extra controller (₹). Leave 0 to hide.</Text>
+        <TextInput
+          style={adminStyles.input}
+          keyboardType="numeric"
+          value={controllerPrice}
+          onChangeText={setControllerPrice}
+          placeholder="150"
           placeholderTextColor={colors.mutedText}
         />
       </View>

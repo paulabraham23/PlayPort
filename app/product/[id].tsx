@@ -17,6 +17,7 @@ import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/t
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
+import { useFeelStore } from '@/store/feelStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 import {
@@ -54,6 +55,8 @@ export default function ProductDetailScreen() {
   const addProductToCart = useAppStore((s) => s.addProductToCart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
   const products = useCatalogStore((s) => s.products);
+  const units = useCatalogStore((s) => s.units);
+  const showToast = useFeelStore((s) => s.showToast);
 
   const product = products.find((p) => p.id === id);
   const normalized = product ? normalizeProduct(product) : null;
@@ -63,6 +66,7 @@ export default function ProductDetailScreen() {
   const [planId, setPlanId] = useState(initialPlan?.id ?? '12h');
   const [hourlyHours, setHourlyHours] = useState(1);
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
+  const [unitId, setUnitId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!product) return;
@@ -71,6 +75,7 @@ export default function ProductDetailScreen() {
     setMode('package');
     setHourlyHours(1);
     setAddonQty({});
+    setUnitId(null);
   }, [product?.id]);
 
   const productReviews = useMemo(
@@ -100,6 +105,13 @@ export default function ProductDetailScreen() {
     );
   }
 
+  const productUnits = units.filter((u) => u.productId === product?.id && u.status === 'available');
+  const controllerAddons = (normalized?.addons ?? []).filter(
+    (a) => a.id === 'extra-controller' || /controller/i.test(a.name)
+  );
+  const otherAddons = (normalized?.addons ?? []).filter(
+    (a) => a.id !== 'extra-controller' && !/controller/i.test(a.name)
+  );
   const hours = resolveHours(normalized, mode, planId, hourlyHours);
   const kitPrice = kitUnitPrice(normalized, mode, planId, hours);
   const selectedAddons = Object.entries(addonQty)
@@ -194,10 +206,84 @@ export default function ProductDetailScreen() {
           />
         </View>
 
-        {(normalized.addons?.length ?? 0) > 0 ? (
+        {productUnits.length > 0 ? (
+          <View style={styles.section}>
+            <SectionHeader eyebrow="Units" title="Choose your kit" />
+            <Text style={styles.addonDesc}>
+              Each unit can have a different set of games. Pick the one you want.
+            </Text>
+            {productUnits.map((unit) => {
+              const selected = unitId === unit.id;
+              return (
+                <Pressable
+                  key={unit.id}
+                  onPress={() => setUnitId(unit.id)}
+                  style={[styles.addonRow, selected && styles.unitSelected]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.addonName}>{unit.skuLabel}</Text>
+                    <Text style={styles.addonDesc}>
+                      {(unit.games ?? []).length ? unit.games!.join(' · ') : 'Games not listed yet'}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={selected ? 'radio-button-on' : 'radio-button-off'}
+                    size={20}
+                    color={selected ? colors.playportOrange : colors.mutedText}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+
+        {controllerAddons.length > 0 ? (
+          <View style={styles.section}>
+            <SectionHeader eyebrow="Extras" title="Extra controllers" />
+            {controllerAddons.map((addon) => {
+              const qty = addonQty[addon.id] ?? 0;
+              const unitPreview = priceForAddon(addon, hours, 1);
+              return (
+                <View key={addon.id} style={styles.addonRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.addonName}>{addon.name}</Text>
+                    <Text style={styles.addonPrice}>{formatINR(unitPreview)} each</Text>
+                  </View>
+                  <View style={styles.stepper}>
+                    <Pressable
+                      onPress={() =>
+                        setAddonQty((prev) => ({
+                          ...prev,
+                          [addon.id]: Math.max(0, (prev[addon.id] ?? 0) - 1),
+                        }))
+                      }
+                      style={styles.stepBtn}
+                    >
+                      <Ionicons name="remove" size={16} color={colors.primaryText} />
+                    </Pressable>
+                    <Text style={styles.stepValue}>{qty}</Text>
+                    <Pressable
+                      onPress={() =>
+                        setAddonQty((prev) => ({
+                          ...prev,
+                          [addon.id]: Math.min(addon.maxQuantity, (prev[addon.id] ?? 0) + 1),
+                        }))
+                      }
+                      style={styles.stepBtn}
+                    >
+                      <Ionicons name="add" size={16} color={colors.primaryText} />
+                    </Pressable>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
+
+        {otherAddons.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader eyebrow="Add-ons" title="Optional extras" />
-            {normalized.addons!.map((addon) => {
+            {otherAddons.map((addon) => {
               const qty = addonQty[addon.id] ?? 0;
               const unitPreview = priceForAddon(addon, hours, 1);
               return (
@@ -351,11 +437,20 @@ export default function ProductDetailScreen() {
           icon={<Ionicons name="bag-add-outline" size={16} color={colors.white} />}
           onPress={() => {
             if (!ensureLoggedIn('/cart')) return;
+            if (productUnits.length > 0 && !unitId) {
+              showToast('Choose which unit you want');
+              return;
+            }
+            const unit = productUnits.find((u) => u.id === unitId);
             addProductToCart(product.id, {
               planId: mode === 'hourly' ? 'hourly' : planId,
               pricingMode: mode,
               hours,
               addons: selectedAddons,
+              inventoryUnitId: unit?.id,
+              unitLabel: unit
+                ? `${unit.skuLabel}${(unit.games ?? []).length ? ` · ${unit.games!.join(', ')}` : ''}`
+                : undefined,
             });
             router.push('/cart');
           }}
@@ -474,6 +569,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
     padding: spacing.md,
+  },
+  unitSelected: {
+    borderColor: colors.playportOrange,
+    backgroundColor: colors.orangeTint,
   },
   addonName: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
   addonDesc: {

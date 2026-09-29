@@ -1,10 +1,10 @@
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+  NunitoSans_400Regular,
+  NunitoSans_500Medium,
+  NunitoSans_600SemiBold,
+  NunitoSans_700Bold,
+} from '@expo-google-fonts/nunito-sans';
+import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -16,6 +16,7 @@ import { InstallAppBanner } from '@/components/pwa/InstallAppBanner';
 import { colors } from '@/constants/theme';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 import { registerWebPushIfAvailable } from '@/lib/fcm';
 import { startAuthSessionKeepAlive } from '@/lib/firebase';
 
@@ -28,9 +29,9 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 const PlayPortTheme = {
-  ...DarkTheme,
+  ...DefaultTheme,
   colors: {
-    ...DarkTheme.colors,
+    ...DefaultTheme.colors,
     primary: colors.playportOrange,
     background: colors.page,
     card: colors.surface,
@@ -45,10 +46,10 @@ export default function RootLayout() {
   const bootstrapAuth = useAppStore((s) => s.bootstrapAuth);
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const [loaded, error] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    NunitoSans_400Regular,
+    NunitoSans_500Medium,
+    NunitoSans_600SemiBold,
+    NunitoSans_700Bold,
   });
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export default function RootLayout() {
     // Don't block first paint on web fonts — hydrate ASAP, fonts swap in.
     SplashScreen.hideAsync();
     void hydrateCatalog();
+    void useWishlistStore.getState().hydrate();
   }, [hydrateCatalog]);
 
   useEffect(() => {
@@ -89,7 +91,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={PlayPortTheme}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <InstallAppBanner />
       <Stack
         screenOptions={{
@@ -108,7 +110,7 @@ export default function RootLayout() {
         <Stack.Screen name="search/results" />
         <Stack.Screen name="product/[id]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="experience/[id]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="cart" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="wishlist" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="checkout/index" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="checkout/payment" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="checkout/confirmation" options={{ animation: 'fade' }} />

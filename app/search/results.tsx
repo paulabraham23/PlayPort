@@ -56,7 +56,7 @@ export default function SearchResultsScreen() {
   };
 
   return (
-    <Screen showHeader showCart>
+    <Screen showHeader showCart showSearch={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

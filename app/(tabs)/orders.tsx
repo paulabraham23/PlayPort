@@ -46,15 +46,11 @@ export default function OrdersScreen() {
 
   if (!isAuthenticated) {
     return (
-      <Screen showCart={false}>
+      <Screen showCart={false} pageTitle="Orders">
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
         >
-          <View style={styles.titleBlock}>
-            <Text style={styles.eyebrow}>Activity</Text>
-            <Text style={styles.pageTitle}>Orders</Text>
-          </View>
           <EmptyState
             title="Log in to see orders"
             subtitle="Your active rentals and past sessions show up here after you sign in."
@@ -67,18 +63,11 @@ export default function OrdersScreen() {
   }
 
   return (
-    <Screen showCart={false}>
+    <Screen showCart={false} pageTitle="Orders">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
       >
-        <View style={styles.titleBlock}>
-          <Text style={styles.eyebrow}>Activity</Text>
-          <Text style={styles.title}>Orders</Text>
-          <Text style={styles.subtitle}>Track live dispatch and past rentals</Text>
-          <Badge label={`${orders.length} total`} color={colors.secondaryText} />
-        </View>
-
         <View style={styles.tabs}>
           <Pressable
             accessibilityRole="button"
@@ -87,7 +76,7 @@ export default function OrdersScreen() {
             style={[styles.tab, tab === 'active' && styles.tabActive]}
           >
             <Text style={[styles.tabText, tab === 'active' && styles.tabTextActive]}>
-              Active & Upcoming
+              Active
             </Text>
           </Pressable>
           <Pressable
@@ -96,15 +85,11 @@ export default function OrdersScreen() {
             onPress={() => setTab('past')}
             style={[styles.tab, tab === 'past' && styles.tabActive]}
           >
-            <Text style={[styles.tabText, tab === 'past' && styles.tabTextActive]}>Past Orders</Text>
+            <Text style={[styles.tabText, tab === 'past' && styles.tabTextActive]}>Past</Text>
           </Pressable>
         </View>
 
         {tab === 'active' && live ? <LiveDispatchCard order={live} /> : null}
-
-        {tab === 'past' && past.length > 0 ? (
-          <Text style={styles.sectionLabel}>Past Orders</Text>
-        ) : null}
 
         {list.length === 0 ? (
           <EmptyState

@@ -94,6 +94,19 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="experiences"
+        options={{
+          title: 'Experiences',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              name={focused ? 'sparkles' : 'sparkles-outline'}
+              color={String(color)}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="orders"
         options={{
           title: 'Orders',
@@ -121,19 +134,19 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.borderSubtle,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 8,
-    ...Platform.select({
-      web: {
-        backdropFilter: 'blur(18px)',
-        backgroundColor: 'rgba(16,19,27,0.94)',
-        borderTopWidth: 1,
-        borderTopColor: colors.borderSubtle,
-      } as object,
-      default: {},
-    }),
+        backgroundColor: colors.page,
+        borderTopColor: colors.border,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        paddingTop: 8,
+        ...Platform.select({
+          web: {
+            backgroundColor: colors.page,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            boxShadow: '0 -1px 0 rgba(0,0,0,0.04)',
+          } as object,
+          default: {},
+        }),
   },
   tabBarWeb: {
     width: '100%',

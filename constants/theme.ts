@@ -1,23 +1,22 @@
 /**
- * PlayPort — corporate quick-commerce design system.
- * Deep "ink" canvas + matte neutral orange brand.
+ * PlayPort — light, Airbnb-like canvas with the matte orange brand.
  */
 export const colors = {
-  // ── Surfaces — deep ink with cool undertone ────────────────────────────
-  baseBlack: '#07080C',
-  page: '#0B0D12',
-  surface: '#10131B',
-  surfaceRaised: '#151926',
-  surfaceAlt: '#1C2130',
-  surfaceHover: '#242A3D',
-  border: '#2A3042',
-  borderSubtle: '#1E2331',
-  borderFocus: 'rgba(180, 100, 48, 0.40)',
+  // ── Surfaces — white canvas, soft gray wells ───────────────────────────
+  baseBlack: '#222222',
+  page: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceRaised: '#FFFFFF',
+  surfaceAlt: '#F7F7F7',
+  surfaceHover: '#EBEBEB',
+  border: '#DDDDDD',
+  borderSubtle: '#EBEBEB',
+  borderFocus: 'rgba(184, 106, 50, 0.45)',
 
   // ── Text ───────────────────────────────────────────────────────────────
-  primaryText: '#F4F6FB',
-  secondaryText: '#9AA3B8',
-  mutedText: '#69748C',
+  primaryText: '#222222',
+  secondaryText: '#6A6A6A',
+  mutedText: '#717171',
 
   // ── Brand — matte neutral orange (desaturated clay, not neon) ─────────
   playportOrange: '#B86A32',
@@ -32,10 +31,10 @@ export const colors = {
   orangeBorder: 'rgba(184, 106, 50, 0.42)',
 
   // ── Status ─────────────────────────────────────────────────────────────
-  success: '#3DD68C',
-  successBg: 'rgba(61, 214, 140, 0.12)',
-  info: '#5EA8FF',
-  infoBg: 'rgba(94, 168, 255, 0.12)',
+  success: '#14804A',
+  successBg: 'rgba(20, 128, 74, 0.10)',
+  info: '#2F6FED',
+  infoBg: 'rgba(47, 111, 237, 0.10)',
   warning: '#F5C242',
   danger: '#F26D6D',
   dangerBg: 'rgba(242, 109, 109, 0.12)',
@@ -49,8 +48,8 @@ export const colors = {
   heroScrimStrong: 'rgba(7, 8, 12, 0.85)',
 
   // ── Delivery ───────────────────────────────────────────────────────────
-  etaBg: 'rgba(61, 214, 140, 0.12)',
-  etaText: '#3DD68C',
+  etaBg: 'rgba(20, 128, 74, 0.10)',
+  etaText: '#14804A',
 
   // ── Category accents — muted corporate jewel tones ────────────────────
   categories: {
@@ -100,12 +99,12 @@ export const radii = {
 } as const;
 
 export const fonts = {
-  heading: 'Inter_700Bold',
-  headingMedium: 'Inter_600SemiBold',
-  body: 'Inter_400Regular',
-  bodyMedium: 'Inter_500Medium',
-  mono: 'Inter_500Medium',
-  monoMedium: 'Inter_600SemiBold',
+  heading: 'NunitoSans_700Bold',
+  headingMedium: 'NunitoSans_600SemiBold',
+  body: 'NunitoSans_400Regular',
+  bodyMedium: 'NunitoSans_500Medium',
+  mono: 'NunitoSans_500Medium',
+  monoMedium: 'NunitoSans_600SemiBold',
 } as const;
 
 export const typeScale = {
@@ -129,43 +128,41 @@ export const layout = {
   floatingCartHeight: 56,
 } as const;
 
-/** Signature multi-layer shadow recipes — corporate depth, zero neon. */
+/** Airbnb-like soft elevation on a white canvas. */
 export const shadows = {
   card: {
-    shadowColor: '#04060A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.45,
-    shadowRadius: 20,
-    elevation: 7,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 4,
   },
   soft: {
-    shadowColor: '#04060A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.32,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   glow: {
     shadowColor: colors.playportOrange,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.18,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 3,
   },
-  /** Hover-lift on web (paired with boxShadow). */
   lift: {
-    shadowColor: '#04060A',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.5,
-    shadowRadius: 26,
-    elevation: 9,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 24,
+    elevation: 6,
   },
 } as const;
 
-/** Web-only hairline + lift recipe (boxShadow unsupported in RN StyleSheet typings). */
 export const webShadows = {
-  card: '0 1px 0 rgba(255,255,255,0.03) inset, 0 10px 30px rgba(4,6,10,0.35)',
-  soft: '0 1px 0 rgba(255,255,255,0.025) inset, 0 6px 18px rgba(4,6,10,0.30)',
-  glow: '0 6px 18px rgba(184,106,50,0.18)',
-  lift: '0 18px 44px rgba(4,6,10,0.45)',
+  card: '0 6px 16px rgba(0,0,0,0.12)',
+  soft: '0 1px 2px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05)',
+  glow: '0 6px 16px rgba(184,106,50,0.22)',
+  lift: '0 8px 28px rgba(0,0,0,0.16)',
 } as const;

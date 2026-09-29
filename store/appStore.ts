@@ -64,6 +64,8 @@ export type AddToCartOptions = {
   hours?: number;
   addons?: { id: string; quantity: number }[];
   quantity?: number;
+  inventoryUnitId?: string;
+  unitLabel?: string;
 };
 
 interface AppState {
@@ -389,13 +391,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       pricingMode === 'hourly'
         ? `${hours}h hourly`
         : plan?.label ?? planId;
-    const key = `${productId}-${pricingMode}-${planId}-${hours}-${addonLines.map((a) => `${a.id}:${a.quantity}`).join(',')}`;
+    const key = `${productId}-${pricingMode}-${planId}-${hours}-${options.inventoryUnitId ?? ''}-${addonLines.map((a) => `${a.id}:${a.quantity}`).join(',')}`;
     const existing = get().cart.find(
       (c) =>
         c.productId === productId &&
         c.pricingMode === pricingMode &&
         c.planId === planId &&
         c.hours === hours &&
+        (c.inventoryUnitId ?? '') === (options.inventoryUnitId ?? '') &&
         JSON.stringify(c.addons ?? []) === JSON.stringify(addonLines)
     );
     let next: CartItem[];
@@ -418,8 +421,12 @@ export const useAppStore = create<AppState>((set, get) => ({
         unitPrice,
         addons: addonLines,
         addonsTotal: extras,
+        inventoryUnitId: options.inventoryUnitId,
+        unitLabel: options.unitLabel,
         quantity,
-        includesNote: product.includes[0]?.detail,
+        includesNote: options.unitLabel
+          ? `${options.unitLabel}${product.includes[0]?.detail ? ` · ${product.includes[0].detail}` : ''}`
+          : product.includes[0]?.detail,
       };
       next = [...get().cart, item];
     }

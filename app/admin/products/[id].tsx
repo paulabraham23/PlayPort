@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { adminStyles } from '@/components/admin/adminStyles';
+import { UnitGamesEditor } from '@/components/admin/UnitGamesEditor';
 import { Button } from '@/components/ui/Button';
 import { colors, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -49,6 +50,10 @@ export default function AdminProductEditScreen() {
   const { horizontalPadding } = useResponsive();
   const saveProduct = useAdminStore((s) => s.saveProduct);
   const categories = useAdminStore((s) => s.categories);
+  const units = useAdminStore((s) => s.units);
+  const hubs = useAdminStore((s) => s.hubs);
+  const saveUnit = useAdminStore((s) => s.saveUnit);
+  const [unitNumber, setUnitNumber] = useState('001');
   const [form, setForm] = useState<Product>(EMPTY);
   const [plans, setPlans] = useState<RentalPlan[]>(EMPTY.plans);
   const [hourly, setHourly] = useState<ProductHourlyRate>(
@@ -56,6 +61,7 @@ export default function AdminProductEditScreen() {
   );
   const [addons, setAddons] = useState<ProductAddon[]>([]);
   const [controllerPrice, setControllerPrice] = useState('');
+  const [controllerMax, setControllerMax] = useState('3');
   const [tagsText, setTagsText] = useState('');
   const [requirementsText, setRequirementsText] = useState('');
   const [includes, setIncludes] = useState<IncludeRow[]>([]);
@@ -69,6 +75,7 @@ export default function AdminProductEditScreen() {
       setHourly(EMPTY.hourly!);
       setAddons([]);
       setControllerPrice('');
+      setControllerMax('3');
       setTagsText('');
       setRequirementsText('');
       setIncludes([]);
@@ -85,6 +92,7 @@ export default function AdminProductEditScreen() {
         );
         const ctrl = (n.addons ?? []).find((a) => a.id === 'extra-controller');
         setControllerPrice(ctrl ? String(ctrl.pricing.flatPrice) : '');
+        setControllerMax(ctrl ? String(ctrl.maxQuantity) : '3');
         setAddons((n.addons ?? []).filter((a) => a.id !== 'extra-controller'));
         setTagsText((n.tags ?? []).join(', '));
         setRequirementsText((n.requirements ?? []).join('\n'));
@@ -130,6 +138,7 @@ export default function AdminProductEditScreen() {
         ? [
             {
               ...defaultExtraControllerAddon(),
+              maxQuantity: Math.max(1, num(controllerMax) || 3),
               pricing: {
                 perHour: 0,
                 perHourMaxPlanHours: 1,
@@ -444,7 +453,7 @@ export default function AdminProductEditScreen() {
 
       <Text style={adminStyles.cardTitle}>Extra controller price</Text>
       <View style={adminStyles.field}>
-        <Text style={adminStyles.label}>Flat price per extra controller (₹). Leave 0 to hide.</Text>
+        <Text style={adminStyles.label}>Flat price per extra controller (₹). Leave 0 to hide it on the product page.</Text>
         <TextInput
           style={adminStyles.input}
           keyboardType="numeric"
@@ -454,15 +463,74 @@ export default function AdminProductEditScreen() {
           placeholderTextColor={colors.mutedText}
         />
       </View>
+      <View style={adminStyles.field}>
+        <Text style={adminStyles.label}>Max extra controllers a customer can add</Text>
+        <TextInput
+          style={adminStyles.input}
+          keyboardType="numeric"
+          value={controllerMax}
+          onChangeText={setControllerMax}
+          placeholder="3"
+          placeholderTextColor={colors.mutedText}
+        />
+      </View>
+
+      <Text style={adminStyles.cardTitle}>Physical units and games</Text>
+      <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
+        Customers pick a unit on the product page and see only the games saved on that unit.
+      </Text>
+      {isNew ? (
+        <Text style={[adminStyles.subtitle, { marginBottom: spacing.lg }]}>
+          Save the product first, then add PS4 #1, PS4 #2, and their games here.
+        </Text>
+      ) : (
+        <View style={{ gap: spacing.md, marginBottom: spacing.lg }}>
+          {units.filter((u) => u.productId === id).map((unit) => (
+            <View key={unit.id} style={adminStyles.card}>
+              <UnitGamesEditor
+                unit={unit}
+                productName={form.shortName || form.name}
+                onSave={(games) => saveUnit({ ...unit, games, updatedAt: new Date().toISOString() })}
+              />
+            </View>
+          ))}
+          <View style={adminStyles.card}>
+            <Text style={adminStyles.label}>Add a unit number</Text>
+            <TextInput
+              style={adminStyles.input}
+              value={unitNumber}
+              onChangeText={setUnitNumber}
+              placeholder="001"
+              placeholderTextColor={colors.mutedText}
+              keyboardType="numeric"
+            />
+            <Button
+              title="Create unit"
+              size="sm"
+              variant="secondary"
+              onPress={() => {
+                const n = unitNumber.padStart(3, '0');
+                const now = new Date().toISOString();
+                const skuLabel = `${(form.shortName || form.name || id).toUpperCase().replace(/\s+/g, '-')}-${n}`;
+                void saveUnit({
+                  id: `${id}-${n}`,
+                  productId: id,
+                  hubId: hubs[0]?.id ?? 'indiranagar',
+                  skuLabel,
+                  status: 'available',
+                  games: [],
+                  createdAt: now,
+                  updatedAt: now,
+                });
+                setUnitNumber(String(Number(n) + 1).padStart(3, '0'));
+              }}
+            />
+          </View>
+        </View>
+      )}
 
       <Text style={adminStyles.cardTitle}>Add-ons</Text>
       <View style={[adminStyles.row, { marginBottom: spacing.md, flexWrap: 'wrap', gap: 8 }]}>
-        <Button
-          title="Add extra controller"
-          size="sm"
-          variant="secondary"
-          onPress={() => setAddons((prev) => [...prev, defaultExtraControllerAddon()])}
-        />
         <Button
           title="Add blank add-on"
           size="sm"

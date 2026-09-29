@@ -27,6 +27,7 @@ const NAV = [
   { href: '/admin/customers', label: 'Customers', match: (p: string) => p.startsWith('/admin/customers') },
   { href: '/admin/riders', label: 'Riders', match: (p: string) => p.startsWith('/admin/riders') },
   { href: '/admin/reviews', label: 'Reviews', match: (p: string) => p.startsWith('/admin/reviews') },
+  { href: '/admin/feedback', label: 'Feedback', match: (p: string) => p.startsWith('/admin/feedback') },
   { href: '/admin/settings', label: 'Settings', match: (p: string) => p.startsWith('/admin/settings') },
 ] as const;
 
@@ -162,6 +163,7 @@ export default function AdminLayout() {
               <Stack.Screen name="customers/index" />
               <Stack.Screen name="riders/index" />
               <Stack.Screen name="reviews/index" />
+              <Stack.Screen name="feedback/index" />
               <Stack.Screen name="settings/index" />
             </Stack>
           </View>

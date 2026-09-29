@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { UnitGamesEditor } from '@/components/admin/UnitGamesEditor';
 import { adminStyles } from '@/components/admin/adminStyles';
 import { Button } from '@/components/ui/Button';
 import { colors, spacing } from '@/constants/theme';
@@ -72,7 +73,9 @@ export default function AdminInventoryScreen() {
       contentContainerStyle={[adminStyles.scroll, { paddingHorizontal: horizontalPadding, paddingTop: spacing.xl }]}
     >
       <Text style={adminStyles.title}>Inventory</Text>
-      <Text style={adminStyles.subtitle}>{units.length} units · {filtered.length} shown</Text>
+      <Text style={adminStyles.subtitle}>
+        Each physical kit is a unit. Games saved here are what customers see when they choose PS4 #1 or PS4 #2.
+      </Text>
 
       <View style={adminStyles.card}>
         <Text style={adminStyles.cardTitle}>Add unit</Text>
@@ -158,22 +161,10 @@ export default function AdminInventoryScreen() {
       ) : (
         filtered.map((u) => (
           <View key={u.id} style={adminStyles.card}>
-            <Text style={adminStyles.cardTitle}>{u.skuLabel}</Text>
-            <Text style={adminStyles.cardMeta}>
-              {u.id} · {u.productId} · hub {u.hubId} · {u.status}
-            </Text>
-            <TextInput
-              style={adminStyles.input}
-              defaultValue={(u.games ?? []).join(', ')}
-              placeholder="Games on this unit, comma separated"
-              placeholderTextColor={colors.mutedText}
-              onEndEditing={(e) => {
-                const games = e.nativeEvent.text
-                  .split(',')
-                  .map((g) => g.trim())
-                  .filter(Boolean);
-                void saveUnit({ ...u, games, updatedAt: new Date().toISOString() });
-              }}
+            <UnitGamesEditor
+              unit={u}
+              productName={products.find((p) => p.id === u.productId)?.shortName}
+              onSave={(games) => saveUnit({ ...u, games, updatedAt: new Date().toISOString() })}
             />
             <View style={adminStyles.row}>
               {STATUSES.map((s) => (

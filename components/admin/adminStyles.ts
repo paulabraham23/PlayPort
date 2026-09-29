@@ -1,10 +1,10 @@
-import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
-import { StyleSheet } from 'react-native';
+import { colors, fonts, radii, shadows, spacing, typeScale, webShadows } from '@/constants/theme';
+import { Platform, StyleSheet } from 'react-native';
 
 export const adminStyles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: colors.page,
+    backgroundColor: colors.surfaceAlt,
   },
   scroll: {
     paddingBottom: spacing.huge,
@@ -29,12 +29,17 @@ export const adminStyles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.white,
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: spacing.sm,
+    ...shadows.soft,
+    ...Platform.select({
+      web: { boxShadow: webShadows.soft } as object,
+      default: {},
+    }),
   },
   cardTitle: {
     fontFamily: fonts.bodyMedium,
@@ -47,7 +52,7 @@ export const adminStyles = StyleSheet.create({
     color: colors.mutedText,
   },
   input: {
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.sm,

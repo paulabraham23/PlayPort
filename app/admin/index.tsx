@@ -25,6 +25,7 @@ export default function AdminOverviewScreen() {
     { label: 'Open deliveries', value: counts?.openOrders ?? '—', href: '/admin/orders' },
     { label: 'Hubs', value: counts?.hubs ?? '—', href: '/admin/hubs' },
     { label: 'Reviews', value: counts?.reviews ?? '—', href: '/admin/reviews' },
+    { label: 'Feedback', value: 'Inbox', href: '/admin/feedback' },
     { label: 'Settings', value: config.maintenanceMode ? 'Maint.' : 'Live', href: '/admin/settings' },
   ];
 

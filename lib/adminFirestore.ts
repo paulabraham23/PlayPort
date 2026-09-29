@@ -366,6 +366,38 @@ export async function adminListUsers(): Promise<User[]> {
   return mapDocs<User>(snap).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
+// ——— Feedback ———
+
+export type AdminFeedback = {
+  id: string;
+  text: string;
+  channel: 'text' | 'voice';
+  userId: string | null;
+  createdAtMs: number;
+};
+
+export async function adminListFeedback(): Promise<AdminFeedback[]> {
+  const snap = await getDocs(collection(db, 'feedback'));
+  return snap.docs
+    .map((d) => {
+      const data = d.data() as {
+        text?: string;
+        channel?: string;
+        userId?: string | null;
+        createdAt?: { seconds?: number };
+      };
+      const seconds = data.createdAt?.seconds;
+      return {
+        id: d.id,
+        text: data.text ?? '',
+        channel: data.channel === 'voice' ? ('voice' as const) : ('text' as const),
+        userId: data.userId ?? null,
+        createdAtMs: seconds ? seconds * 1000 : 0,
+      };
+    })
+    .sort((a, b) => b.createdAtMs - a.createdAtMs);
+}
+
 // ——— App config ———
 
 export async function adminGetAppConfig(): Promise<AppConfig> {

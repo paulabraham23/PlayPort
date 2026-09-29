@@ -11,6 +11,7 @@ import { cheapestPlanPrice, normalizeProduct } from '@/utils/rentalPricing';
 export default function AdminProductsScreen() {
   const { horizontalPadding } = useResponsive();
   const products = useAdminStore((s) => s.products);
+  const units = useAdminStore((s) => s.units);
   const error = useAdminStore((s) => s.error);
   const removeProduct = useAdminStore((s) => s.removeProduct);
   const loadProducts = useAdminStore((s) => s.loadProducts);
@@ -109,10 +110,14 @@ export default function AdminProductsScreen() {
               <Pressable onPress={() => router.push(`/admin/products/${p.id}` as never)}>
                 <Text style={adminStyles.cardTitle}>{p.shortName || p.name}</Text>
                 <Text style={adminStyles.cardMeta}>
-                  {p.id} · {p.categoryId} · {n.plans.length} plans
+                  {p.id}
+                  {` · ${units.filter((u) => u.productId === p.id).length} units`}
                   {from != null ? ` · from ₹${from}` : ''}
                   {n.hourly?.enabled ? ' · hourly' : ''}
-                  {(n.addons?.length ?? 0) > 0 ? ` · ${n.addons!.length} add-ons` : ''}
+                  {(() => {
+                    const ctrl = n.addons?.find((a) => a.id === 'extra-controller');
+                    return ctrl ? ` · extra controller ₹${ctrl.pricing.flatPrice}` : ' · no extra controller';
+                  })()}
                 </Text>
               </Pressable>
               <View style={[adminStyles.row, { marginTop: 8 }]}>

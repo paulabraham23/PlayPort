@@ -11,24 +11,24 @@ export const colors = {
   surfaceHover: '#EBEBEB',
   border: '#DDDDDD',
   borderSubtle: '#EBEBEB',
-  borderFocus: 'rgba(184, 106, 50, 0.45)',
+  borderFocus: 'rgba(249, 115, 22, 0.45)',
 
   // ── Text ───────────────────────────────────────────────────────────────
   primaryText: '#222222',
   secondaryText: '#6A6A6A',
   mutedText: '#717171',
 
-  // ── Brand — matte neutral orange (desaturated clay, not neon) ─────────
-  playportOrange: '#B86A32',
-  ctaPrimary: '#B86A32',
+  // ── Brand — clear orange ───────────────────────────────────────────────
+  playportOrange: '#F97316',
+  ctaPrimary: '#F97316',
   ctaPrimaryText: '#FFFFFF',
-  ctaPrimaryHover: '#C87A42',
-  orangeSoft: '#945528',
-  orangeDeep: '#73401E',
-  orangeTint: 'rgba(184, 106, 50, 0.12)',
-  orangeTintStrong: 'rgba(184, 106, 50, 0.20)',
-  orangeGlow: 'rgba(184, 106, 50, 0.18)',
-  orangeBorder: 'rgba(184, 106, 50, 0.42)',
+  ctaPrimaryHover: '#FF8A3D',
+  orangeSoft: '#E85D04',
+  orangeDeep: '#C2410C',
+  orangeTint: 'rgba(249, 115, 22, 0.12)',
+  orangeTintStrong: 'rgba(249, 115, 22, 0.20)',
+  orangeGlow: 'rgba(249, 115, 22, 0.18)',
+  orangeBorder: 'rgba(249, 115, 22, 0.42)',
 
   // ── Status ─────────────────────────────────────────────────────────────
   success: '#14804A',
@@ -56,7 +56,7 @@ export const colors = {
     gaming: '#A78BFA',
     movieNights: '#F0A6CA',
     musicKaraoke: '#5EA8FF',
-    partySocial: '#B86A32',
+    partySocial: '#F97316',
     family: '#3DD68C',
     kids: '#F5C242',
     dateNight: '#F27E7E',
@@ -68,12 +68,12 @@ export const colors = {
 
 /** Signature vertical gradients (module-level: shared style objects). */
 export const gradients = {
-  brand: ['#C87A42', '#B86A32', '#945528'] as const,
-  brandSubtle: ['#B86A32', '#945528'] as const,
+  brand: ['#FF8A3D', '#F97316', '#E85D04'] as const,
+  brandSubtle: ['#F97316', '#E85D04'] as const,
   heroScrim: ['rgba(7,8,12,0)', 'rgba(7,8,12,0.82)', 'rgba(7,8,12,0.97)'] as const,
   heroVeil: ['rgba(7,8,12,0.45)', 'rgba(7,8,12,0.35)'] as const,
   cardSheen: ['rgba(255,255,255,0.045)', 'rgba(255,255,255,0)'] as const,
-  cta: ['#C87A42', '#A35A28'] as const,
+  cta: ['#FF8A3D', '#EA580C'] as const,
   statusbar: ['rgba(11,13,18,0.92)', 'rgba(11,13,18,0.75)', 'rgba(11,13,18,0.92)'] as const,
 } as const;
 
@@ -98,13 +98,14 @@ export const radii = {
   full: 999,
 } as const;
 
+/** Plus Jakarta Sans — licensed stand-in for Airbnb Cereal (Book / Medium / Bold). */
 export const fonts = {
-  heading: 'NunitoSans_700Bold',
-  headingMedium: 'NunitoSans_600SemiBold',
-  body: 'NunitoSans_400Regular',
-  bodyMedium: 'NunitoSans_500Medium',
-  mono: 'NunitoSans_500Medium',
-  monoMedium: 'NunitoSans_600SemiBold',
+  heading: 'PlusJakartaSans_700Bold',
+  headingMedium: 'PlusJakartaSans_600SemiBold',
+  body: 'PlusJakartaSans_400Regular',
+  bodyMedium: 'PlusJakartaSans_500Medium',
+  mono: 'PlusJakartaSans_500Medium',
+  monoMedium: 'PlusJakartaSans_600SemiBold',
 } as const;
 
 export const typeScale = {
@@ -163,6 +164,6 @@ export const shadows = {
 export const webShadows = {
   card: '0 6px 16px rgba(0,0,0,0.12)',
   soft: '0 1px 2px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05)',
-  glow: '0 6px 16px rgba(184,106,50,0.22)',
+  glow: '0 6px 16px rgba(249,115,22,0.28)',
   lift: '0 8px 28px rgba(0,0,0,0.16)',
 } as const;

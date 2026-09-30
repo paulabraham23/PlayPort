@@ -107,10 +107,10 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         cursor: 'pointer' as unknown as undefined,
-        boxShadow: '0 12px 28px rgba(184,106,50,0.22)',
+        boxShadow: '0 12px 28px rgba(249,115,22,0.28)',
       } as object,
       default: {
-        shadowColor: '#945528',
+        shadowColor: '#E85D04',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.4,
         shadowRadius: 16,

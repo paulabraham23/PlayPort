@@ -1,9 +1,9 @@
 import {
-  NunitoSans_400Regular,
-  NunitoSans_500Medium,
-  NunitoSans_600SemiBold,
-  NunitoSans_700Bold,
-} from '@expo-google-fonts/nunito-sans';
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -46,10 +46,10 @@ export default function RootLayout() {
   const bootstrapAuth = useAppStore((s) => s.bootstrapAuth);
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const [loaded, error] = useFonts({
-    NunitoSans_400Regular,
-    NunitoSans_500Medium,
-    NunitoSans_600SemiBold,
-    NunitoSans_700Bold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
   });
 
   useEffect(() => {

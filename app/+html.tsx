@@ -33,6 +33,12 @@ export default function Root({ children }: { children: ReactNode }) {
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=3" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3" />
         <link rel="manifest" href="/manifest.json?v=3" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
 
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="PlayPort" />
@@ -72,7 +78,7 @@ html, body, #root {
   max-width: 100vw;
   overflow-x: hidden;
   touch-action: manipulation;
-  font-family: 'Nunito Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color-scheme: light;
   scroll-behavior: smooth;
 }
@@ -94,7 +100,7 @@ input, textarea, select {
   max-width: 100%;
 }
 ::selection {
-  background: rgba(184, 106, 50, 0.28);
+  background: rgba(249, 115, 22, 0.28);
   color: #fff;
 }
 ::-webkit-scrollbar {

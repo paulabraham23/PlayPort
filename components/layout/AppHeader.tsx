@@ -6,7 +6,7 @@ import { FeedbackSheet } from '@/components/feedback/FeedbackSheet';
 import { PressableScale } from '@/components/motion/PressableScale';
 import { PulseOnChange } from '@/components/motion/Pulse';
 import { SearchBar } from '@/components/search/SearchBar';
-import { ClayPot } from '@/components/brand/ClayPot';
+import { PlayPortWordmark } from '@/components/brand/PlayPortWordmark';
 import { colors, fonts, layout, radii, spacing, typeScale, webShadows } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartCount } from '@/store/appStore';
@@ -57,27 +57,27 @@ export function AppHeader({
         ]}
       >
         <View style={styles.topRow}>
-          {showDelivery ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Delivering to ${place}`}
-              onPress={() => {
-                if (!isAuthenticated) {
-                  ensureLoggedIn('/address');
-                  return;
-                }
-                router.push('/address');
-              }}
-              style={[styles.placeBtn, !pageTitle && styles.placeBtnWide]}
-            >
-              {!pageTitle ? <ClayPot size={28} /> : null}
-              <Text style={styles.delivering} numberOfLines={2}>
-                Delivering to <Text style={styles.place}>{place}</Text>
-              </Text>
-            </Pressable>
-          ) : (
-            <View style={styles.sideSpacer} />
-          )}
+          <View style={styles.brandBlock}>
+            <PlayPortWordmark size={pageTitle ? 22 : 26} />
+            {showDelivery ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Delivering to ${place}`}
+                onPress={() => {
+                  if (!isAuthenticated) {
+                    ensureLoggedIn('/address');
+                    return;
+                  }
+                  router.push('/address');
+                }}
+                style={styles.placeBtn}
+              >
+                <Text style={styles.delivering} numberOfLines={2}>
+                  Delivering to <Text style={styles.place}>{place}</Text>
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
 
           <View style={styles.actions}>
             {rightSlot}
@@ -111,7 +111,6 @@ export function AppHeader({
 
         {pageTitle ? (
           <View style={styles.titleRow}>
-            <ClayPot size={34} />
             <Text style={styles.pageTitle} numberOfLines={1}>
               {pageTitle}
             </Text>
@@ -151,19 +150,18 @@ const styles = StyleSheet.create({
   topRow: {
     minHeight: 44,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    paddingTop: 2,
+  },
+  brandBlock: {
+    flexShrink: 1,
+    maxWidth: '72%',
+    gap: 2,
+    zIndex: 2,
   },
   placeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    maxWidth: '72%',
-    zIndex: 2,
     flexShrink: 1,
-  },
-  placeBtnWide: {
-    maxWidth: '78%',
   },
   delivering: {
     color: colors.secondaryText,
@@ -177,10 +175,8 @@ const styles = StyleSheet.create({
     fontSize: typeScale.body,
   },
   titleRow: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
   },
@@ -189,10 +185,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.heading,
     fontSize: 36,
     letterSpacing: -0.8,
-  },
-  sideSpacer: {
-    width: 40,
-    height: 40,
   },
   actions: {
     flexDirection: 'row',

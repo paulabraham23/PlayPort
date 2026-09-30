@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { ClayPot } from '@/components/brand/ClayPot';
+import { PlayPortWordmark } from '@/components/brand/PlayPortWordmark';
 import { Screen } from '@/components/layout/Screen';
 import { colors, fonts, spacing, typeScale } from '@/constants/theme';
 
@@ -7,7 +7,7 @@ export default function ExperiencesScreen() {
   return (
     <Screen showHeader={false}>
       <View style={styles.wrap}>
-        <ClayPot size={96} />
+        <PlayPortWordmark size={40} />
         <Text style={styles.title}>Something's cooking.</Text>
         <Text style={styles.body}>We'll be back with experiences worth the wait.</Text>
       </View>

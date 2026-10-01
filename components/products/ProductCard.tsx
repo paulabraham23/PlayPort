@@ -23,6 +23,8 @@ interface Props {
   compact?: boolean;
   wished?: boolean;
   onToggleWishlist?: () => void;
+  /** Stretch the photo so the card fills a fixed frame (home peek layout). */
+  fill?: boolean;
 }
 
 function CartAction({
@@ -114,6 +116,7 @@ export function ProductCard({
   compact,
   wished,
   onToggleWishlist,
+  fill,
 }: Props) {
   const normalized = normalizeProduct(product);
   const plan = defaultPlan(normalized);
@@ -162,9 +165,17 @@ export function ProductCard({
   }
 
   return (
-    <Animated.View entering={FadeIn.duration(320)} style={[styles.card, soldOut && styles.cardDim]}>
-      <PressableScale accessibilityLabel={product.name} onPress={onPress} scaleTo={0.985}>
-        <View style={styles.imageWrap}>
+    <Animated.View
+      entering={FadeIn.duration(320)}
+      style={[styles.card, fill && styles.cardFill, soldOut && styles.cardDim]}
+    >
+      <PressableScale
+        accessibilityLabel={product.name}
+        onPress={onPress}
+        scaleTo={0.985}
+        style={fill ? styles.fillPress : undefined}
+      >
+        <View style={[styles.imageWrap, fill ? styles.imageFill : styles.imageRatio]}>
           <ZoomImage uri={product.images[0]} style={styles.image} />
           <LinearGradient
             colors={[...gradients.cardSheen]}
@@ -253,12 +264,15 @@ const styles = StyleSheet.create({
     }),
   },
   cardDim: { opacity: 0.62 },
+  cardFill: { flex: 1, height: '100%' },
+  fillPress: { flex: 1 },
   imageWrap: {
     backgroundColor: colors.surfaceAlt,
     position: 'relative',
     overflow: 'hidden',
-    aspectRatio: 1.05,
   },
+  imageRatio: { aspectRatio: 1.05 },
+  imageFill: { flex: 1 },
   image: { width: '100%', height: '100%' },
   sheen: { ...StyleSheet.absoluteFill },
   etaBadge: {

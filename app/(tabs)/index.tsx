@@ -1,20 +1,23 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
+import { useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
-import { EnterUp } from '@/components/motion/Enter';
 import { ProductCard } from '@/components/products/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, spacing } from '@/constants/theme';
+import { colors, layout, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useAppStore } from '@/store/appStore';
+import { useAppStore, useCartCount } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 
+const CARD_GAP = 16;
+
 export default function HomeScreen() {
-  const { horizontalPadding, productColumns, gap } = useResponsive();
+  const { horizontalPadding } = useResponsive();
+  const cartCount = useCartCount();
+  const [viewport, setViewport] = useState(0);
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
@@ -38,40 +41,52 @@ export default function HomeScreen() {
     showToast(`Added ${product.shortName}`);
   };
 
+  const cartInset = cartCount > 0 ? layout.floatingCartHeight + 20 : 0;
+  const visible = Math.max(viewport - cartInset, 0);
+  const cardHeight = visible > 0 ? (visible - CARD_GAP) / 1.5 : 0;
+  const stride = cardHeight + CARD_GAP;
+
   return (
     <Screen showCart showFloatingCart showSearch>
       <ScrollView
+        style={styles.scroll}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingHorizontal: horizontalPadding, paddingBottom: spacing.huge + 120 },
-        ]}
+        onLayout={(event) => setViewport(event.nativeEvent.layout.height)}
+        snapToInterval={stride > 0 ? stride : undefined}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        disableIntervalMomentum
+        contentContainerStyle={{
+          paddingHorizontal: horizontalPadding,
+          paddingBottom: cardHeight > 0 ? Math.max(visible - cardHeight, spacing.lg) : spacing.huge,
+          backgroundColor: colors.surfaceAlt,
+          flexGrow: 1,
+        }}
       >
         {!ready ? (
           <ActivityIndicator color={colors.playportOrange} style={{ marginTop: 24 }} />
-        ) : products.length ? (
-          <ResponsiveGrid columns={productColumns} gap={gap}>
-            {products.map((product, index) => (
-              <EnterUp key={product.id} index={index} style={{ width: '100%' }}>
-                <ProductCard
-                  product={product}
-                  wished={wishlist.includes(product.id)}
-                  onToggleWishlist={() => toggleWishlist(product.id)}
-                  quantityInCart={qtyFor(product.id)}
-                  onPress={() => router.push(`/product/${product.id}`)}
-                  onAdd={() => addKit(product)}
-                  onIncrement={() => addKit(product)}
-                  onDecrement={() => {
-                    if (!isAuthenticated) return;
-                    const id = cartItemIdFor(product.id);
-                    const qty = qtyFor(product.id);
-                    if (id) updateCartQuantity(id, qty - 1);
-                  }}
-                />
-              </EnterUp>
-            ))}
-          </ResponsiveGrid>
-        ) : (
+        ) : products.length && cardHeight > 0 ? (
+          products.map((product) => (
+            <View key={product.id} style={{ height: cardHeight, marginBottom: CARD_GAP }}>
+              <ProductCard
+                fill
+                product={product}
+                wished={wishlist.includes(product.id)}
+                onToggleWishlist={() => toggleWishlist(product.id)}
+                quantityInCart={qtyFor(product.id)}
+                onPress={() => router.push(`/product/${product.id}`)}
+                onAdd={() => addKit(product)}
+                onIncrement={() => addKit(product)}
+                onDecrement={() => {
+                  if (!isAuthenticated) return;
+                  const id = cartItemIdFor(product.id);
+                  const qty = qtyFor(product.id);
+                  if (id) updateCartQuantity(id, qty - 1);
+                }}
+              />
+            </View>
+          ))
+        ) : products.length ? null : (
           <EmptyState
             icon="cube-outline"
             title="No products yet"
@@ -90,9 +105,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingTop: spacing.lg,
-    gap: spacing.lg,
+    flex: 1,
     backgroundColor: colors.surfaceAlt,
-    flexGrow: 1,
   },
 });

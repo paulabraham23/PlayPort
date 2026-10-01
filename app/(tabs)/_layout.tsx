@@ -9,9 +9,8 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, fonts, gradients, layout, radii, webShadows } from '@/constants/theme';
+import { colors, fonts, layout, radii } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
-
 type IconName = keyof typeof Ionicons.glyphMap;
 
 function TabIcon({ name, color, focused }: { name: IconName; color: string; focused: boolean }) {
@@ -47,7 +46,7 @@ function TabIcon({ name, color, focused }: { name: IconName; color: string; focu
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
-  const { contentWidth, isDesktop } = useResponsive();
+  const { contentWidth } = useResponsive();
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 10 : 0);
 
   return (
@@ -61,9 +60,9 @@ export default function TabsLayout() {
           {
             height: layout.tabBarHeight + bottomInset,
             paddingBottom: bottomInset > 0 ? bottomInset : 10,
-            maxWidth: isDesktop ? contentWidth : undefined,
-            alignSelf: isDesktop ? 'center' : undefined,
             width: '100%',
+            maxWidth: contentWidth,
+            alignSelf: 'center',
           },
           Platform.OS === 'web' && styles.tabBarWeb,
         ],
@@ -157,6 +156,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   item: {
+    flex: 1,
+    flexBasis: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 2,
   },
   iconWrap: {

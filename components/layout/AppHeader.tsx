@@ -10,7 +10,6 @@ import { PlayPortWordmark } from '@/components/brand/PlayPortWordmark';
 import { colors, fonts, layout, radii, spacing, typeScale, webShadows } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartCount } from '@/store/appStore';
-import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 
 interface Props {
@@ -32,54 +31,48 @@ export function AppHeader({
 }: Props) {
   const cartCount = useCartCount();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-  const addresses = useAppStore((s) => s.addresses);
-  const selectedAddressId = useAppStore((s) => s.selectedAddressId);
-  const hub = useCatalogStore((s) => s.hub);
   const { horizontalPadding, contentWidth } = useResponsive();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const selectedAddress =
-    addresses.find((a) => a.id === selectedAddressId) ?? addresses.find((a) => a.isDefault);
-  const place = selectedAddress
-    ? [selectedAddress.line1, selectedAddress.line2, selectedAddress.area, selectedAddress.city]
-        .map((part) => part?.trim())
-        .filter((part, index, all): part is string => Boolean(part) && all.indexOf(part) === index)
-        .join(', ')
-    : hub?.city && hub.city !== '—'
-      ? hub.city
-      : 'your address';
+  const place = 'Durgha Dairy products';
 
   return (
     <View style={styles.outer}>
       <View
         style={[
-          styles.wrap,
+          pageTitle ? styles.wrapCompact : styles.wrapHome,
           { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%' },
         ]}
       >
-        <View style={styles.topRow}>
-          <View style={styles.brandBlock}>
-            <PlayPortWordmark size={pageTitle ? 22 : 26} />
-            {showDelivery ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Delivering to ${place}`}
-                onPress={() => {
-                  if (!isAuthenticated) {
-                    ensureLoggedIn('/address');
-                    return;
-                  }
-                  router.push('/address');
-                }}
-                style={styles.placeBtn}
-              >
-                <Text style={styles.delivering} numberOfLines={2}>
-                  Delivering to <Text style={styles.place}>{place}</Text>
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
+        <View style={[styles.topRow, pageTitle && styles.topRowCompact]}>
+          {pageTitle ? (
+            <Text style={styles.pageTitle} numberOfLines={1}>
+              {pageTitle}
+            </Text>
+          ) : (
+            <View style={styles.brandBlock}>
+              <PlayPortWordmark size={26} />
+              {showDelivery ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delivering to ${place}`}
+                  onPress={() => {
+                    if (!isAuthenticated) {
+                      ensureLoggedIn('/address');
+                      return;
+                    }
+                    router.push('/address');
+                  }}
+                  style={styles.placeBtn}
+                >
+                  <Text style={styles.delivering} numberOfLines={1}>
+                    Delivering to <Text style={styles.placeName}>{place}</Text>
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          )}
 
-          <View style={styles.actions}>
+          <View style={[styles.actions, pageTitle && styles.actionsOverlay]}>
             {rightSlot}
             {showFeedback ? (
               <PressableScale
@@ -109,12 +102,22 @@ export function AppHeader({
           </View>
         </View>
 
-        {pageTitle ? (
-          <View style={styles.titleRow}>
-            <Text style={styles.pageTitle} numberOfLines={1}>
-              {pageTitle}
+        {pageTitle && showDelivery ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Delivering to ${place}`}
+            onPress={() => {
+              if (!isAuthenticated) {
+                ensureLoggedIn('/address');
+                return;
+              }
+              router.push('/address');
+            }}
+          >
+            <Text style={styles.deliveryLine} numberOfLines={1}>
+              Delivering to <Text style={styles.placeName}>{place}</Text>
             </Text>
-          </View>
+          </Pressable>
         ) : null}
 
         {showSearch ? (
@@ -141,11 +144,17 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  wrap: {
+  wrapHome: {
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
     gap: spacing.sm,
     minHeight: layout.headerHeight,
+  },
+  wrapCompact: {
+    paddingTop: 4,
+    paddingBottom: 6,
+    gap: 2,
+    minHeight: 48,
   },
   topRow: {
     minHeight: 44,
@@ -153,6 +162,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingTop: 2,
+  },
+  topRowCompact: {
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   brandBlock: {
     flexShrink: 1,
@@ -169,28 +183,33 @@ const styles = StyleSheet.create({
     fontSize: typeScale.body,
     flexShrink: 1,
   },
-  place: {
+  placeName: {
     color: colors.primaryText,
     fontFamily: fonts.headingMedium,
-    fontSize: typeScale.body,
-  },
-  titleRow: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
   },
   pageTitle: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
-    fontSize: 36,
+    fontSize: 32,
     letterSpacing: -0.8,
+    textAlign: 'center',
+  },
+  deliveryLine: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     zIndex: 2,
+  },
+  actionsOverlay: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   iconBtn: {
     width: 40,

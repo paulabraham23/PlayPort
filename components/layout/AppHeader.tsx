@@ -50,7 +50,7 @@ export function AppHeader({
             </Text>
           ) : (
             <View style={styles.brandBlock}>
-              <PlayPortWordmark size={34} />
+              <PlayPortWordmark size={26} />
               {showDelivery ? (
                 <Pressable
                   accessibilityRole="button"

@@ -28,7 +28,7 @@ export default function CombosScreen() {
   };
 
   return (
-    <Screen showFloatingCart pageTitle="Combos" showCart={false}>
+    <Screen showFloatingCart pageTitle="Combos" showCart={false} showDelivery={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[

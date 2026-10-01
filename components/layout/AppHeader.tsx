@@ -12,6 +12,38 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartCount } from '@/store/appStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 
+function DeliveryPlace({
+  place,
+  onPress,
+  align = 'left',
+}: {
+  place: string;
+  onPress: () => void;
+  align?: 'left' | 'center';
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Delivering to ${place}`}
+      onPress={onPress}
+      style={[styles.placeBtn, align === 'center' && styles.placeBtnCenter]}
+    >
+      <View style={styles.pinWrap}>
+        <Ionicons name="location" size={15} color={colors.playportOrange} />
+      </View>
+      <View style={styles.placeCopy}>
+        <Text style={styles.deliveringLabel}>Delivering to</Text>
+        <View style={styles.placeRow}>
+          <Text style={styles.placeName} numberOfLines={1}>
+            {place}
+          </Text>
+          <Ionicons name="chevron-down" size={14} color={colors.primaryText} />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 interface Props {
   showCart?: boolean;
   showSearch?: boolean;
@@ -35,6 +67,14 @@ export function AppHeader({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const place = 'Durgha Dairy products';
 
+  const openAddress = () => {
+    if (!isAuthenticated) {
+      ensureLoggedIn('/address');
+      return;
+    }
+    router.push('/address');
+  };
+
   return (
     <View style={styles.outer}>
       <View
@@ -51,24 +91,7 @@ export function AppHeader({
           ) : (
             <View style={styles.brandBlock}>
               <PlayPortWordmark size={26} />
-              {showDelivery ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Delivering to ${place}`}
-                  onPress={() => {
-                    if (!isAuthenticated) {
-                      ensureLoggedIn('/address');
-                      return;
-                    }
-                    router.push('/address');
-                  }}
-                  style={styles.placeBtn}
-                >
-                  <Text style={styles.delivering} numberOfLines={1}>
-                    Delivering to <Text style={styles.placeName}>{place}</Text>
-                  </Text>
-                </Pressable>
-              ) : null}
+              {showDelivery ? <DeliveryPlace place={place} onPress={openAddress} /> : null}
             </View>
           )}
 
@@ -103,21 +126,7 @@ export function AppHeader({
         </View>
 
         {pageTitle && showDelivery ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Delivering to ${place}`}
-            onPress={() => {
-              if (!isAuthenticated) {
-                ensureLoggedIn('/address');
-                return;
-              }
-              router.push('/address');
-            }}
-          >
-            <Text style={styles.deliveryLine} numberOfLines={1}>
-              Delivering to <Text style={styles.placeName}>{place}</Text>
-            </Text>
-          </Pressable>
+          <DeliveryPlace place={place} onPress={openAddress} align="center" />
         ) : null}
 
         {showSearch ? (
@@ -175,29 +184,52 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   placeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 8,
     flexShrink: 1,
+    maxWidth: '100%',
+    marginTop: 2,
   },
-  delivering: {
-    color: colors.secondaryText,
-    fontFamily: fonts.body,
-    fontSize: typeScale.body,
+  placeBtnCenter: {
+    alignSelf: 'center',
+  },
+  pinWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.orangeTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeCopy: {
     flexShrink: 1,
+    minWidth: 0,
+  },
+  deliveringLabel: {
+    color: colors.mutedText,
+    fontFamily: fonts.body,
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  placeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    maxWidth: '100%',
   },
   placeName: {
     color: colors.primaryText,
     fontFamily: fonts.headingMedium,
+    fontSize: typeScale.body,
+    flexShrink: 1,
   },
   pageTitle: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
     fontSize: 32,
     letterSpacing: -0.8,
-    textAlign: 'center',
-  },
-  deliveryLine: {
-    color: colors.secondaryText,
-    fontFamily: fonts.body,
-    fontSize: typeScale.small,
     textAlign: 'center',
   },
   actions: {

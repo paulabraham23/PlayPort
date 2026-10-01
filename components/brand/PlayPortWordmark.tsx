@@ -1,7 +1,7 @@
 import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
 import { colors, fonts } from '@/constants/theme';
 
-/** Wordmark: ink “Play”, brand orange “Port”. */
+/** Handwritten wordmark, in the spirit of a scribbled mark. */
 export function PlayPortWordmark({
   size = 24,
   style,
@@ -9,12 +9,13 @@ export function PlayPortWordmark({
   size?: number;
   style?: StyleProp<TextStyle>;
 }) {
+  const fontSize = Math.round(size * 1.35);
   return (
     <Text
       accessibilityLabel="PlayPort"
-      style={[styles.mark, { fontSize: size, letterSpacing: size * -0.035 }, style]}
+      style={[styles.mark, { fontSize, lineHeight: Math.round(fontSize * 1.05) }, style]}
     >
-      Play<Text style={styles.port}>Port</Text>
+      PlayPort
     </Text>
   );
 }
@@ -22,9 +23,7 @@ export function PlayPortWordmark({
 const styles = StyleSheet.create({
   mark: {
     color: colors.primaryText,
-    fontFamily: fonts.heading,
-  },
-  port: {
-    color: colors.playportOrange,
+    fontFamily: fonts.wordmark,
+    letterSpacing: 0.2,
   },
 });

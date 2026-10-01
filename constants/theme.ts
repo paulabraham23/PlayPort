@@ -106,6 +106,7 @@ export const fonts = {
   bodyMedium: 'PlusJakartaSans_500Medium',
   mono: 'PlusJakartaSans_500Medium',
   monoMedium: 'PlusJakartaSans_600SemiBold',
+  wordmark: 'Caveat_700Bold',
 } as const;
 
 export const typeScale = {

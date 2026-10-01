@@ -160,10 +160,10 @@ const styles = StyleSheet.create({
     minHeight: layout.headerHeight,
   },
   wrapCompact: {
-    paddingTop: 4,
-    paddingBottom: 6,
+    paddingTop: 12,
+    paddingBottom: 12,
     gap: 2,
-    minHeight: 48,
+    minHeight: 56,
   },
   topRow: {
     minHeight: 44,

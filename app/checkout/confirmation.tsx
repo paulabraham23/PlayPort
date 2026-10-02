@@ -89,9 +89,11 @@ export default function ConfirmationScreen() {
             <Ionicons name="time-outline" size={16} color={colors.secondaryText} />
             <Text style={styles.etaLabel}>ESTIMATED DROPOFF</Text>
             <Text style={styles.etaTime}>{order.etaLabel} tonight</Text>
-            <View style={styles.etaPill}>
-              <Text style={styles.etaPillText}>in 28 mins</Text>
-            </View>
+            {order.etaMinutes ? (
+              <View style={styles.etaPill}>
+                <Text style={styles.etaPillText}>in {order.etaMinutes} mins</Text>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.stepper}>
@@ -173,6 +175,22 @@ export default function ConfirmationScreen() {
             ))}
           </View>
         </View>
+
+        {order.deliveryOtp ? (
+          <View style={styles.otpStrip}>
+            <View style={styles.otpHead}>
+              <Ionicons name="key-outline" size={15} color={colors.playportOrange} />
+              <Text style={styles.otpLabel}>YOUR HANDOVER CODE</Text>
+            </View>
+            <Text style={styles.otpDigits}>
+              {String(order.deliveryOtp).replace(/\D/g, '').split('').join(' ')}
+            </Text>
+            <Text style={styles.otpHint}>
+              Show this to your rider when the kit arrives — it confirms delivery in the rider app.
+              Also available on Track.
+            </Text>
+          </View>
+        ) : null}
 
         <View style={styles.section}>
           <View style={styles.nextHeader}>
@@ -313,6 +331,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   stepLabelActive: { color: colors.playportOrange, fontFamily: fonts.bodyMedium },
+  otpStrip: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.orangeBorder,
+    padding: spacing.lg,
+    alignItems: 'center',
+    gap: 6,
+  },
+  otpHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  otpLabel: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 1.2,
+  },
+  otpDigits: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: typeScale.hero,
+    letterSpacing: 10,
+  },
+  otpHint: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    textAlign: 'center',
+    lineHeight: 17,
+  },
   addressRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   addressText: {
     color: colors.secondaryText,

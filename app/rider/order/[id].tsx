@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -30,6 +30,7 @@ export default function RiderOrderDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deliveryCode, setDeliveryCode] = useState('');
 
   const reload = async () => {
     setLoading(true);
@@ -155,15 +156,48 @@ export default function RiderOrderDetailScreen() {
           />
         ) : null}
         {isMine && next.length > 0
-          ? next.map((action) => (
-              <Button
-                key={action.status}
-                title={busy ? 'Updating…' : action.label}
-                size="sm"
-                disabled={busy}
-                onPress={() => void run(() => setStatus(order.id, action.status))}
-              />
-            ))
+          ? next.map((action) => {
+              const needsOtp = action.status === 'delivered' && Boolean(order.deliveryOtp);
+              if (!needsOtp) {
+                return (
+                  <Button
+                    key={action.status}
+                    title={busy ? 'Updating…' : action.label}
+                    size="sm"
+                    disabled={busy}
+                    onPress={() => void run(() => setStatus(order.id, action.status))}
+                  />
+                );
+              }
+              const codeReady = deliveryCode.replace(/\D/g, '').length === 4;
+              return (
+                <View key={action.status} style={styles.otpBlock}>
+                  <Text style={styles.otpTitle}>Handover verification</Text>
+                  <Text style={styles.otpHint}>
+                    Ask the customer for the 4-digit code shown on their tracking screen.
+                  </Text>
+                  <TextInput
+                    value={deliveryCode}
+                    onChangeText={(t) => setDeliveryCode(t.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="0000"
+                    placeholderTextColor={colors.mutedText}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    style={styles.otpInput}
+                  />
+                  <Button
+                    title={busy ? 'Verifying…' : 'Verify & mark delivered'}
+                    size="sm"
+                    disabled={busy || !codeReady}
+                    onPress={() =>
+                      void run(() =>
+                        setStatus(order.id, action.status, deliveryCode.replace(/\D/g, ''))
+                      )
+                    }
+                  />
+                </View>
+              );
+            })
           : null}
         {isMine && next.length === 0 ? (
           <Text style={styles.meta}>No further rider actions for this status.</Text>
@@ -193,4 +227,35 @@ const styles = StyleSheet.create({
   cardTitle: { fontFamily: fonts.heading, fontSize: typeScale.title, color: colors.primaryText },
   meta: { fontFamily: fonts.body, fontSize: typeScale.small, color: colors.secondaryText, lineHeight: 18 },
   error: { fontFamily: fonts.body, color: colors.danger, fontSize: typeScale.body },
+  otpBlock: {
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    backgroundColor: colors.surfaceRaised,
+  },
+  otpTitle: {
+    fontFamily: fonts.heading,
+    fontSize: typeScale.body,
+    color: colors.primaryText,
+  },
+  otpHint: {
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    color: colors.secondaryText,
+    lineHeight: 17,
+  },
+  otpInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    backgroundColor: colors.page,
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: 24,
+    letterSpacing: 10,
+    textAlign: 'center',
+    paddingVertical: 10,
+  },
 });

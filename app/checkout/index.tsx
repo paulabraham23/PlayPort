@@ -86,8 +86,8 @@ export default function CheckoutScreen() {
             address={address}
             selected
             actionLabel="Change"
-            onAction={() => router.push('/address')}
-            onPress={() => router.push('/address')}
+            onAction={() => router.push({ pathname: '/address', params: { select: '1' } })}
+            onPress={() => router.push({ pathname: '/address', params: { select: '1' } })}
           />
         ) : (
           <View style={styles.card}>
@@ -95,7 +95,11 @@ export default function CheckoutScreen() {
             <Text style={styles.timingValue}>
               Add where we should drop off the kit before you pay.
             </Text>
-            <Button title="Add delivery address" onPress={() => router.push('/address')} fullWidth />
+            <Button
+              title="Add delivery address"
+              onPress={() => router.push({ pathname: '/address', params: { select: '1' } })}
+              fullWidth
+            />
           </View>
         )}
 

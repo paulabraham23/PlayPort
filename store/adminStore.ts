@@ -7,6 +7,7 @@ import {
   adminDeleteInventoryUnit,
   adminDeleteProduct,
   adminDeleteReview,
+  adminSetReviewHidden,
   adminGetAppConfig,
   adminListCategories,
   adminListExperiences,
@@ -87,6 +88,7 @@ interface AdminState {
   removeUnit: (id: string) => Promise<void>;
   advanceOrder: (orderId: string, status: OrderStatus) => Promise<void>;
   removeReview: (id: string) => Promise<void>;
+  setReviewHidden: (id: string, hidden: boolean) => Promise<void>;
   saveConfig: (config: AppConfig) => Promise<void>;
 }
 
@@ -248,6 +250,11 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     await adminDeleteReview(id);
     await get().loadReviews();
     await get().refreshCounts();
+  },
+
+  setReviewHidden: async (id, hidden) => {
+    await adminSetReviewHidden(id, hidden);
+    await get().loadReviews();
   },
 
   saveConfig: async (config) => {

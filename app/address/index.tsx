@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AddressCard } from '@/components/address/AddressCard';
 import { Screen } from '@/components/layout/Screen';
@@ -15,6 +15,9 @@ import { useCatalogStore } from '@/store/catalogStore';
 
 export default function AddressIndexScreen() {
   const { horizontalPadding } = useResponsive();
+  const params = useLocalSearchParams<{ select?: string }>();
+  // Select mode: opened from checkout — picking an address returns straight back.
+  const selectMode = params.select === '1';
   const addresses = useAppStore((s) => s.addresses);
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
   const selectAddress = useAppStore((s) => s.selectAddress);
@@ -99,6 +102,7 @@ export default function AddressIndexScreen() {
                     } else {
                       selectAddress(address.id);
                     }
+                    if (selectMode) router.back();
                   }}
                 />
               );
@@ -118,9 +122,19 @@ export default function AddressIndexScreen() {
           </View>
         </Card>
 
+        {selectMode ? (
+          <Button
+            title="Done"
+            fullWidth
+            icon={<Ionicons name="checkmark-circle-outline" size={18} color={colors.baseBlack} />}
+            onPress={() => router.back()}
+          />
+        ) : null}
+
         <Button
           title="Add New Address"
           fullWidth
+          variant={selectMode ? 'secondary' : 'primary'}
           icon={<Ionicons name="add-circle-outline" size={18} color={colors.white} />}
           onPress={() => router.push('/address/add')}
         />

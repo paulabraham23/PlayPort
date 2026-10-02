@@ -359,6 +359,11 @@ export async function adminDeleteReview(id: string): Promise<void> {
   await deleteDoc(doc(db, 'reviews', id));
 }
 
+/** Hide/show a review on customer-facing surfaces without deleting it. */
+export async function adminSetReviewHidden(id: string, hidden: boolean): Promise<void> {
+  await setDoc(doc(db, 'reviews', id), { hidden, updatedAt: new Date().toISOString() }, { merge: true });
+}
+
 // ——— Customers ———
 
 export async function adminListUsers(): Promise<User[]> {

@@ -130,6 +130,21 @@ export default function OrderTrackScreen() {
               </View>
             </View>
 
+            {order.deliveryOtp && order.status === 'out_for_delivery' ? (
+              <View style={styles.otpCard}>
+                <View style={styles.otpHeader}>
+                  <Ionicons name="key-outline" size={16} color={colors.playportOrange} />
+                  <Text style={styles.otpLabel}>HANDOVER CODE</Text>
+                </View>
+                <Text style={styles.otpValue}>
+                  {String(order.deliveryOtp).replace(/\D/g, '').padEnd(4, '·').split('').join(' ')}
+                </Text>
+                <Text style={styles.otpHint}>
+                  Read this 4-digit code to your rider — they enter it to confirm delivery & setup.
+                </Text>
+              </View>
+            ) : null}
+
             <View style={styles.note}>
               <Ionicons name="information-circle-outline" size={16} color={colors.mutedText} />
               <Text style={styles.noteText}>
@@ -260,6 +275,36 @@ const styles = StyleSheet.create({
   },
   stepLabel: { color: colors.mutedText, fontFamily: fonts.mono, fontSize: 9, textAlign: 'center' },
   stepLabelCurrent: { color: colors.primaryText },
+  otpCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.orangeBorder,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    gap: 8,
+  },
+  otpHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  otpLabel: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
+    letterSpacing: 1.2,
+  },
+  otpValue: {
+    color: colors.primaryText,
+    fontFamily: fonts.heading,
+    fontSize: 40,
+    letterSpacing: 8,
+  },
+  otpHint: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    textAlign: 'center',
+    lineHeight: 17,
+  },
   note: {
     flexDirection: 'row',
     gap: 8,

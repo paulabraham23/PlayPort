@@ -406,6 +406,8 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     setupIncluded: true,
     liveDispatch: false,
     riderId: null,
+    // 4-digit handover code — customer reads it to the rider before mark-delivered.
+    deliveryOtp: String(Math.floor(1000 + Math.random() * 9000)),
   };
 
   batch.set(db.collection('orders').doc(id), order);

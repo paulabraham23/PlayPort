@@ -216,7 +216,8 @@ export async function riderPingLocation(
 export async function riderUpdateOrderStatus(
   orderId: string,
   status: OrderStatus,
-  riderId: string
+  riderId: string,
+  otp?: string
 ): Promise<void> {
   const ref = doc(db, 'orders', orderId);
   const snap = await getDoc(ref);
@@ -233,6 +234,14 @@ export async function riderUpdateOrderStatus(
   const next = allowed[order.status] ?? [];
   if (!next.includes(status)) {
     throw new Error(`Cannot move ${order.status} → ${status}`);
+  }
+
+  // Handover verification: new orders carry a 4-digit code the customer reads aloud.
+  if (status === 'delivered' && order.deliveryOtp) {
+    const digits = (otp ?? '').replace(/\D/g, '');
+    if (digits !== String(order.deliveryOtp).replace(/\D/g, '')) {
+      throw new Error('Wrong code — ask the customer for the 4-digit handover code');
+    }
   }
 
   const now = new Date().toISOString();

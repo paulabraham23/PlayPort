@@ -7,6 +7,7 @@ import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
+import { ControllerAddonRow } from '@/components/products/ControllerAddonRow';
 import { DurationSelector } from '@/components/products/DurationSelector';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Badge } from '@/components/ui/Badge';
@@ -82,7 +83,7 @@ export default function ProductDetailScreen() {
   }, [product?.id]);
 
   const productReviews = useMemo(
-    () => reviews.filter((r) => r.productId === product?.id),
+    () => reviews.filter((r) => r.productId === product?.id && !r.hidden),
     [reviews, product?.id]
   );
   const related = useMemo(
@@ -238,10 +239,11 @@ export default function ProductDetailScreen() {
           <View style={styles.section}>
             <SectionHeader eyebrow="Units" title="Choose your kit" />
             <Text style={styles.addonDesc}>
-              Each unit can have a different set of games. Pick the one you want.
+              Each unit has its own game lineup. Pick yours — tap Games for the full list.
             </Text>
             {productUnits.map((unit) => {
               const selected = unitId === unit.id;
+              const games = unit.games ?? [];
               return (
                 <Pressable
                   key={unit.id}
@@ -250,10 +252,22 @@ export default function ProductDetailScreen() {
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={styles.addonName}>{unit.skuLabel}</Text>
-                    <Text style={styles.addonDesc}>
-                      {(unit.games ?? []).length ? unit.games!.join(' · ') : 'Games not listed yet'}
+                    <Text style={styles.addonDesc} numberOfLines={1}>
+                      {games.length
+                        ? `${games.slice(0, 3).join(' · ')}${games.length > 3 ? ` +${games.length - 3} more` : ''}`
+                        : 'Games not listed yet'}
                     </Text>
                   </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`View games on ${unit.skuLabel}`}
+                    onPress={() => router.push(`/unit-games/${unit.id}`)}
+                    hitSlop={6}
+                    style={styles.gamesLink}
+                  >
+                    <Ionicons name="game-controller-outline" size={13} color={colors.playportOrange} />
+                    <Text style={styles.gamesLinkText}>Games</Text>
+                  </Pressable>
                   <Ionicons
                     name={selected ? 'radio-button-on' : 'radio-button-off'}
                     size={20}
@@ -268,43 +282,26 @@ export default function ProductDetailScreen() {
         {controllerAddons.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader eyebrow="Extras" title="Extra controllers" />
-            {controllerAddons.map((addon) => {
-              const qty = addonQty[addon.id] ?? 0;
-              const unitPreview = priceForAddon(addon, hours, 1);
-              return (
-                <View key={addon.id} style={styles.addonRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.addonName}>{addon.name}</Text>
-                    <Text style={styles.addonPrice}>{formatINR(unitPreview)} each</Text>
-                  </View>
-                  <View style={styles.stepper}>
-                    <Pressable
-                      onPress={() =>
-                        setAddonQty((prev) => ({
-                          ...prev,
-                          [addon.id]: Math.max(0, (prev[addon.id] ?? 0) - 1),
-                        }))
-                      }
-                      style={styles.stepBtn}
-                    >
-                      <Ionicons name="remove" size={16} color={colors.primaryText} />
-                    </Pressable>
-                    <Text style={styles.stepValue}>{qty}</Text>
-                    <Pressable
-                      onPress={() =>
-                        setAddonQty((prev) => ({
-                          ...prev,
-                          [addon.id]: Math.min(addon.maxQuantity, (prev[addon.id] ?? 0) + 1),
-                        }))
-                      }
-                      style={styles.stepBtn}
-                    >
-                      <Ionicons name="add" size={16} color={colors.primaryText} />
-                    </Pressable>
-                  </View>
-                </View>
-              );
-            })}
+            {controllerAddons.map((addon) => (
+              <ControllerAddonRow
+                key={addon.id}
+                addon={addon}
+                hours={hours}
+                quantity={addonQty[addon.id] ?? 0}
+                onIncrement={() =>
+                  setAddonQty((prev) => ({
+                    ...prev,
+                    [addon.id]: Math.min(addon.maxQuantity, (prev[addon.id] ?? 0) + 1),
+                  }))
+                }
+                onDecrement={() =>
+                  setAddonQty((prev) => ({
+                    ...prev,
+                    [addon.id]: Math.max(0, (prev[addon.id] ?? 0) - 1),
+                  }))
+                }
+              />
+            ))}
           </View>
         ) : null}
 
@@ -610,6 +607,22 @@ const styles = StyleSheet.create({
   unitSelected: {
     borderColor: colors.playportOrange,
     backgroundColor: colors.orangeTint,
+  },
+  gamesLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: colors.orangeBorder,
+    backgroundColor: colors.orangeTint,
+    borderRadius: radii.full,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  gamesLinkText: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.caption,
   },
   addonName: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
   addonDesc: {

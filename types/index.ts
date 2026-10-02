@@ -259,6 +259,8 @@ export interface Order {
   etaSource?: 'road' | 'straight';
   setupIncluded: boolean;
   liveDispatch?: boolean;
+  /** 4-digit handover code — customer reads it to the rider before mark-delivered. */
+  deliveryOtp?: string;
   reservationIds?: string[];
   startAt?: string;
   endAt?: string;
@@ -304,6 +306,8 @@ export interface Review {
   dateLabel: string;
   text: string;
   createdAt?: string;
+  /** Ops can hide a review from customer-facing surfaces without deleting it. */
+  hidden?: boolean;
 }
 
 export interface AppNotification {

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
 import { QuantitySelector } from '@/components/cart/QuantitySelector';
+import { ControllerAddonRow } from '@/components/products/ControllerAddonRow';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
@@ -122,6 +123,7 @@ export default function CartScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Extra controllers</Text>
+          <Text style={styles.note}>priced by your rental length</Text>
         </View>
         {cart.map((item) => {
           if (!item.productId) return null;
@@ -139,23 +141,14 @@ export default function CartScreen() {
             updateCartPlan(item.id, { addons: next });
           };
           return (
-            <View key={item.id} style={styles.itemCard}>
-              <Text style={styles.itemTitle}>{item.name}</Text>
-              <Text style={styles.note}>
-                {addon.name} · {formatINR(addon.pricing.flatPrice || addon.pricing.perHour)} each
-              </Text>
-              <View style={styles.priceRow}>
-                <Text style={styles.itemPrice}>{current} added</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Button title="−" size="sm" variant="secondary" onPress={() => setQty(Math.max(0, current - 1))} />
-                  <Button
-                    title="+"
-                    size="sm"
-                    onPress={() => setQty(Math.min(addon.maxQuantity, current + 1))}
-                  />
-                </View>
-              </View>
-            </View>
+            <ControllerAddonRow
+              key={item.id}
+              addon={addon}
+              hours={item.hours}
+              quantity={current}
+              onIncrement={() => setQty(Math.min(addon.maxQuantity, current + 1))}
+              onDecrement={() => setQty(Math.max(0, current - 1))}
+            />
           );
         })}
       </View>

@@ -16,7 +16,7 @@ interface RiderState {
   error: string | null;
   bootstrap: () => Promise<() => void>;
   accept: (orderId: string) => Promise<void>;
-  setStatus: (orderId: string, status: OrderStatus) => Promise<void>;
+  setStatus: (orderId: string, status: OrderStatus, otp?: string) => Promise<void>;
 }
 
 let unsub: Unsubscribe | null = null;
@@ -64,9 +64,9 @@ export const useRiderStore = create<RiderState>((set, get) => ({
     await riderAcceptOrder(orderId, rider);
   },
 
-  setStatus: async (orderId, status) => {
+  setStatus: async (orderId, status, otp) => {
     const rider = get().rider;
     if (!rider) throw new Error('Not signed in as rider');
-    await riderUpdateOrderStatus(orderId, status, rider.id);
+    await riderUpdateOrderStatus(orderId, status, rider.id, otp);
   },
 }));

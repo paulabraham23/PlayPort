@@ -149,7 +149,11 @@ export async function fetchUserAddresses(userId: string): Promise<Address[]> {
 }
 
 export async function upsertAddress(userId: string, address: Address) {
-  await setDoc(doc(db, 'users', userId, 'addresses', address.id), address, { merge: true });
+  const data: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(address)) {
+    if (value !== undefined) data[key] = value;
+  }
+  await setDoc(doc(db, 'users', userId, 'addresses', address.id), data, { merge: true });
 }
 
 export async function deleteAddressDoc(userId: string, addressId: string) {

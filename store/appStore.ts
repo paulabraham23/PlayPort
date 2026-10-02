@@ -559,10 +559,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     const uid = get().user?.id;
     if (uid && get().isAuthenticated) {
       void (async () => {
-        if (address.isDefault) {
-          await Promise.all(next.map((a) => upsertAddress(uid, { ...a, isDefault: false })));
+        try {
+          if (address.isDefault) {
+            await Promise.all(next.map((a) => upsertAddress(uid, { ...a, isDefault: false })));
+          }
+          await upsertAddress(uid, created);
+        } catch (e) {
+          console.warn('addAddress failed', e);
         }
-        await upsertAddress(uid, created);
       })();
     }
     return id;

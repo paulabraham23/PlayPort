@@ -159,6 +159,7 @@ export default function EditAddressScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
@@ -280,6 +281,7 @@ function Field({
 }
 
 const styles = StyleSheet.create({
+  scrollView: { flex: 1 },
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.md, paddingTop: spacing.sm },
   field: { gap: 6 },
   fieldLabel: {

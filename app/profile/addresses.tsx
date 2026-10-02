@@ -54,6 +54,7 @@ export default function ProfileAddressesScreen() {
         }
       />
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
       >
@@ -102,6 +103,7 @@ export default function ProfileAddressesScreen() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: { flex: 1 },
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.lg, paddingTop: spacing.sm },
   hubLink: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 14 },
   banner: {

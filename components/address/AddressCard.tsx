@@ -35,7 +35,7 @@ export function AddressCard({
               color={colors.playportOrange}
             />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={styles.heading}>
             <View style={styles.titleRow}>
               <Text style={styles.title}>{address.label}</Text>
               {address.isDefault ? (
@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
   selected: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTint },
   outOfZone: { opacity: 0.95 },
   header: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  heading: { flex: 1, minWidth: 0 },
   icon: {
     width: 32,
     height: 32,
@@ -114,8 +115,22 @@ const styles = StyleSheet.create({
   line: { color: colors.primaryText, fontFamily: fonts.body, fontSize: 13, lineHeight: 19, marginTop: 8 },
   meta: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   note: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  eta: { color: colors.etaText, fontFamily: fonts.bodyMedium, fontSize: 11, flex: 1 },
+  footer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  eta: {
+    color: colors.etaText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 11,
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+  },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   action: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
 });

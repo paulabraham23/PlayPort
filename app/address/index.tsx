@@ -29,6 +29,7 @@ export default function AddressIndexScreen() {
         onBack={() => router.back()}
       />
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
       >
@@ -129,6 +130,7 @@ export default function AddressIndexScreen() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: { flex: 1 },
   scroll: { paddingBottom: spacing.xxxl, gap: spacing.lg, paddingTop: spacing.sm },
   hubCard: { gap: spacing.sm, borderColor: colors.playportOrange },
   hubTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

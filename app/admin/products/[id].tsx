@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { adminStyles } from '@/components/admin/adminStyles';
 import { UnitGamesEditor } from '@/components/admin/UnitGamesEditor';
 import { Button } from '@/components/ui/Button';
-import { colors, spacing } from '@/constants/theme';
+import { colors, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { adminGetProduct } from '@/lib/adminFirestore';
+import { uploadProductImage } from '@/lib/productImages';
 import { useAdminStore } from '@/store/adminStore';
 import type { Product, ProductAddon, ProductHourlyRate, RentalPlan } from '@/types';
 import {
@@ -66,6 +69,8 @@ export default function AdminProductEditScreen() {
   const [requirementsText, setRequirementsText] = useState('');
   const [includes, setIncludes] = useState<IncludeRow[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -103,6 +108,36 @@ export default function AdminProductEditScreen() {
 
   const setField = <K extends keyof Product>(key: K, value: Product[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const onUploadImage = async () => {
+    setImageError(null);
+    if (Platform.OS !== 'web') {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setImageError('Allow photo access to upload a product image.');
+        return;
+      }
+    }
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+    if (picked.canceled || !picked.assets[0]) return;
+    const asset = picked.assets[0];
+    const productId = (isNew ? form.id : id)?.trim() || 'draft';
+    setUploadingImage(true);
+    try {
+      const url = await uploadProductImage(productId, asset.uri, asset.mimeType ?? 'image/jpeg');
+      setForm((prev) => ({
+        ...prev,
+        images: [...(prev.images ?? []).map((u) => u.trim()).filter(Boolean), url],
+      }));
+    } catch (e) {
+      setImageError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const updatePlan = (index: number, patch: Partial<RentalPlan>) => {
@@ -658,19 +693,41 @@ export default function AdminProductEditScreen() {
 
       <Text style={adminStyles.cardTitle}>Media & discovery</Text>
       <View style={adminStyles.field}>
-        <Text style={adminStyles.label}>Image URLs (one per line)</Text>
-        <Text style={[adminStyles.cardMeta, { marginBottom: 6 }]}>
-          Paste the picture file itself, such as a link ending in .jpg or .png. A Google search page will not show.
+        <Text style={adminStyles.label}>Product photos</Text>
+        <Text style={[adminStyles.cardMeta, { marginBottom: 8 }]}>
+          Upload a picture from your device. JPG, PNG, or WEBP, under 5 MB.
         </Text>
-        <TextInput
-          placeholder="https://example.com/ps5.jpg"
-          style={[adminStyles.input, { minHeight: 88, textAlignVertical: 'top' }]}
-          value={(form.images ?? []).join('\n')}
-          onChangeText={(t) => setField('images', t.split('\n'))}
-          multiline
-          autoCapitalize="none"
-          placeholderTextColor={colors.mutedText}
-        />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          {(form.images ?? []).filter((uri) => uri.trim()).map((uri) => (
+            <View key={uri} style={{ width: 96 }}>
+              <Image
+                source={{ uri }}
+                style={{ width: 96, height: 96, borderRadius: radii.md, backgroundColor: colors.surfaceAlt }}
+                contentFit="cover"
+              />
+              <Pressable
+                onPress={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    images: (prev.images ?? []).filter((item) => item !== uri),
+                  }))
+                }
+                style={{ marginTop: 4 }}
+              >
+                <Text style={{ color: colors.danger, fontSize: 12 }}>Remove</Text>
+              </Pressable>
+            </View>
+          ))}
+        </View>
+        <View style={{ marginTop: 10, alignSelf: 'flex-start' }}>
+          <Button
+            title={uploadingImage ? 'Uploading…' : 'Upload image'}
+            variant="secondary"
+            disabled={uploadingImage}
+            onPress={() => void onUploadImage()}
+          />
+        </View>
+        {imageError ? <Text style={{ color: colors.danger, marginTop: 8 }}>{imageError}</Text> : null}
       </View>
       <View style={adminStyles.field}>
         <Text style={adminStyles.label}>Tags (comma-separated)</Text>

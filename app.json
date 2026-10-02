@@ -39,7 +39,15 @@
           "backgroundColor": "#FFFFFF"
         }
       ],
-      "expo-image"
+      "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PlayPort uses your photos so you can upload product pictures.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

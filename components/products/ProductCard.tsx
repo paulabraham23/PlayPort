@@ -9,6 +9,7 @@ import { SoftPulse } from '@/components/motion/Pulse';
 import { ValuePop } from '@/components/motion/ValuePop';
 import { colors, fonts, gradients, radii, shadows, spacing, typeScale, webShadows } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
+import { firstDisplayableImage } from '@/utils/images';
 import { cheapestPlanPrice, defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
 import type { Product } from '@/types';
 
@@ -127,13 +128,16 @@ export function ProductCard({
       ? Math.round(((product.compareAtPrice - price) / product.compareAtPrice) * 100)
       : 0;
   const soldOut = product.availabilityLabel?.startsWith('No');
+  const imageUri = firstDisplayableImage(product.images);
   const handleAdd = onAdd ?? onRent;
 
   if (compact) {
     return (
       <PressableScale onPress={onPress} scaleTo={0.98} style={styles.compact}>
         <View style={styles.compactImageWrap}>
-          <Image source={{ uri: product.images[0] }} style={styles.compactImage} contentFit="cover" />
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.compactImage} contentFit="cover" />
+          ) : null}
           <View style={styles.compactEta}>
             <Text style={styles.etaBadgeText}>{product.etaMinutes}m</Text>
           </View>
@@ -176,7 +180,7 @@ export function ProductCard({
         style={fill ? styles.fillPress : undefined}
       >
         <View style={[styles.imageWrap, fill ? styles.imageFill : styles.imageRatio]}>
-          <ZoomImage uri={product.images[0]} style={styles.image} />
+          {imageUri ? <ZoomImage uri={imageUri} style={styles.image} /> : null}
           <LinearGradient
             colors={[...gradients.cardSheen]}
             style={StyleSheet.absoluteFill}
@@ -337,7 +341,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   soldOutText: {
-    color: colors.primaryText,
+    color: colors.white,
     fontFamily: fonts.heading,
     fontSize: typeScale.small,
     letterSpacing: 1.4,

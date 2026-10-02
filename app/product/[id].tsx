@@ -20,6 +20,7 @@ import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
+import { firstDisplayableImage } from '@/utils/images';
 import {
   addonsTotal,
   computeAddonLines,
@@ -30,18 +31,6 @@ import {
   resolveHours,
 } from '@/utils/rentalPricing';
 import type { PricingMode } from '@/types';
-
-function isDisplayableImage(uri: string) {
-  const trimmed = uri.trim();
-  if (!trimmed) return false;
-  if (trimmed.startsWith('data:image/')) return true;
-  try {
-    const path = decodeURIComponent(new URL(trimmed).pathname);
-    return /\.(png|jpe?g|webp|gif|avif|heic)$/i.test(path);
-  } catch {
-    return false;
-  }
-}
 
 const FLOW_STEPS = [
   {
@@ -139,7 +128,7 @@ export default function ProductDetailScreen() {
       ? `${hours}h hourly`
       : normalized.plans.find((p) => p.id === planId)?.label ?? planId;
 
-  const heroUri = product.images?.find((uri) => isDisplayableImage(uri));
+  const heroUri = firstDisplayableImage(product.images);
   const showHero = Boolean(heroUri) && !heroFailed;
   const heroBlock = showHero && heroUri ? (
     <View style={[styles.hero, useSplitPane && styles.heroSplit]}>

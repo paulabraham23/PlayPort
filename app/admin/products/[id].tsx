@@ -659,7 +659,11 @@ export default function AdminProductEditScreen() {
       <Text style={adminStyles.cardTitle}>Media & discovery</Text>
       <View style={adminStyles.field}>
         <Text style={adminStyles.label}>Image URLs (one per line)</Text>
+        <Text style={[adminStyles.cardMeta, { marginBottom: 6 }]}>
+          Paste the picture file itself, such as a link ending in .jpg or .png. A Google search page will not show.
+        </Text>
         <TextInput
+          placeholder="https://example.com/ps5.jpg"
           style={[adminStyles.input, { minHeight: 88, textAlignVertical: 'top' }]}
           value={(form.images ?? []).join('\n')}
           onChangeText={(t) => setField('images', t.split('\n'))}

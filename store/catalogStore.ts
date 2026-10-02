@@ -45,7 +45,9 @@ function sanitizeProduct(p: Product): Product {
 function enrichProducts(products: Product[], units: InventoryUnit[]): Product[] {
   return products.map((raw) => {
     const p = normalizeProduct(sanitizeProduct(raw));
-    const n = units.filter((u) => u.productId === p.id && u.status === 'available').length;
+    const forProduct = units.filter((u) => u.productId === p.id);
+    if (!forProduct.length) return p;
+    const n = forProduct.filter((u) => u.status === 'available').length;
     return {
       ...p,
       availabilityLabel: n > 0 ? `${n} units at hub` : 'No units at hub',

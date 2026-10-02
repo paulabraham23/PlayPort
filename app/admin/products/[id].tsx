@@ -357,8 +357,8 @@ export default function AdminProductEditScreen() {
               <TextInput
                 style={adminStyles.input}
                 keyboardType="numeric"
-                value={String(plan.hours)}
-                onChangeText={(t) => updatePlan(index, { hours: num(t) || 1 })}
+                value={plan.hours > 0 ? String(plan.hours) : ''}
+                onChangeText={(t) => updatePlan(index, { hours: num(t) })}
                 placeholderTextColor={colors.mutedText}
               />
             </View>

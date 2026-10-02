@@ -48,10 +48,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: 'center',
     ...Platform.select({
-      web: {
-        boxShadow: '0 -10px 36px rgba(4,6,10,0.5)',
-        backdropFilter: 'blur(18px)',
-        backgroundColor: 'rgba(16,19,27,0.94)',
+        web: {
+        boxShadow: '0 -8px 24px rgba(0,0,0,0.08)',
+        backgroundColor: colors.page,
       } as object,
       default: {},
     }),

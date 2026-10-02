@@ -31,6 +31,18 @@ import {
 } from '@/utils/rentalPricing';
 import type { PricingMode } from '@/types';
 
+function isDisplayableImage(uri: string) {
+  const trimmed = uri.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('data:image/')) return true;
+  try {
+    const path = decodeURIComponent(new URL(trimmed).pathname);
+    return /\.(png|jpe?g|webp|gif|avif|heic)$/i.test(path);
+  } catch {
+    return false;
+  }
+}
+
 const FLOW_STEPS = [
   {
     title: 'Hub Pre-Test',
@@ -67,6 +79,7 @@ export default function ProductDetailScreen() {
   const [hourlyHours, setHourlyHours] = useState(1);
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
   const [unitId, setUnitId] = useState<string | null>(null);
+  const [heroFailed, setHeroFailed] = useState(false);
 
   useEffect(() => {
     if (!product) return;
@@ -76,6 +89,7 @@ export default function ProductDetailScreen() {
     setHourlyHours(1);
     setAddonQty({});
     setUnitId(null);
+    setHeroFailed(false);
   }, [product?.id]);
 
   const productReviews = useMemo(
@@ -125,9 +139,16 @@ export default function ProductDetailScreen() {
       ? `${hours}h hourly`
       : normalized.plans.find((p) => p.id === planId)?.label ?? planId;
 
-  const heroBlock = (
+  const heroUri = product.images?.find((uri) => isDisplayableImage(uri));
+  const showHero = Boolean(heroUri) && !heroFailed;
+  const heroBlock = showHero && heroUri ? (
     <View style={[styles.hero, useSplitPane && styles.heroSplit]}>
-      <Image source={{ uri: product.images[0] }} style={styles.heroImage} contentFit="cover" />
+      <Image
+        source={{ uri: heroUri }}
+        style={styles.heroImage}
+        contentFit="cover"
+        onError={() => setHeroFailed(true)}
+      />
       <View style={styles.heroTop}>
         <Badge
           label={`DELIVERED IN ${product.etaMinutes} MINS`}
@@ -146,16 +167,33 @@ export default function ProductDetailScreen() {
         </View>
       </View>
     </View>
-  );
+  ) : null;
 
   const summaryBlock = (
-    <View style={[styles.summary, useSplitPane && styles.summarySplit]}>
+    <View style={[styles.summary, showHero && useSplitPane && styles.summarySplit]}>
+      {!showHero ? (
+        <View style={styles.tagRow}>
+          <Badge
+            label={`Delivered in ${product.etaMinutes} mins`}
+            color={colors.etaText}
+            backgroundColor={colors.etaBg}
+            left={<Ionicons name="flash" size={12} color={colors.etaText} />}
+          />
+          <Text style={styles.ratingInline}>
+            ★ {product.rating} ({product.reviewCount}+)
+          </Text>
+        </View>
+      ) : null}
       <View style={styles.tagRow}>
         {product.tags.map((tag) => (
           <Badge
             key={tag}
             label={tag}
-            color={tag.toLowerCase().includes('deposit') ? colors.secondaryText : colors.white}
+            color={
+              tag.toLowerCase().includes('gaming') || tag.toLowerCase().includes('drop')
+                ? colors.white
+                : colors.secondaryText
+            }
             backgroundColor={
               tag.toLowerCase().includes('gaming') || tag.toLowerCase().includes('drop')
                 ? colors.playportOrange
@@ -179,13 +217,14 @@ export default function ProductDetailScreen() {
     <Screen showHeader={false} edges={['top']}>
       <ScreenHeader title="Item Detail" onBack={() => router.back()} />
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scroll,
           { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad },
         ]}
       >
-        <View style={[styles.topBlock, useSplitPane && styles.topBlockSplit]}>
+        <View style={[styles.topBlock, showHero && useSplitPane && styles.topBlockSplit]}>
           {heroBlock}
           {summaryBlock}
         </View>
@@ -326,6 +365,7 @@ export default function ProductDetailScreen() {
           </View>
         ) : null}
 
+        {product.includes.length > 0 ? (
         <View style={styles.section}>
           <View style={styles.sectionTop}>
             <SectionHeader eyebrow="Includes" title="What's in the transit case" />
@@ -348,6 +388,7 @@ export default function ProductDetailScreen() {
             ))}
           </View>
         </View>
+        ) : null}
 
         <View style={styles.section}>
           <SectionHeader eyebrow="Promise" title="Instant flow guarantee" />
@@ -462,6 +503,7 @@ export default function ProductDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: { flex: 1 },
   scroll: { gap: spacing.xl, paddingTop: spacing.sm },
   topBlock: { gap: spacing.lg },
   topBlockSplit: {
@@ -508,15 +550,21 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     flexWrap: 'wrap',
   },
-  sanitizeText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
-  ratingText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption },
+  sanitizeText: { color: colors.white, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
+  ratingText: { color: 'rgba(255,255,255,0.86)', fontFamily: fonts.bodyMedium, fontSize: typeScale.caption },
   summary: { gap: spacing.md },
   summarySplit: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     minWidth: 280,
+    paddingTop: spacing.sm,
   },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  ratingInline: {
+    color: colors.secondaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: typeScale.small,
+  },
   title: {
     color: colors.primaryText,
     fontFamily: fonts.heading,
@@ -548,7 +596,7 @@ const styles = StyleSheet.create({
   sectionTop: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     gap: 12,
   },
   metaLabel: {

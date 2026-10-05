@@ -14,7 +14,8 @@ import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/t
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
-import { ensureLoggedIn } from '@/utils/authGate';
+import { gateCartAdd } from '@/utils/authGate';
+import { defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
 import { formatINR, searchProducts } from '@/utils/format';
 
 export default function SearchResultsScreen() {
@@ -29,8 +30,10 @@ export default function SearchResultsScreen() {
   const products = useCatalogStore((s) => s.products);
 
   const addKit = (productId: string) => {
-    if (!ensureLoggedIn('/search/results')) return;
-    addProductToCart(productId);
+    const product = products.find((p) => p.id === productId);
+    const options = product ? { planId: defaultPlan(normalizeProduct(product))?.id } : undefined;
+    if (!gateCartAdd('/search/results', { kind: 'product', productId, options })) return;
+    addProductToCart(productId, options);
   };
 
   const results = useMemo(() => searchProducts(query, products), [query, products]);
@@ -71,29 +74,17 @@ export default function SearchResultsScreen() {
           onClear={() => setQuery('')}
         />
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-          <View style={[styles.filterChip, styles.filterActive]}>
-            <Ionicons name="checkmark" size={14} color={colors.playportOrange} />
-            <Text style={styles.filterActiveText}>Filters (1)</Text>
-          </View>
-          <View style={styles.filterChip}>
-            <Text style={styles.filterText}>Sort: Fastest Drop</Text>
-            <Ionicons name="chevron-down" size={14} color={colors.secondaryText} />
-          </View>
-          <View style={styles.filterChip}>
-            <Text style={styles.filterText}>Under ₹1500</Text>
-          </View>
-        </ScrollView>
-
         <View style={styles.statusRow}>
           <View style={styles.statusLeft}>
             <View style={styles.statusDot} />
-            <Text style={styles.hubStatus}>{setupsReady} setups ready in your hub</Text>
+            <Text style={styles.hubStatus}>{setupsReady} kits in your hub</Text>
           </View>
-          <View style={styles.dropBadge}>
-            <Ionicons name="flash" size={11} color={colors.etaText} />
-            <Text style={styles.dropBadgeText}>30-35M DROPOFF</Text>
-          </View>
+          {featured ? (
+            <View style={styles.dropBadge}>
+              <Ionicons name="flash" size={11} color={colors.etaText} />
+              <Text style={styles.dropBadgeText}>{featured.etaMinutes} MIN</Text>
+            </View>
+          ) : null}
         </View>
         {!results.length ? (
           <EmptyState

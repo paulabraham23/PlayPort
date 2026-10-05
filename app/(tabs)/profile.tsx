@@ -8,10 +8,12 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
+import { useNow } from '@/hooks/useNow';
 import { useResponsive } from '@/hooks/useResponsive';
 import { checkIsAdmin } from '@/lib/adminAuth';
 import { checkIsRider } from '@/lib/riderFirestore';
 import { useAppStore } from '@/store/appStore';
+import { isEnRoute, remainingEtaMinutes } from '@/utils/liveEta';
 import { needsOnboarding } from '@/utils/onboarding';
 
 type MenuItem = {
@@ -58,6 +60,8 @@ export default function ProfileScreen() {
   const activeOrder = orders.find((o) =>
     ['confirmed', 'preparing', 'out_for_delivery', 'delivered', 'active', 'returning'].includes(o.status)
   );
+  const now = useNow(isEnRoute(activeOrder?.status));
+  const liveMinutes = remainingEtaMinutes(activeOrder, now);
 
   const showSetup = isAuthenticated && user && needsOnboarding(user, addresses);
 
@@ -194,7 +198,10 @@ export default function ProfileScreen() {
                   </View>
                   <Text style={styles.trackTitle}>Track #{activeOrder.id}</Text>
                   <Text style={styles.trackMeta}>
-                    ETA {activeOrder.etaLabel} · {activeOrder.items[0]?.name}
+                    {isEnRoute(activeOrder.status) && liveMinutes != null
+                      ? `${liveMinutes} min away`
+                      : activeOrder.etaLabel}{' '}
+                    · {activeOrder.items[0]?.name}
                   </Text>
                   <View style={styles.progressTrack}>
                     <View style={[styles.progressFill, { width: `${activeOrder.progressPercent}%` }]} />

@@ -10,7 +10,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
-import { ensureLoggedIn } from '@/utils/authGate';
+import { gateCartAdd } from '@/utils/authGate';
 
 export default function CombosScreen() {
   const { horizontalPadding, experienceColumns, gap } = useResponsive();
@@ -22,7 +22,7 @@ export default function CombosScreen() {
   const cols = Math.max(1, experienceColumns);
 
   const bookCombo = (id: string, name: string) => {
-    if (!ensureLoggedIn()) return;
+    if (!gateCartAdd('/(tabs)/combos', { kind: 'experience', experienceId: id })) return;
     addExperienceToCart(id);
     showToast(`Added ${name}`);
   };

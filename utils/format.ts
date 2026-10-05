@@ -14,8 +14,27 @@ export function formatAddressLine(parts: {
     .join(', ');
 }
 
+/** Rental end time in India, regardless of the server clock. */
+export function formatReturnLabel(endAt?: string | null, fallback?: string): string {
+  if (!endAt) return fallback ?? '';
+  const date = new Date(endAt);
+  if (Number.isNaN(date.getTime())) return fallback ?? '';
+  const formatted = date.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  return `Returns ${formatted}`;
+}
+
 export function orderStatusLabel(status: string): string {
   switch (status) {
+    case 'pending_payment':
+      return 'AWAITING PAYMENT';
     case 'confirmed':
       return 'CONFIRMED';
     case 'preparing':

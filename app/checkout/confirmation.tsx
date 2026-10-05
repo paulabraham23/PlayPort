@@ -9,29 +9,51 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
-import { formatINR } from '@/utils/format';
+import { useNow } from '@/hooks/useNow';
+import { formatINR, formatReturnLabel } from '@/utils/format';
+import { isEnRoute, locationAgeLabel, remainingEtaMinutes } from '@/utils/liveEta';
 
 const STEPS = [
   { id: 'confirmed', label: 'Confirmed' },
-  { id: 'pretest', label: 'Pre-Testing' },
-  { id: 'dispatch', label: 'Dispatch' },
-  { id: 'setup', label: 'Setup' },
+  { id: 'preparing', label: 'Preparing' },
+  { id: 'dispatch', label: 'On the way' },
+  { id: 'setup', label: 'Delivered' },
 ] as const;
 
 const NEXT_STEPS = [
   {
-    title: 'Tamper-Sealed Transit',
-    body: 'Shockproof padded vaults and UV-sterilized controllers leave the dark hub sealed.',
+    title: 'Rider prepares the kit',
+    body: 'Someone from your hub accepts the order and gets the kit ready.',
   },
   {
-    title: 'Zero-Effort Instant Setup',
-    body: 'Technician plugs into HDMI 2.1 and runs a 60-second latency check.',
+    title: 'Live arrival time',
+    body: 'Once they leave, tracking shows minutes and distance from their location.',
   },
   {
-    title: 'Hassle-Free Doorstep Pickup',
-    body: 'No boxing up needed — leave gear assembled for tomorrow’s return window.',
+    title: 'Handover code',
+    body: 'Read the 4-digit code to your rider so they can mark the kit delivered.',
+  },
+  {
+    title: 'Pickup at the end of your slot',
+    body: 'Leave the kit set up. The rider collects it when the rental ends.',
   },
 ];
+
+function confirmationStep(status?: string): number {
+  switch (status) {
+    case 'preparing':
+      return 1;
+    case 'out_for_delivery':
+      return 2;
+    case 'delivered':
+    case 'active':
+    case 'returning':
+    case 'completed':
+      return 3;
+    default:
+      return 0;
+  }
+}
 
 export default function ConfirmationScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -40,6 +62,8 @@ export default function ConfirmationScreen() {
   const lastOrderId = useAppStore((s) => s.lastOrderId);
   const orderId = (typeof id === 'string' && id) || lastOrderId || orders[0]?.id;
   const order = orders.find((o) => o.id === orderId);
+  const enRoute = isEnRoute(order?.status);
+  const now = useNow(enRoute);
 
   if (!order) {
     return (
@@ -55,11 +79,19 @@ export default function ConfirmationScreen() {
     );
   }
 
-  const activeStepIndex = 1; // Pre-Testing active after Confirmed
+  const liveMinutes = remainingEtaMinutes(order, now);
+  const liveAge = locationAgeLabel(order.riderLocationUpdatedAt, now);
+  const activeStepIndex = confirmationStep(order.status);
+  const paidVia =
+    order.paymentProvider === 'demo' ||
+    !order.paymentMethodLabel ||
+    order.paymentMethodLabel === 'Demo checkout'
+      ? ''
+      : order.paymentMethodLabel;
 
   return (
     <Screen showHeader={false} edges={['top']} narrow>
-      <ScreenHeader title="Dropoff Confirmed" onBack={() => router.replace('/(tabs)')} />
+      <ScreenHeader title="Order confirmed" onBack={() => router.replace('/(tabs)')} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
@@ -68,18 +100,18 @@ export default function ConfirmationScreen() {
           <View style={styles.heroIcon}>
             <Ionicons name="checkmark" size={28} color={colors.white} />
           </View>
-          <Text style={styles.heroTitle}>Dropoff Confirmed</Text>
+          <Text style={styles.heroTitle}>Order confirmed</Text>
           <Text style={styles.heroSub}>
             {order.paymentStatus === 'paid'
-              ? 'Your entertainment gear is being packed and pre-tested at our local hub.'
-              : 'Payment is still processing — we’ll confirm packing once it clears.'}
+              ? 'A rider from your hub will bring the kit to your address.'
+              : 'Payment is not finished yet. The booking is held until it clears.'}
           </Text>
           <View style={styles.orderPill}>
             <Text style={styles.orderPillText}>
               <Text style={styles.orderId}>#{order.id}</Text>
               {order.paymentStatus === 'paid' ? ' · Paid ' : ' · Total '}
               {formatINR(order.total)}
-              {order.paymentMethodLabel ? ` via ${order.paymentMethodLabel}` : ''}
+              {paidVia ? ` via ${paidVia}` : ''}
             </Text>
           </View>
         </View>
@@ -88,10 +120,16 @@ export default function ConfirmationScreen() {
           <View style={styles.etaRow}>
             <Ionicons name="time-outline" size={16} color={colors.secondaryText} />
             <Text style={styles.etaLabel}>ESTIMATED DROPOFF</Text>
-            <Text style={styles.etaTime}>{order.etaLabel} tonight</Text>
-            {order.etaMinutes ? (
+            <Text style={styles.etaTime}>
+              {enRoute && liveMinutes != null
+                ? `${liveMinutes} min`
+                : enRoute
+                  ? 'Getting live location…'
+                  : 'Starts when a rider is on the way'}
+            </Text>
+            {liveAge ? (
               <View style={styles.etaPill}>
-                <Text style={styles.etaPillText}>in {order.etaMinutes} mins</Text>
+                <Text style={styles.etaPillText}>{liveAge}</Text>
               </View>
             ) : null}
           </View>
@@ -151,7 +189,7 @@ export default function ConfirmationScreen() {
             <Text style={styles.sectionTitle}>
               {order.items.length} Setup{order.items.length === 1 ? '' : 's'} Reserved
             </Text>
-            <Text style={styles.monoLabel}>SANITIZED PODS</Text>
+            <Text style={styles.monoLabel}>YOUR KIT</Text>
           </View>
           <View style={styles.itemList}>
             {order.items.map((item, index) => (
@@ -165,8 +203,13 @@ export default function ConfirmationScreen() {
                     <Text style={styles.itemPrice}>{formatINR(item.price)}</Text>
                   </View>
                   <Text style={styles.itemMeta}>
-                    {item.durationLabel} · {item.returnLabel}
+                    {item.durationLabel} · {formatReturnLabel(order.endAt, item.returnLabel)}
                   </Text>
+                  {item.extras?.map((extra) => (
+                    <Text key={extra} style={styles.itemMeta}>
+                      {extra}
+                    </Text>
+                  ))}
                   {item.badges?.length ? (
                     <Text style={styles.itemBadge}>{item.badges.join(' · ')}</Text>
                   ) : null}
@@ -227,7 +270,7 @@ export default function ConfirmationScreen() {
 
         <View style={styles.support}>
           <Ionicons name="headset-outline" size={16} color={colors.secondaryText} />
-          <Text style={styles.supportText}>Questions? 24/7 Live Tech Desk available</Text>
+          <Text style={styles.supportText}>Questions? Contact support from your profile.</Text>
         </View>
       </ScrollView>
     </Screen>

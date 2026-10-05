@@ -12,6 +12,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { ensureLoggedIn } from '@/utils/authGate';
+import { formatReturnLabel } from '@/utils/format';
 import { formatFunctionsError } from '@/utils/functionsError';
 
 export default function ReturnOrderScreen() {
@@ -87,7 +88,8 @@ export default function ReturnOrderScreen() {
   }
 
   const deadline =
-    order.items[0]?.returnLabel ?? 'Scheduled pickup at end of your rental window';
+    formatReturnLabel(order.endAt, order.items[0]?.returnLabel) ||
+    'Scheduled pickup at end of your rental window';
 
   const onConfirm = async () => {
     if (!id || busy) return;
@@ -118,6 +120,11 @@ export default function ReturnOrderScreen() {
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={styles.name}>{item.name}</Text>
                 <Text style={styles.meta}>{item.durationLabel}</Text>
+                {item.extras?.map((extra) => (
+                  <Text key={extra} style={styles.meta}>
+                    {extra}
+                  </Text>
+                ))}
                 {item.badges?.map((b) => (
                   <Text key={b} style={styles.badge}>
                     Includes {b}

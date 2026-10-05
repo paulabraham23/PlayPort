@@ -44,12 +44,16 @@ export async function callCreateBooking(input: CreateBookingInput): Promise<Crea
   return res.data;
 }
 
-export async function callConfirmPayment(orderId: string, fail = false) {
+export async function callConfirmPayment(
+  orderId: string,
+  fail = false,
+  provider: 'demo' | 'razorpay' = 'demo'
+) {
   const fn = httpsCallable<
     { orderId: string; fail?: boolean; provider?: 'demo' | 'razorpay' },
     { ok: boolean; paymentStatus: PaymentStatus; error?: string }
   >(functions, 'confirmPayment');
-  const res = await fn({ orderId, fail, provider: 'demo' });
+  const res = await fn({ orderId, fail, provider });
   return res.data;
 }
 

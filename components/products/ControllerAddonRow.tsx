@@ -8,6 +8,8 @@ import type { ProductAddon } from '@/types';
 
 interface Props {
   addon: ProductAddon;
+  /** Which kit this rate belongs to, when the cart has more than one. */
+  productName?: string;
   /** Selected session length — drives the live per-hour / flat breakdown. */
   hours: number;
   quantity: number;
@@ -19,10 +21,17 @@ interface Props {
  * Extra-controller row with a live pricing breakdown:
  * per-hour plans show ₹/hr × hours, package plans show the flat rate.
  */
-export function ControllerAddonRow({ addon, hours, quantity, onIncrement, onDecrement }: Props) {
+export function ControllerAddonRow({
+  addon,
+  productName,
+  hours,
+  quantity,
+  onIncrement,
+  onDecrement,
+}: Props) {
   const { pricing } = addon;
   const unitPrice = priceForAddon(addon, hours, 1);
-  const isFlat = hours >= pricing.flatMinPlanHours;
+  const isFlat = pricing.flatPrice > 0 && hours >= pricing.flatMinPlanHours;
   const isPureHourly = hours <= pricing.perHourMaxPlanHours;
 
   const breakdown = isFlat
@@ -38,6 +47,11 @@ export function ControllerAddonRow({ addon, hours, quantity, onIncrement, onDecr
           <Ionicons name="game-controller-outline" size={18} color={colors.playportOrange} />
         </View>
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          {productName ? (
+            <Text style={styles.product} numberOfLines={1}>
+              {productName}
+            </Text>
+          ) : null}
           <View style={styles.nameRow}>
             <Text style={styles.name} numberOfLines={1}>
               {addon.name}
@@ -110,6 +124,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  product: {
+    color: colors.mutedText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 11,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
   name: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: typeScale.body, flexShrink: 1 },
   modeChip: {
     backgroundColor: colors.orangeTint,

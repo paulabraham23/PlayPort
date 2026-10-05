@@ -74,7 +74,7 @@ export default function AddressIndexScreen() {
           <EmptyState
             icon="location-outline"
             title="No saved addresses"
-            subtitle="Add a drop-off so we can route from your nearest dark hub."
+            subtitle="Add a drop-off so we can deliver from your hub."
             actionLabel="Add address"
             onAction={() => router.push('/address/add')}
           />
@@ -115,9 +115,9 @@ export default function AddressIndexScreen() {
             <Ionicons name="hand-left-outline" size={22} color={colors.playportOrange} />
           </View>
           <View style={{ flex: 1, gap: 4 }}>
-            <Text style={styles.bannerTitle}>White-glove doorstep setup</Text>
+            <Text style={styles.bannerTitle}>Doorstep setup</Text>
             <Text style={styles.bannerBody}>
-              Specialists unpack, calibrate, and demo every kit — then handle pickup when your slot ends.
+              We deliver the kit, set it up, and pick it up when your rental ends.
             </Text>
           </View>
         </Card>

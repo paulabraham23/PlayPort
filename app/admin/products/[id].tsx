@@ -11,12 +11,16 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { adminGetProduct } from '@/lib/adminFirestore';
 import { uploadProductImage } from '@/lib/productImages';
 import { useAdminStore } from '@/store/adminStore';
-import type { Product, ProductAddon, ProductHourlyRate, RentalPlan } from '@/types';
+import type { Product, ProductHourlyRate, RentalPlan } from '@/types';
 import {
   DEFAULT_PLAN_TEMPLATES,
-  defaultExtraControllerAddon,
+  describeControllerPrice,
+  isControllerAddon,
   normalizeProduct,
+  priceForAddon,
 } from '@/utils/rentalPricing';
+import { formatINR } from '@/utils/format';
+import type { ProductAddon } from '@/types';
 
 const EMPTY: Product = {
   id: '',
@@ -63,7 +67,10 @@ export default function AdminProductEditScreen() {
     EMPTY.hourly ?? { enabled: false, firstHourPrice: 0, extraHourPrice: 0, maxHours: 24 }
   );
   const [addons, setAddons] = useState<ProductAddon[]>([]);
-  const [controllerPrice, setControllerPrice] = useState('');
+  const [controllerPerHour, setControllerPerHour] = useState('');
+  const [controllerHourCap, setControllerHourCap] = useState('6');
+  const [controllerFlat, setControllerFlat] = useState('');
+  const [controllerFlatFrom, setControllerFlatFrom] = useState('12');
   const [controllerMax, setControllerMax] = useState('3');
   const [tagsText, setTagsText] = useState('');
   const [requirementsText, setRequirementsText] = useState('');
@@ -79,7 +86,10 @@ export default function AdminProductEditScreen() {
       setPlans(EMPTY.plans);
       setHourly(EMPTY.hourly!);
       setAddons([]);
-      setControllerPrice('');
+      setControllerPerHour('');
+      setControllerHourCap('6');
+      setControllerFlat('');
+      setControllerFlatFrom('12');
       setControllerMax('3');
       setTagsText('');
       setRequirementsText('');
@@ -95,10 +105,13 @@ export default function AdminProductEditScreen() {
         setHourly(
           n.hourly ?? { enabled: false, firstHourPrice: 0, extraHourPrice: 0, maxHours: 24 }
         );
-        const ctrl = (n.addons ?? []).find((a) => a.id === 'extra-controller');
-        setControllerPrice(ctrl ? String(ctrl.pricing.flatPrice) : '');
+        const ctrl = (n.addons ?? []).find((a) => isControllerAddon(a));
+        setControllerPerHour(ctrl && ctrl.pricing.perHour > 0 ? String(ctrl.pricing.perHour) : '');
+        setControllerHourCap(ctrl ? String(ctrl.pricing.perHourMaxPlanHours) : '6');
+        setControllerFlat(ctrl && ctrl.pricing.flatPrice > 0 ? String(ctrl.pricing.flatPrice) : '');
+        setControllerFlatFrom(ctrl ? String(ctrl.pricing.flatMinPlanHours) : '12');
         setControllerMax(ctrl ? String(ctrl.maxQuantity) : '3');
-        setAddons((n.addons ?? []).filter((a) => a.id !== 'extra-controller'));
+        setAddons((n.addons ?? []).filter((a) => !isControllerAddon(a)));
         setTagsText((n.tags ?? []).join(', '));
         setRequirementsText((n.requirements ?? []).join('\n'));
         setIncludes((n.includes ?? []).map((i) => ({ ...i })));
@@ -168,21 +181,21 @@ export default function AdminProductEditScreen() {
       setError('Add at least one rental plan');
       return;
     }
-    const controllerAddon =
-      num(controllerPrice) > 0
-        ? [
-            {
-              ...defaultExtraControllerAddon(),
-              maxQuantity: Math.max(1, num(controllerMax) || 3),
-              pricing: {
-                perHour: 0,
-                perHourMaxPlanHours: 1,
-                flatPrice: num(controllerPrice),
-                flatMinPlanHours: 1,
-              },
-            },
-          ]
-        : [];
+    const perHour = Math.max(0, num(controllerPerHour));
+    const flatPrice = Math.max(0, num(controllerFlat));
+    const controllerDraft: ProductAddon = {
+      id: 'extra-controller',
+      name: 'Extra Controller',
+      maxQuantity: Math.max(1, num(controllerMax) || 1),
+      pricing: {
+        perHour,
+        perHourMaxPlanHours: Math.max(1, num(controllerHourCap) || 1),
+        flatPrice,
+        flatMinPlanHours: Math.max(1, num(controllerFlatFrom) || 1),
+      },
+    };
+    controllerDraft.description = describeControllerPrice(controllerDraft);
+    const controllerAddon = perHour > 0 || flatPrice > 0 ? [controllerDraft] : [];
     setSaving(true);
     try {
       const product: Product = {
@@ -203,7 +216,7 @@ export default function AdminProductEditScreen() {
         addons: [
           ...controllerAddon,
           ...addons
-          .filter((a) => a.id.trim() && a.name.trim() && a.id.trim() !== 'extra-controller')
+          .filter((a) => a.id.trim() && a.name.trim() && !isControllerAddon(a))
           .map((a) => ({
             ...a,
             id: a.id.trim(),
@@ -486,19 +499,49 @@ export default function AdminProductEditScreen() {
         />
       </View>
 
-      <Text style={adminStyles.cardTitle}>Extra controller price</Text>
-      <View style={adminStyles.field}>
-        <Text style={adminStyles.label}>Flat price per extra controller (₹). Leave 0 to hide it on the product page.</Text>
+      <Text style={adminStyles.cardTitle}>Extra controller for this product</Text>
+      <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
+        This price is only for this kit. Leave both amounts at 0 to hide extra controllers on the product page.
+      </Text>
+      <Text style={adminStyles.label}>₹ per hour, used until the hour cap</Text>
+      <View style={adminStyles.row}>
         <TextInput
-          style={adminStyles.input}
+          style={[adminStyles.input, { flex: 1 }]}
           keyboardType="numeric"
-          value={controllerPrice}
-          onChangeText={setControllerPrice}
-          placeholder="150"
+          value={controllerPerHour}
+          onChangeText={setControllerPerHour}
+          placeholder="20"
+          placeholderTextColor={colors.mutedText}
+        />
+        <TextInput
+          style={[adminStyles.input, { flex: 1, marginLeft: 8 }]}
+          keyboardType="numeric"
+          value={controllerHourCap}
+          onChangeText={setControllerHourCap}
+          placeholder="Up to hours"
           placeholderTextColor={colors.mutedText}
         />
       </View>
-      <View style={adminStyles.field}>
+      <Text style={[adminStyles.label, { marginTop: 8 }]}>Flat ₹, used from this many hours</Text>
+      <View style={adminStyles.row}>
+        <TextInput
+          style={[adminStyles.input, { flex: 1 }]}
+          keyboardType="numeric"
+          value={controllerFlat}
+          onChangeText={setControllerFlat}
+          placeholder="150"
+          placeholderTextColor={colors.mutedText}
+        />
+        <TextInput
+          style={[adminStyles.input, { flex: 1, marginLeft: 8 }]}
+          keyboardType="numeric"
+          value={controllerFlatFrom}
+          onChangeText={setControllerFlatFrom}
+          placeholder="From hours"
+          placeholderTextColor={colors.mutedText}
+        />
+      </View>
+      <View style={[adminStyles.field, { marginTop: 8 }]}>
         <Text style={adminStyles.label}>Max extra controllers a customer can add</Text>
         <TextInput
           style={adminStyles.input}
@@ -509,6 +552,13 @@ export default function AdminProductEditScreen() {
           placeholderTextColor={colors.mutedText}
         />
       </View>
+      <ControllerPricePreview
+        perHour={controllerPerHour}
+        hourCap={controllerHourCap}
+        flat={controllerFlat}
+        flatFrom={controllerFlatFrom}
+        plans={plans}
+      />
 
       <Text style={adminStyles.cardTitle}>Physical units and games</Text>
       <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
@@ -862,5 +912,51 @@ export default function AdminProductEditScreen() {
         <Button title={saving ? 'Saving…' : 'Save product'} size="sm" disabled={saving} onPress={() => void onSave()} />
       </View>
     </ScrollView>
+  );
+}
+
+function ControllerPricePreview({
+  perHour,
+  hourCap,
+  flat,
+  flatFrom,
+  plans,
+}: {
+  perHour: string;
+  hourCap: string;
+  flat: string;
+  flatFrom: string;
+  plans: RentalPlan[];
+}) {
+  const draft: ProductAddon = {
+    id: 'extra-controller',
+    name: 'Extra Controller',
+    maxQuantity: 1,
+    pricing: {
+      perHour: Math.max(0, num(perHour)),
+      perHourMaxPlanHours: Math.max(1, num(hourCap) || 1),
+      flatPrice: Math.max(0, num(flat)),
+      flatMinPlanHours: Math.max(1, num(flatFrom) || 1),
+    },
+  };
+  if (draft.pricing.perHour <= 0 && draft.pricing.flatPrice <= 0) {
+    return (
+      <Text style={[adminStyles.subtitle, { marginTop: 8, marginBottom: spacing.lg }]}>
+        Hidden on the product page until you set an hourly or flat price.
+      </Text>
+    );
+  }
+  return (
+    <View style={{ marginTop: 8, marginBottom: spacing.lg, gap: 4 }}>
+      <Text style={adminStyles.label}>Customer sees</Text>
+      <Text style={adminStyles.cardMeta}>{describeControllerPrice(draft)}</Text>
+      {plans
+        .filter((p) => p.hours > 0)
+        .map((p) => (
+          <Text key={p.id || String(p.hours)} style={adminStyles.cardMeta}>
+            {p.label || `${p.hours}h`} · {formatINR(priceForAddon(draft, p.hours, 1))} each
+          </Text>
+        ))}
+    </View>
   );
 }

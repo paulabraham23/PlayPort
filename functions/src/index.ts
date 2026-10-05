@@ -23,6 +23,7 @@ const REGION = 'asia-south1';
 const HOLD_TTL_MS = 15 * 60 * 1000;
 
 const ORDER_TRANSITIONS: Record<string, string[]> = {
+  pending_payment: ['cancelled'],
   confirmed: ['preparing', 'cancelled', 'refunded'],
   preparing: ['out_for_delivery', 'cancelled'],
   out_for_delivery: ['delivered', 'cancelled'],
@@ -56,6 +57,23 @@ function requireAuth(uid: string | undefined): string {
 function orderId() {
   const n = Math.floor(1000 + Math.random() * 9000);
   return `PP-${new Date().getFullYear()}-${n}`;
+}
+
+function formatInIndia(date: Date): string {
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date);
+}
+
+async function clearUserCart(uid: string) {
+  const cartSnap = await db.collection('users').doc(uid).collection('cart').get();
+  await Promise.all(cartSnap.docs.map((d) => d.ref.delete()));
 }
 
 function lineClientTotal(c: CartItem): number {
@@ -160,7 +178,8 @@ async function pickUnitsForProduct(
   quantity: number,
   startMs: number,
   endMs: number,
-  now: number
+  now: number,
+  preferredUnitIds: string[] = []
 ): Promise<string[]> {
   const unitsSnap = await db
     .collection('inventory_units')
@@ -169,11 +188,23 @@ async function pickUnitsForProduct(
     .where('status', '==', 'available')
     .get();
 
+  const preferred = new Set(preferredUnitIds.filter(Boolean));
+  const docs = [...unitsSnap.docs].sort((a, b) => {
+    const rank = (id: string) => (preferred.has(id) ? 0 : 1);
+    return rank(a.id) - rank(b.id);
+  });
+
   const picked: string[] = [];
-  for (const doc of unitsSnap.docs) {
+  for (const doc of docs) {
     if (picked.length >= quantity) break;
     const busy = await unitHasOverlap(doc.id, startMs, endMs, now);
     if (!busy) picked.push(doc.id);
+  }
+  if (preferred.size > 0 && !picked.some((id) => preferred.has(id))) {
+    throw new HttpsError(
+      'failed-precondition',
+      'The unit you chose is not free for that window'
+    );
   }
   if (picked.length < quantity) {
     throw new HttpsError(
@@ -330,7 +361,8 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
       line.quantity,
       startMs,
       endMs,
-      now
+      now,
+      line.inventoryUnitId ? [line.inventoryUnitId] : []
     );
     for (const unitId of unitIds) {
       unitAssignments.push({ productId: line.productId!, unitId });
@@ -372,7 +404,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     id,
     userId: uid,
     hubId,
-    status: 'confirmed' as const,
+    status: 'pending_payment' as const,
     paymentStatus: 'pending' as const,
     createdAt: nowIso,
     updatedAt: nowIso,
@@ -380,7 +412,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     startAt: startIso,
     endAt: endIso,
     reservationIds,
-    etaLabel: 'Arriving soon',
+    etaLabel: 'Complete payment to confirm',
     addressLabel,
     addressFull,
     items: cart.map((c) => ({
@@ -389,14 +421,12 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
       name: c.name,
       image: c.image,
       durationLabel: c.durationLabel,
-      returnLabel: `Returns ${endAt.toLocaleString('en-IN')}`,
+      returnLabel: `Returns ${formatInIndia(endAt)}`,
       price: lineClientTotal(c),
-      badges: [
-        ...(c.includesNote ? [c.includesNote.slice(0, 28)] : []),
-        ...((c.addons ?? []).length
-          ? [`+${(c.addons ?? []).reduce((s, a) => s + a.quantity, 0)} add-ons`]
-          : []),
-      ],
+      badges: [...(c.includesNote ? [c.includesNote.slice(0, 28)] : [])],
+      extras: (c.addons ?? [])
+        .filter((a) => a.quantity > 0)
+        .map((a) => `${a.quantity}× ${a.name} · ₹${a.unitPrice} each`),
     })),
     subtotal,
     taxes,
@@ -412,9 +442,6 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
 
   batch.set(db.collection('orders').doc(id), order);
   await batch.commit();
-
-  const cartSnap = await db.collection('users').doc(uid).collection('cart').get();
-  await Promise.all(cartSnap.docs.map((d) => d.ref.delete()));
 
   await pushNotification(uid, {
     title: 'Booking held',
@@ -497,7 +524,12 @@ export const confirmPayment = onCall({ region: REGION }, async (request) => {
     holdExpiresAt: null,
     progressPercent: 20,
     updatedAt: nowIso,
+    ...(provider === 'demo'
+      ? { paymentMethodLabel: '', paymentProvider: 'demo' }
+      : { paymentProvider: 'razorpay' }),
   });
+
+  await clearUserCart(uid);
 
   await pushNotification(uid, {
     title: 'Payment received',
@@ -610,7 +642,10 @@ export const completeReturn = onCall({ region: REGION }, async (request) => {
   const snap = await ref.get();
   if (!snap.exists) throw new HttpsError('not-found', 'Order not found');
   const order = snap.data()!;
-  if (order.userId !== uid && request.auth?.token?.admin !== true) {
+  const riderSnap = await db.collection('riders').doc(uid).get();
+  const isAssignedRider =
+    riderSnap.exists && riderSnap.data()?.active === true && order.riderId === uid;
+  if (order.userId !== uid && request.auth?.token?.admin !== true && !isAssignedRider) {
     throw new HttpsError('permission-denied', 'Not your order');
   }
 
@@ -782,6 +817,7 @@ async function confirmPaidOrderAdmin(orderId: string, providerRef: string) {
     progressPercent: 20,
     updatedAt: nowIso,
   });
+  if (order.userId) await clearUserCart(order.userId);
   await pushNotification(order.userId, {
     title: 'Payment received',
     body: `${orderId} is confirmed and being packed.`,

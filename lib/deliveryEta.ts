@@ -27,11 +27,23 @@ type CacheEntry = {
 
 let lastRoadCache: CacheEntry | null = null;
 
+const geocodeCache = new Map<string, { lat: number; lng: number }>();
+
 export async function geocodeAddress(
   address: string
 ): Promise<{ lat: number; lng: number } | null> {
   const q = address.trim();
-  if (!q || !MAPS_KEY) return null;
+  if (q.length < 6) return null;
+  const cached = geocodeCache.get(q.toLowerCase());
+  if (cached) return cached;
+
+  const hit = (await geocodeGoogle(q)) ?? (await geocodeNominatim(q));
+  if (hit) geocodeCache.set(q.toLowerCase(), hit);
+  return hit;
+}
+
+async function geocodeGoogle(q: string): Promise<{ lat: number; lng: number } | null> {
+  if (!MAPS_KEY) return null;
   try {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=in&key=${MAPS_KEY}`;
     const res = await fetch(url);
@@ -42,6 +54,22 @@ export async function geocodeAddress(
     const loc = data.results?.[0]?.geometry?.location;
     if (!loc || typeof loc.lat !== 'number') return null;
     return { lat: loc.lat, lng: loc.lng };
+  } catch {
+    return null;
+  }
+}
+
+/** Used when no Google key is configured. Nominatim allows browser calls. */
+async function geocodeNominatim(q: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    if (!res.ok) return null;
+    const data = (await res.json()) as Array<{ lat?: string; lon?: string }>;
+    const lat = Number(data[0]?.lat);
+    const lng = Number(data[0]?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { lat, lng };
   } catch {
     return null;
   }

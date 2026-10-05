@@ -35,6 +35,7 @@ import {
   callCreateRazorpayOrder,
 } from '@/lib/functions';
 import { useCatalogStore } from '@/store/catalogStore';
+import { useFeelStore } from '@/store/feelStore';
 import { calcCartTotals } from '@/utils/format';
 import { formatFunctionsError } from '@/utils/functionsError';
 import { isPlaceholderName } from '@/utils/onboarding';
@@ -68,6 +69,10 @@ export type AddToCartOptions = {
   unitLabel?: string;
 };
 
+export type PendingCartAdd =
+  | { kind: 'product'; productId: string; options?: AddToCartOptions }
+  | { kind: 'experience'; experienceId: string };
+
 interface AppState {
   isAuthenticated: boolean;
   authReady: boolean;
@@ -86,6 +91,7 @@ interface AppState {
   lastOrderId: string | null;
   paymentError: string | null;
   pendingOrderId: string | null;
+  pendingCartAdd: PendingCartAdd | null;
 
   bootstrapAuth: () => () => void;
   setPhoneDraft: (phone: string) => void;
@@ -95,6 +101,7 @@ interface AppState {
   hydrateUserData: (userId: string) => Promise<void>;
   updateUserProfile: (patch: Partial<User>) => Promise<void>;
 
+  queueCartAdd: (add: PendingCartAdd) => void;
   addProductToCart: (productId: string, options?: AddToCartOptions) => void;
   addExperienceToCart: (experienceId: string) => void;
   updateCartQuantity: (cartItemId: string, quantity: number) => void;
@@ -170,6 +177,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   lastOrderId: null,
   paymentError: null,
   pendingOrderId: null,
+  pendingCartAdd: null,
 
   bootstrapAuth: () => {
     const unsub = watchAuth(async (firebaseUser) => {
@@ -344,7 +352,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     attachListeners(user.id, set);
 
-    // Push any local cart built while guest
+    const pending = get().pendingCartAdd;
+    if (pending?.kind === 'product') {
+      get().addProductToCart(pending.productId, pending.options);
+    } else if (pending?.kind === 'experience') {
+      get().addExperienceToCart(pending.experienceId);
+    }
+    if (pending) {
+      set({ pendingCartAdd: null });
+      useFeelStore.getState().showToast('Added to cart');
+    }
+
+    // Push any local cart built while guest, including the item queued before OTP.
     const { cart } = get();
     if (cart.length) {
       await replaceUserCart(user.id, cart);
@@ -363,6 +382,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       addresses: [],
       selectedAddressId: null,
       pendingOrderId: null,
+      pendingCartAdd: null,
     });
   },
 
@@ -371,6 +391,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!isAuthenticated || !user?.id) return;
     void replaceUserCart(user.id, cart).catch(() => {});
   },
+
+  queueCartAdd: (add) => set({ pendingCartAdd: add }),
 
   addProductToCart: (productId, options = {}) => {
     const raw = useCatalogStore.getState().products.find((p) => p.id === productId);
@@ -661,11 +683,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       const useDemo = Boolean(rzp.demo || !rzp.keyId);
 
       if (useDemo) {
-        const paid = await callConfirmPayment(orderId!, fail);
+        const paid = await callConfirmPayment(orderId!, fail, 'demo');
         if (!paid.ok) {
           set({
             paymentError: paid.error ?? 'Payment failed',
-            // Keep cart so user can retry or rebuild
+            pendingOrderId: null,
             cart: get().cart.length ? get().cart : cartSnapshot,
           });
           return { ok: false, error: paid.error ?? 'Payment failed', orderId };
@@ -680,12 +702,12 @@ export const useAppStore = create<AppState>((set, get) => ({
           name: user.name,
           phone: user.phone,
         });
-        await callConfirmPayment(orderId!, false);
+        await callConfirmPayment(orderId!, false, 'razorpay');
       } else {
-        await callConfirmPayment(orderId!, fail);
+        await callConfirmPayment(orderId!, fail, useDemo ? 'demo' : 'razorpay');
       }
 
-      // Success — clear cart only now (server cart already cleared on createBooking)
+      const paidLabel = useDemo ? '' : payment?.label;
       set({
         cart: [],
         lastOrderId: orderId!,
@@ -693,7 +715,17 @@ export const useAppStore = create<AppState>((set, get) => ({
         pendingOrderId: null,
         orders: get().orders.map((o) =>
           o.id === orderId
-            ? { ...o, paymentStatus: 'paid', progressPercent: 20, status: 'confirmed' }
+            ? {
+                ...o,
+                paymentStatus: 'paid',
+                progressPercent: 20,
+                status: 'confirmed',
+                ...(useDemo
+                  ? { paymentMethodLabel: '', paymentProvider: 'demo' as const }
+                  : paidLabel
+                    ? { paymentMethodLabel: paidLabel, paymentProvider: 'razorpay' as const }
+                    : {}),
+              }
             : o
         ),
       });

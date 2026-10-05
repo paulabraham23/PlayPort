@@ -26,7 +26,6 @@ export function PriceBreakdown({
         label="Sanitization & Cable Kit"
         value={sanitizationFree ? 'FREE' : formatINR(150)}
         valueColor={sanitizationFree ? colors.playportOrange : colors.primaryText}
-        strike={!sanitizationFree ? undefined : formatINR(150)}
       />
       <Row
         label="Express Delivery & Live Setup"

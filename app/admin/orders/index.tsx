@@ -12,6 +12,7 @@ import { orderStatusLabel } from '@/utils/format';
 const FILTERS: { id: 'open' | 'all' | OrderStatus; label: string }[] = [
   { id: 'open', label: 'Open' },
   { id: 'all', label: 'All' },
+  { id: 'pending_payment', label: 'Unpaid' },
   { id: 'confirmed', label: 'Confirmed' },
   { id: 'preparing', label: 'Preparing' },
   { id: 'out_for_delivery', label: 'Out' },
@@ -23,6 +24,7 @@ const FILTERS: { id: 'open' | 'all' | OrderStatus; label: string }[] = [
 ];
 
 const OPEN: OrderStatus[] = [
+  'pending_payment',
   'confirmed',
   'preparing',
   'out_for_delivery',

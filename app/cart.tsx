@@ -17,7 +17,7 @@ import { useAppStore, useCartTotals } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
-import { addonsTotal, normalizeProduct } from '@/utils/rentalPricing';
+import { addonsTotal, isControllerAddon, normalizeProduct } from '@/utils/rentalPricing';
 import type { CartItem } from '@/types';
 
 export default function CartScreen() {
@@ -42,8 +42,8 @@ export default function CartScreen() {
         <EmptyState
           icon="bag-handle-outline"
           title="Your cart is empty"
-          subtitle="Browse gaming kits, projectors, and party gear near you — dropoff in ~30 mins."
-          actionLabel="Explore Tonight"
+          subtitle="Browse kits from your hub."
+          actionLabel="Browse kits"
           onAction={() => router.push('/(tabs)')}
         />
       </Screen>
@@ -55,10 +55,10 @@ export default function CartScreen() {
       <View style={styles.promise}>
         <Ionicons name="flash" size={18} color={colors.etaText} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.promiseTitle}>30–35 Min Express Drop</Text>
-          <Text style={styles.promiseSub}>
-            {locationLabel} · Free sanitization & live setup included
+          <Text style={styles.promiseTitle}>
+            {hub?.etaMinutes ? `About ${hub.etaMinutes} min from the hub` : 'Delivery from your hub'}
           </Text>
+          <Text style={styles.promiseSub}>{locationLabel} · Setup included</Text>
         </View>
       </View>
 
@@ -101,7 +101,7 @@ export default function CartScreen() {
                   </Text>
                   {(item.addons?.length ?? 0) > 0 ? (
                     <Text style={styles.note}>
-                      + {item.addons!.map((a) => `${a.quantity}× ${a.name}`).join(', ')}
+                      + {item.addons!.map((a) => `${a.quantity}× ${a.name} (${formatINR(a.unitPrice)} each)`).join(', ')}
                     </Text>
                   ) : null}
                   <QuantitySelector
@@ -120,16 +120,22 @@ export default function CartScreen() {
         ))}
       </View>
 
-      <View style={styles.section}>
+        {cart.some((item) => {
+          const product = products.find((p) => p.id === item.productId);
+          return product
+            ? normalizeProduct(product).addons?.some((a) => isControllerAddon(a))
+            : false;
+        }) ? (
+        <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Extra controllers</Text>
-          <Text style={styles.note}>priced by your rental length</Text>
+          <Text style={styles.note}>each kit has its own price</Text>
         </View>
         {cart.map((item) => {
           if (!item.productId) return null;
           const product = products.find((p) => p.id === item.productId);
           const addon = product
-            ? normalizeProduct(product).addons?.find((a) => a.id === 'extra-controller' || /controller/i.test(a.name))
+            ? normalizeProduct(product).addons?.find((a) => isControllerAddon(a))
             : undefined;
           if (!product || !addon) return null;
           const current = item.addons?.find((a) => a.id === addon.id)?.quantity ?? 0;
@@ -143,6 +149,7 @@ export default function CartScreen() {
           return (
             <ControllerAddonRow
               key={item.id}
+              productName={product.shortName || product.name}
               addon={addon}
               hours={item.hours}
               quantity={current}
@@ -152,6 +159,7 @@ export default function CartScreen() {
           );
         })}
       </View>
+        ) : null}
     </>
   );
 

@@ -6,6 +6,7 @@ import type {
   ProductAddon,
   RentalPlan,
 } from '@/types';
+import { formatINR } from '@/utils/format';
 
 /** Flyer-style default empty plans for admin “Load defaults”. */
 export const DEFAULT_PLAN_TEMPLATES: Omit<RentalPlan, 'price'>[] = [
@@ -107,6 +108,24 @@ export function priceForHourly(product: Product, hours: number): number {
   return h.firstHourPrice + (n - 1) * h.extraHourPrice;
 }
 
+export function isControllerAddon(addon: { id: string; name: string }): boolean {
+  return addon.id === 'extra-controller' || /controller/i.test(addon.name);
+}
+
+/** How this product charges for one extra controller, in plain language. */
+export function describeControllerPrice(addon: ProductAddon): string {
+  const { perHour, perHourMaxPlanHours, flatPrice, flatMinPlanHours } = addon.pricing;
+  const hourly = perHour > 0;
+  const flat = flatPrice > 0;
+  if (flat && flatMinPlanHours <= 1 && !hourly) return `${formatINR(flatPrice)} each`;
+  if (hourly && flat) {
+    return `${formatINR(perHour)}/hr up to ${perHourMaxPlanHours}h · ${formatINR(flatPrice)} flat from ${flatMinPlanHours}h`;
+  }
+  if (hourly) return `${formatINR(perHour)}/hr`;
+  if (flat) return `${formatINR(flatPrice)} flat from ${flatMinPlanHours}h`;
+  return 'No charge';
+}
+
 export function priceForAddon(
   addon: ProductAddon,
   hours: number,
@@ -115,15 +134,8 @@ export function priceForAddon(
   const q = Math.max(0, quantity);
   if (q <= 0) return 0;
   const { pricing } = addon;
-  let unit = 0;
-  if (hours >= pricing.flatMinPlanHours) {
-    unit = pricing.flatPrice;
-  } else if (hours <= pricing.perHourMaxPlanHours) {
-    unit = pricing.perHour * hours;
-  } else {
-    // Between thresholds (e.g. 7–11h): prorate per-hour
-    unit = pricing.perHour * hours;
-  }
+  const useFlat = pricing.flatPrice > 0 && hours >= pricing.flatMinPlanHours;
+  const unit = useFlat ? pricing.flatPrice : pricing.perHour * hours;
   return unit * q;
 }
 

@@ -9,10 +9,12 @@ import {
   updateDoc,
   where,
   deleteDoc,
+  deleteField,
   type DocumentData,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+import { callCompleteReturn } from '@/lib/functions';
 import { computeDeliveryEta, geocodeAddress } from '@/lib/deliveryEta';
 import { createUserNotification } from '@/lib/notify';
 import type { Order, OrderStatus, Rider } from '@/types';
@@ -138,20 +140,18 @@ export async function riderAcceptOrder(orderId: string, rider: Rider): Promise<v
     riderName: rider.name,
     riderPhone: rider.phone,
     riderAcceptedAt: now,
-    status: 'out_for_delivery',
-    progressPercent: PROGRESS.out_for_delivery,
-    liveDispatch: true,
+    status: 'preparing',
+    progressPercent: PROGRESS.preparing,
+    liveDispatch: false,
     updatedAt: now,
-    etaLabel: 'Rider on the way',
-    ...(dropoff
-      ? { dropoffLat: dropoff.lat, dropoffLng: dropoff.lng, etaMinutes: 30 }
-      : { etaMinutes: 30 }),
+    etaLabel: 'Being prepared',
+    ...(dropoff ? { dropoffLat: dropoff.lat, dropoffLng: dropoff.lng } : {}),
   });
 
   if (order.userId) {
     await createUserNotification(order.userId, {
       title: 'Rider assigned',
-      body: `${rider.name} accepted your order ${orderId} and is heading to you.`,
+      body: `${rider.name} accepted ${orderId} and is preparing your kit.`,
       type: 'delivery',
       orderId,
     }).catch(() => undefined);
@@ -171,6 +171,9 @@ export async function riderPingLocation(
   const order = snap.data() as Order;
   if (order.riderId !== riderId) throw new Error('Not your delivery');
   if (!['out_for_delivery', 'returning'].includes(order.status)) {
+    return { etaMinutes: order.etaMinutes ?? 0, distanceKm: order.riderDistanceKm ?? 0 };
+  }
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || (Math.abs(lat) < 0.01 && Math.abs(lng) < 0.01)) {
     return { etaMinutes: order.etaMinutes ?? 0, distanceKm: order.riderDistanceKm ?? 0 };
   }
 
@@ -200,13 +203,19 @@ export async function riderPingLocation(
     distanceKm = computed.distanceKm;
     patch.dropoffLat = dropLat;
     patch.dropoffLng = dropLng;
-    patch.etaMinutes = etaMinutes;
-    patch.riderDistanceKm = distanceKm;
     patch.etaSource = computed.source;
-    patch.etaLabel =
-      computed.source === 'road'
-        ? `${etaMinutes} min away · ${distanceKm} km`
-        : `${etaMinutes} min away (approx)`;
+    if (distanceKm < 0.05 || etaMinutes <= 0) {
+      patch.etaLabel = 'Arriving now';
+      patch.etaMinutes = 1;
+      patch.riderDistanceKm = deleteField();
+    } else {
+      patch.etaMinutes = etaMinutes;
+      patch.riderDistanceKm = distanceKm;
+      patch.etaLabel =
+        computed.source === 'road'
+          ? `${etaMinutes} min away · ${distanceKm} km`
+          : `${etaMinutes} min away (approx)`;
+    }
   }
 
   await updateDoc(ref, patch);
@@ -226,6 +235,7 @@ export async function riderUpdateOrderStatus(
   if (order.riderId !== riderId) throw new Error('Not your delivery');
 
   const allowed: Record<string, OrderStatus[]> = {
+    preparing: ['out_for_delivery'],
     out_for_delivery: ['delivered'],
     delivered: ['active', 'returning'],
     active: ['returning'],
@@ -244,19 +254,56 @@ export async function riderUpdateOrderStatus(
     }
   }
 
+  if (status === 'completed') {
+    try {
+      await callCompleteReturn(orderId);
+      return;
+    } catch {
+      // Fall through and close locally, then release the unit if rules allow.
+    }
+  }
+
   const now = new Date().toISOString();
+  const enRoute = status === 'out_for_delivery' || status === 'returning';
   await updateDoc(ref, {
     status,
     progressPercent: PROGRESS[status] ?? order.progressPercent,
     updatedAt: now,
-    ...(status === 'completed' ? { completedAt: now } : {}),
+    liveDispatch: enRoute,
+    ...(status === 'completed' ? { completedAt: now, etaLabel: 'Rental complete' } : {}),
+    ...(status === 'out_for_delivery' ? { etaLabel: 'Rider on the way' } : {}),
     ...(status === 'delivered'
-      ? { etaMinutes: 0, etaLabel: 'Delivered', riderDistanceKm: 0 }
+      ? { etaLabel: 'Delivered', etaMinutes: deleteField(), riderDistanceKm: deleteField() }
+      : {}),
+    ...(status === 'active' ? { etaLabel: 'With you' } : {}),
+    ...(status === 'returning'
+      ? {
+          etaLabel: 'On the way for pickup',
+          etaMinutes: deleteField(),
+          riderDistanceKm: deleteField(),
+        }
       : {}),
   });
 
+  if (status === 'completed') {
+    const nowIso = new Date().toISOString();
+    await Promise.all(
+      (order.reservationIds ?? []).map((rid) =>
+        updateDoc(doc(db, 'inventory_reservations', rid), {
+          status: 'completed',
+          holdExpiresAt: null,
+          updatedAt: nowIso,
+        }).catch(() => undefined)
+      )
+    );
+  }
+
   if (order.userId) {
     const messages: Partial<Record<OrderStatus, { title: string; body: string }>> = {
+      out_for_delivery: {
+        title: 'Rider on the way',
+        body: `${orderId} is heading to you.`,
+      },
       delivered: {
         title: 'Kit delivered',
         body: `${orderId} has been delivered and set up.`,

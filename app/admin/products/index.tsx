@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/Button';
 import { colors, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAdminStore } from '@/store/adminStore';
-import { cheapestPlanPrice, normalizeProduct } from '@/utils/rentalPricing';
+import {
+  cheapestPlanPrice,
+  describeControllerPrice,
+  isControllerAddon,
+  normalizeProduct,
+} from '@/utils/rentalPricing';
 
 export default function AdminProductsScreen() {
   const { horizontalPadding } = useResponsive();
@@ -115,8 +120,10 @@ export default function AdminProductsScreen() {
                   {from != null ? ` · from ₹${from}` : ''}
                   {n.hourly?.enabled ? ' · hourly' : ''}
                   {(() => {
-                    const ctrl = n.addons?.find((a) => a.id === 'extra-controller');
-                    return ctrl ? ` · extra controller ₹${ctrl.pricing.flatPrice}` : ' · no extra controller';
+                    const ctrl = n.addons?.find((a) => isControllerAddon(a));
+                    return ctrl
+                      ? ` · extra controller ${describeControllerPrice(ctrl)}`
+                      : ' · no extra controller';
                   })()}
                 </Text>
               </Pressable>

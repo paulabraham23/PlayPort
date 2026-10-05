@@ -4,6 +4,7 @@ import { orderStatusLabel } from '@/utils/format';
 import type { OrderStatus } from '@/types';
 
 const STATUS_STYLE: Record<OrderStatus, { color: string; bg: string }> = {
+  pending_payment: { color: colors.warning, bg: colors.orangeTint },
   confirmed: { color: colors.info, bg: colors.infoBg },
   preparing: { color: colors.warning, bg: colors.orangeTint },
   out_for_delivery: { color: colors.playportOrange, bg: colors.orangeTint },

@@ -99,9 +99,16 @@ export default function AdminOrderDetailScreen() {
       <View style={adminStyles.card}>
         <Text style={adminStyles.cardTitle}>Items</Text>
         {order.items?.map((item, idx) => (
-          <Text key={`${item.name}-${idx}`} style={adminStyles.cardMeta}>
-            {item.name} · {item.durationLabel} · ₹{item.price}
-          </Text>
+          <View key={`${item.name}-${idx}`} style={{ marginBottom: 8 }}>
+            <Text style={adminStyles.cardMeta}>
+              {item.name} · {item.durationLabel} · ₹{item.price}
+            </Text>
+            {item.extras?.map((extra) => (
+              <Text key={extra} style={adminStyles.cardMeta}>
+                {extra}
+              </Text>
+            ))}
+          </View>
         ))}
         <Text style={[adminStyles.cardMeta, { marginTop: 8 }]}>
           Total ₹{order.total} · hub {order.hubId ?? '—'} · progress {order.progressPercent}%

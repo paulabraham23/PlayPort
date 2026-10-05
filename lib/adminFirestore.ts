@@ -29,6 +29,7 @@ import type {
 import { DEFAULT_APP_CONFIG } from '@/types';
 
 const ORDER_TRANSITIONS: Record<string, string[]> = {
+  pending_payment: ['cancelled'],
   confirmed: ['preparing', 'cancelled', 'refunded'],
   preparing: ['out_for_delivery', 'cancelled'],
   out_for_delivery: ['delivered', 'cancelled'],

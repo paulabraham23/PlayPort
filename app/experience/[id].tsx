@@ -14,7 +14,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
-import { ensureLoggedIn } from '@/utils/authGate';
+import { gateCartAdd } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 
 export default function ExperienceDetailScreen() {
@@ -133,7 +133,7 @@ export default function ExperienceDetailScreen() {
                   compact={productColumns === 1}
                   onPress={() => router.push(`/product/${product.id}`)}
                   onAdd={() => {
-                    if (!ensureLoggedIn('/cart')) return;
+                    if (!gateCartAdd('/cart', { kind: 'product', productId: product.id })) return;
                     addProductToCart(product.id);
                     router.push('/cart');
                   }}
@@ -153,7 +153,7 @@ export default function ExperienceDetailScreen() {
           title="Book combo"
           icon={<Ionicons name="flash" size={16} color={colors.white} />}
           onPress={() => {
-            if (!ensureLoggedIn('/cart')) return;
+            if (!gateCartAdd('/cart', { kind: 'experience', experienceId: experience.id })) return;
             addExperienceToCart(experience.id);
             router.push('/cart');
           }}

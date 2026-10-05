@@ -14,18 +14,23 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
-import { formatINR } from '@/utils/format';
+import { useNow } from '@/hooks/useNow';
+import { formatINR, formatReturnLabel } from '@/utils/format';
+import { locationAgeLabel, remainingEtaMinutes } from '@/utils/liveEta';
 import type { OrderStatus } from '@/types';
 
 const TIMELINE = [
   { key: 'booked', label: 'Booked', icon: 'checkmark-circle' as const },
-  { key: 'tested', label: 'Tested', icon: 'hardware-chip' as const },
+  { key: 'preparing', label: 'Preparing', icon: 'hardware-chip' as const },
   { key: 'on_way', label: 'On Way', icon: 'bicycle' as const },
-  { key: 'setup', label: 'Setup', icon: 'construct' as const },
+  { key: 'in_use', label: 'In Use', icon: 'play' as const },
+  { key: 'returned', label: 'Returned', icon: 'checkmark-done' as const },
 ] as const;
 
 function timelineIndex(status: OrderStatus): number {
   switch (status) {
+    case 'pending_payment':
+      return -1;
     case 'confirmed':
       return 0;
     case 'preparing':
@@ -34,9 +39,10 @@ function timelineIndex(status: OrderStatus): number {
       return 2;
     case 'delivered':
     case 'active':
+      return 3;
     case 'returning':
     case 'completed':
-      return 3;
+      return 4;
     case 'cancelled':
     case 'refunded':
       return -1;
@@ -50,6 +56,8 @@ export default function OrderDetailScreen() {
   const { horizontalPadding } = useResponsive();
   const orders = useAppStore((s) => s.orders);
   const order = useMemo(() => orders.find((o) => o.id === id), [orders, id]);
+  const trackable = order?.status === 'out_for_delivery' || order?.status === 'returning';
+  const now = useNow(trackable);
 
   if (!order) {
     return (
@@ -67,8 +75,12 @@ export default function OrderDetailScreen() {
   }
 
   const step = timelineIndex(order.status);
-  const cancellable = order.status === 'confirmed' || order.status === 'preparing';
+  const cancellable =
+    order.status === 'pending_payment' || order.status === 'confirmed' || order.status === 'preparing';
   const canReturn = order.status === 'active' || order.status === 'delivered' || order.status === 'returning';
+  const liveMinutes = remainingEtaMinutes(order, now);
+  const liveAge = locationAgeLabel(order.riderLocationUpdatedAt, now);
+  const showRider = Boolean(order.riderName) && !['cancelled', 'refunded', 'pending_payment'].includes(order.status);
 
   return (
     <Screen showHeader={false}>
@@ -94,13 +106,22 @@ export default function OrderDetailScreen() {
         <Card style={styles.statusCard}>
           <View style={styles.statusTop}>
             <StatusBadge status={order.status} />
-            <Text style={styles.eta}>ETA {order.etaLabel}</Text>
+            {trackable ? (
+              <Text style={styles.eta}>
+                {liveMinutes != null
+                  ? `${order.status === 'returning' ? 'Pickup' : 'Arriving'} in ${liveMinutes} min`
+                  : 'Getting live location…'}
+                {liveAge ? ` · ${liveAge}` : ''}
+              </Text>
+            ) : null}
           </View>
           <Text style={styles.statusTitle}>
-            {order.status === 'out_for_delivery'
+            {order.status === 'pending_payment'
+              ? 'Finish payment to confirm'
+              : order.status === 'out_for_delivery'
               ? 'Gear is on the way'
               : order.status === 'preparing'
-                ? 'Hub is testing your kit'
+                ? 'Your rider is preparing the kit'
                 : order.status === 'confirmed'
                   ? 'Booking confirmed'
                   : orderStatusHeadline(order.status)}
@@ -161,7 +182,9 @@ export default function OrderDetailScreen() {
                 <View style={{ flex: 1, gap: 4 }}>
                   <Text style={styles.itemName}>{item.name}</Text>
                   <Text style={styles.itemMeta}>{item.durationLabel}</Text>
-                  <Text style={styles.itemReturn}>{item.returnLabel}</Text>
+                  <Text style={styles.itemReturn}>
+                    {formatReturnLabel(order.endAt, item.returnLabel)}
+                  </Text>
                   {item.badges?.length ? (
                     <View style={styles.badgeRow}>
                       {item.badges.map((b) => (
@@ -181,17 +204,31 @@ export default function OrderDetailScreen() {
           ))}
         </View>
 
-        {order.setupIncluded ? (
+        {showRider ? (
           <Card style={styles.specialist}>
             <View style={styles.specialistAvatar}>
               <Ionicons name="person" size={22} color={colors.playportOrange} />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={styles.specialistLabel}>SETUP SPECIALIST</Text>
-              <Text style={styles.specialistName}>Suresh M.</Text>
-              <Text style={styles.specialistMeta}>Doorstep calibration · ~10 min</Text>
+              <Text style={styles.specialistLabel}>YOUR RIDER</Text>
+              <Text style={styles.specialistName}>{order.riderName}</Text>
+              <Text style={styles.specialistMeta}>
+                {order.riderPhone ? order.riderPhone : 'Doorstep setup and pickup'}
+              </Text>
             </View>
-            <Badge label="ASSIGNED" />
+            {trackable ? <Badge label="ON THE WAY" /> : null}
+          </Card>
+        ) : order.setupIncluded &&
+          !['completed', 'cancelled', 'refunded'].includes(order.status) ? (
+          <Card style={styles.specialist}>
+            <View style={styles.specialistAvatar}>
+              <Ionicons name="person" size={22} color={colors.playportOrange} />
+            </View>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={styles.specialistLabel}>SETUP</Text>
+              <Text style={styles.specialistName}>Waiting for a rider</Text>
+              <Text style={styles.specialistMeta}>Someone from your hub accepts the run before delivery.</Text>
+            </View>
           </Card>
         ) : null}
 
@@ -201,24 +238,33 @@ export default function OrderDetailScreen() {
             <Text style={styles.protocolTitle}>Collection Protocol</Text>
           </View>
           <Text style={styles.protocolBody}>
-            Leave gear assembled at the end of your slot. Our specialist unhooks HDMI/power, verifies
-            accessories, and issues a digital return receipt — no packing required.
+            Leave the kit set up at the end of your slot. Your rider collects it and checks the accessories.
           </Text>
         </Card>
 
         <Text style={styles.sectionTitle}>Payment</Text>
         <Card>
           <PriceBreakdown itemsTotal={order.subtotal} taxes={order.taxes} total={order.total} />
-          <Text style={styles.payMethod}>Paid via {order.paymentMethodLabel}</Text>
+          <Text style={styles.payMethod}>
+            {order.paymentStatus === 'paid'
+              ? order.paymentProvider === 'demo' ||
+                !order.paymentMethodLabel ||
+                order.paymentMethodLabel === 'Demo checkout'
+                ? 'Paid'
+                : `Paid via ${order.paymentMethodLabel}`
+              : 'Payment not finished yet'}
+          </Text>
         </Card>
 
         <View style={styles.actions}>
-          <Button
-            title="Track Live Delivery"
-            fullWidth
-            icon={<Ionicons name="navigate" size={18} color={colors.white} />}
-            onPress={() => router.push(`/order/track/${order.id}`)}
-          />
+          {trackable ? (
+            <Button
+              title="Track Live Delivery"
+              fullWidth
+              icon={<Ionicons name="navigate" size={18} color={colors.white} />}
+              onPress={() => router.push(`/order/track/${order.id}`)}
+            />
+          ) : null}
           <Button
             title="Contact support"
             variant="secondary"
@@ -262,6 +308,8 @@ function orderStatusHeadline(status: OrderStatus): string {
       return 'Order cancelled';
     case 'refunded':
       return 'Refund processed';
+    case 'pending_payment':
+      return 'Finish payment to confirm';
     default:
       return 'Order update';
   }

@@ -55,7 +55,17 @@ service cloud.firestore {
 
     match /inventory_reservations/{id} {
       allow read: if isOps() || (signedIn() && resource.data.userId == request.auth.uid);
-      allow write: if isOps();
+      allow create, delete: if isOps();
+      allow update: if isOps()
+        || (isActiveRider()
+          && resource.data.status in ['hold', 'confirmed']
+          && request.resource.data.status == 'completed'
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'holdExpiresAt', 'updatedAt'])
+          && get(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.riderId
+            == request.auth.uid
+          && get(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.status
+            == 'completed');
     }
 
     match /inventory/{id} {

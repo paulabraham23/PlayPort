@@ -53,6 +53,7 @@ export type FnCartItem = {
   quantity: number;
   addons?: FnCartAddon[];
   addonsTotal?: number;
+  inventoryUnitId?: string;
 };
 
 function legacyPlans(map?: Record<string, number>): FnRentalPlan[] {
@@ -97,9 +98,8 @@ export function priceForAddon(addon: FnAddon, hours: number, quantity = 1): numb
   const q = Math.max(0, quantity);
   if (q <= 0) return 0;
   const { pricing } = addon;
-  let unit = 0;
-  if (hours >= pricing.flatMinPlanHours) unit = pricing.flatPrice;
-  else unit = pricing.perHour * hours;
+  const useFlat = pricing.flatPrice > 0 && hours >= pricing.flatMinPlanHours;
+  const unit = useFlat ? pricing.flatPrice : pricing.perHour * hours;
   return unit * q;
 }
 

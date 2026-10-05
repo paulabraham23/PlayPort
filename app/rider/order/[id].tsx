@@ -5,12 +5,15 @@ import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
-import { riderGetOrder } from '@/lib/riderFirestore';
+import { riderGetOrder, watchOrder } from '@/lib/riderFirestore';
 import { useRiderStore } from '@/store/riderStore';
 import type { Order, OrderStatus } from '@/types';
+import { useNow } from '@/hooks/useNow';
 import { orderStatusLabel } from '@/utils/format';
+import { isEnRoute, locationAgeLabel, remainingEtaMinutes } from '@/utils/liveEta';
 
 const RIDER_NEXT: Record<string, { status: OrderStatus; label: string }[]> = {
+  preparing: [{ status: 'out_for_delivery', label: 'Start delivery' }],
   out_for_delivery: [{ status: 'delivered', label: 'Mark delivered / setup done' }],
   delivered: [
     { status: 'active', label: 'Customer using kit' },
@@ -42,8 +45,18 @@ export default function RiderOrderDetailScreen() {
   };
 
   useEffect(() => {
-    void reload();
+    if (!id) return;
+    setLoading(true);
+    return watchOrder(id, (live) => {
+      setOrder(live);
+      setLoading(false);
+    });
   }, [id]);
+
+  const enRoute = order ? isEnRoute(order.status) : false;
+  const now = useNow(enRoute && !loading);
+  const liveMinutes = remainingEtaMinutes(order, now);
+  const liveAge = locationAgeLabel(order?.riderLocationUpdatedAt, now);
 
   const mapsUrl = order?.addressFull
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.addressFull)}`
@@ -135,8 +148,10 @@ export default function RiderOrderDetailScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Customer ETA</Text>
           <Text style={styles.meta}>
-            {order.etaMinutes != null ? `About ${order.etaMinutes} min` : 'Getting location…'}
-            {order.riderDistanceKm != null ? ` · ${order.riderDistanceKm} km` : ''}
+            {liveMinutes != null
+              ? `About ${liveMinutes} min${order.riderDistanceKm ? ` · ${order.riderDistanceKm} km` : ''}`
+              : 'Waiting for a location update'}
+            {liveAge ? ` · ${liveAge}` : ''}
           </Text>
           <Text style={styles.meta}>
             Keep this screen open (or the app in foreground) so GPS updates their countdown. No map

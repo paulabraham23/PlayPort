@@ -19,13 +19,15 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
-import { ensureLoggedIn } from '@/utils/authGate';
+import { gateCartAdd } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 import { firstDisplayableImage } from '@/utils/images';
 import {
   addonsTotal,
   computeAddonLines,
   defaultPlan,
+  describeControllerPrice,
+  isControllerAddon,
   kitUnitPrice,
   normalizeProduct,
   priceForAddon,
@@ -35,16 +37,16 @@ import type { PricingMode } from '@/types';
 
 const FLOW_STEPS = [
   {
-    title: 'Hub Pre-Test',
-    body: 'Every kit is powered on, sanitized, and sealed before dispatch from your dark hub.',
+    title: 'Prepared at the hub',
+    body: 'The kit is checked before a rider leaves with it.',
   },
   {
-    title: 'Doorstep Drop',
-    body: 'Rider arrives in a shockproof transit case with HDMI, power, and spare cables ready.',
+    title: 'Delivered to you',
+    body: 'You can follow a live arrival time once the rider is on the way.',
   },
   {
-    title: 'Instant Play',
-    body: 'White-glove setup plugs you in — press start while we verify latency live.',
+    title: 'Set up, then collected',
+    body: 'The rider sets the kit up and picks it up when your slot ends.',
   },
 ];
 
@@ -110,12 +112,8 @@ export default function ProductDetailScreen() {
   }
 
   const productUnits = units.filter((u) => u.productId === product?.id && u.status === 'available');
-  const controllerAddons = (normalized?.addons ?? []).filter(
-    (a) => a.id === 'extra-controller' || /controller/i.test(a.name)
-  );
-  const otherAddons = (normalized?.addons ?? []).filter(
-    (a) => a.id !== 'extra-controller' && !/controller/i.test(a.name)
-  );
+  const controllerAddons = (normalized?.addons ?? []).filter((a) => isControllerAddon(a));
+  const otherAddons = (normalized?.addons ?? []).filter((a) => !isControllerAddon(a));
   const hours = resolveHours(normalized, mode, planId, hourlyHours);
   const kitPrice = kitUnitPrice(normalized, mode, planId, hours);
   const selectedAddons = Object.entries(addonQty)
@@ -261,7 +259,7 @@ export default function ProductDetailScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`View games on ${unit.skuLabel}`}
-                    onPress={() => router.push(`/unit-games/${unit.id}`)}
+                    onPress={() => router.push(`/unit-games/${unit.id}` as never)}
                     hitSlop={6}
                     style={styles.gamesLink}
                   >
@@ -282,6 +280,11 @@ export default function ProductDetailScreen() {
         {controllerAddons.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader eyebrow="Extras" title="Extra controllers" />
+            <Text style={styles.addonDesc}>
+              {controllerAddons.length === 1
+                ? `This kit: ${describeControllerPrice(controllerAddons[0])}`
+                : 'Each extra below uses this kit’s own price.'}
+            </Text>
             {controllerAddons.map((addon) => (
               <ControllerAddonRow
                 key={addon.id}
@@ -430,11 +433,23 @@ export default function ProductDetailScreen() {
                   quantityInCart={qtyFor(item.id)}
                   onPress={() => router.push(`/product/${item.id}`)}
                   onAdd={() => {
-                    if (!ensureLoggedIn(`/product/${item.id}`)) return;
+                    if (
+                      !gateCartAdd(`/product/${item.id}`, {
+                        kind: 'product',
+                        productId: item.id,
+                      })
+                    )
+                      return;
                     addProductToCart(item.id);
                   }}
                   onIncrement={() => {
-                    if (!ensureLoggedIn(`/product/${item.id}`)) return;
+                    if (
+                      !gateCartAdd(`/product/${item.id}`, {
+                        kind: 'product',
+                        productId: item.id,
+                      })
+                    )
+                      return;
                     addProductToCart(item.id);
                   }}
                   onDecrement={() => {
@@ -463,13 +478,12 @@ export default function ProductDetailScreen() {
           title="Add to cart"
           icon={<Ionicons name="bag-add-outline" size={16} color={colors.white} />}
           onPress={() => {
-            if (!ensureLoggedIn('/cart')) return;
             if (productUnits.length > 0 && !unitId) {
               showToast('Choose which unit you want');
               return;
             }
             const unit = productUnits.find((u) => u.id === unitId);
-            addProductToCart(product.id, {
+            const options = {
               planId: mode === 'hourly' ? 'hourly' : planId,
               pricingMode: mode,
               hours,
@@ -478,7 +492,9 @@ export default function ProductDetailScreen() {
               unitLabel: unit
                 ? `${unit.skuLabel}${(unit.games ?? []).length ? ` · ${unit.games!.join(', ')}` : ''}`
                 : undefined,
-            });
+            };
+            if (!gateCartAdd('/cart', { kind: 'product', productId: product.id, options })) return;
+            addProductToCart(product.id, options);
             router.push('/cart');
           }}
           style={styles.bookBtn}

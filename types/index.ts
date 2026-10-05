@@ -9,6 +9,7 @@ export type RentalDurationId = RentalPlanId;
 export type PricingMode = 'package' | 'hourly';
 
 export type OrderStatus =
+  | 'pending_payment'
   | 'confirmed'
   | 'preparing'
   | 'out_for_delivery'
@@ -239,6 +240,8 @@ export interface Order {
   taxes: number;
   total: number;
   paymentMethodLabel: string;
+  /** demo = no payment gateway was used */
+  paymentProvider?: 'razorpay' | 'demo';
   progressPercent: number;
   riderName?: string;
   riderDistanceKm?: number;

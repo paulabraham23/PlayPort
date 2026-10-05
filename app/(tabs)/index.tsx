@@ -10,7 +10,8 @@ import { useAppStore, useCartCount } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { useWishlistStore } from '@/store/wishlistStore';
-import { ensureLoggedIn } from '@/utils/authGate';
+import { gateCartAdd } from '@/utils/authGate';
+import { defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
 
 const CARD_GAP = 16;
 
@@ -36,8 +37,9 @@ export default function HomeScreen() {
   const cartItemIdFor = (productId: string) => cart.find((c) => c.productId === productId)?.id;
 
   const addKit = (product: (typeof products)[0]) => {
-    if (!ensureLoggedIn('/(tabs)')) return;
-    addProductToCart(product.id);
+    const options = { planId: defaultPlan(normalizeProduct(product))?.id };
+    if (!gateCartAdd('/(tabs)', { kind: 'product', productId: product.id, options })) return;
+    addProductToCart(product.id, options);
     showToast(`Added ${product.shortName}`);
   };
 

@@ -34,7 +34,10 @@ export default function RiderLayout() {
   const [allowed, setAllowed] = useState(false);
   const desktop = width >= 900;
 
-  useRiderLocationTracking(allowed ? rider : null, allowed ? mine : []);
+  const locationState = useRiderLocationTracking(allowed ? rider : null, allowed ? mine : []);
+  const sharingLocation = mine.some(
+    (order) => order.status === 'out_for_delivery' || order.status === 'returning'
+  );
 
   useEffect(() => {
     let cleanup: (() => void) | undefined;
@@ -141,6 +144,16 @@ export default function RiderLayout() {
               );
             })}
           </ScrollView>
+          {sharingLocation && locationState === 'denied' ? (
+            <Text style={styles.locWarn}>
+              Location is off, so customers cannot see a live arrival time. Allow location for this site and keep this tab open.
+            </Text>
+          ) : null}
+          {sharingLocation && locationState === 'unavailable' ? (
+            <Text style={styles.locWarn}>
+              Waiting for a GPS fix. Keep this tab open in the foreground so the arrival time can update.
+            </Text>
+          ) : null}
         </View>
         <View style={styles.content}>
           <View style={styles.contentInner}>
@@ -205,6 +218,14 @@ const styles = StyleSheet.create({
     color: colors.secondaryText,
   },
   navLabelActive: { color: colors.playportOrange },
+  locWarn: {
+    fontFamily: fonts.body,
+    fontSize: typeScale.small,
+    color: colors.secondaryText,
+    paddingHorizontal: 12,
+    paddingBottom: spacing.sm,
+    lineHeight: 18,
+  },
   content: { flex: 1, minWidth: 0 },
   contentInner: {
     flex: 1,

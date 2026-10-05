@@ -10,30 +10,55 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useNow } from '@/hooks/useNow';
 import { watchOrder } from '@/lib/riderFirestore';
 import { useAppStore } from '@/store/appStore';
 import type { Order } from '@/types';
 import { formatEtaMinutes } from '@/utils/geo';
 import { formatINR, orderStatusLabel } from '@/utils/format';
+import { isEnRoute, locationAgeLabel, remainingEtaMinutes } from '@/utils/liveEta';
 
-const STEPS = ['Confirmed', 'Preparing', 'On the way', 'Delivered'] as const;
+const STEPS = ['Confirmed', 'On the way', 'With you', 'Pickup', 'Done'] as const;
 
 function stepIndex(status: Order['status']): number {
   switch (status) {
+    case 'pending_payment':
     case 'confirmed':
-      return 0;
     case 'preparing':
-      return 1;
+      return 0;
     case 'out_for_delivery':
-      return 2;
+      return 1;
     case 'delivered':
     case 'active':
+      return 2;
     case 'returning':
-    case 'completed':
       return 3;
+    case 'completed':
+      return 4;
     default:
       return 0;
   }
+}
+
+function trackingHeadline(order: Order, now: number): { eyebrow: string; value: string } {
+  const mins = remainingEtaMinutes(order, now);
+  const live = mins != null && Boolean(order.riderLocationUpdatedAt);
+  if (order.status === 'out_for_delivery') {
+    return { eyebrow: 'Arriving in', value: live ? formatEtaMinutes(mins) : 'Getting live location…' };
+  }
+  if (order.status === 'returning') {
+    return { eyebrow: 'Pickup in', value: live ? formatEtaMinutes(mins) : 'Getting live location…' };
+  }
+  if (order.status === 'delivered' || order.status === 'active') {
+    return { eyebrow: 'With you', value: 'Session in progress' };
+  }
+  if (order.status === 'completed') {
+    return { eyebrow: 'Done', value: 'Rental complete' };
+  }
+  if (order.status === 'pending_payment') {
+    return { eyebrow: 'Payment', value: 'Waiting for payment' };
+  }
+  return { eyebrow: orderStatusLabel(order.status), value: order.etaLabel || 'Being prepared' };
 }
 
 export default function OrderTrackScreen() {
@@ -62,12 +87,11 @@ export default function OrderTrackScreen() {
     }
   }, [storeOrder]);
 
+  const enRoute = order ? isEnRoute(order.status) : false;
+  const now = useNow(enRoute);
   const activeStep = order ? stepIndex(order.status) : 1;
-  const enRoute = order?.status === 'out_for_delivery' || order?.status === 'returning';
-  const etaText =
-    order?.status === 'delivered' || order?.status === 'active'
-      ? 'Arrived'
-      : formatEtaMinutes(order?.etaMinutes);
+  const headline = order ? trackingHeadline(order, now) : null;
+  const age = enRoute ? locationAgeLabel(order?.riderLocationUpdatedAt, now) : null;
 
   return (
     <Screen showHeader={false}>
@@ -76,10 +100,8 @@ export default function OrderTrackScreen() {
         {order ? (
           <>
             <View style={styles.etaCard}>
-              <Text style={styles.etaEyebrow}>
-                {enRoute ? 'Arriving in' : orderStatusLabel(order.status)}
-              </Text>
-              <Text style={styles.etaValue}>{enRoute ? etaText : order.etaLabel || '—'}</Text>
+              <Text style={styles.etaEyebrow}>{headline?.eyebrow}</Text>
+              <Text style={styles.etaValue}>{headline?.value}</Text>
               {order.riderName ? (
                 <Text style={styles.etaRider}>
                   {order.riderName}
@@ -88,18 +110,14 @@ export default function OrderTrackScreen() {
               ) : (
                 <Text style={styles.etaRider}>Waiting for a rider to accept</Text>
               )}
-              {enRoute && order.riderDistanceKm != null ? (
+              {enRoute && order.riderDistanceKm != null && order.riderDistanceKm > 0 ? (
                 <Text style={styles.etaMeta}>
                   {order.etaSource === 'road' ? '' : '~'}
                   {order.riderDistanceKm} km by road
                   {order.etaSource === 'road' ? ' · live traffic' : ' · approximate'}
                 </Text>
               ) : null}
-              {enRoute && order.riderLocationUpdatedAt ? (
-                <Text style={styles.etaMeta}>
-                  Location updated {new Date(order.riderLocationUpdatedAt).toLocaleTimeString()}
-                </Text>
-              ) : null}
+              {age ? <Text style={styles.etaMeta}>{age}</Text> : null}
             </View>
 
             <View style={styles.card}>
@@ -160,6 +178,11 @@ export default function OrderTrackScreen() {
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={styles.itemName}>{item.name}</Text>
                   <Text style={styles.itemMeta}>{item.durationLabel}</Text>
+                  {item.extras?.map((extra) => (
+                    <Text key={extra} style={styles.itemMeta}>
+                      {extra}
+                    </Text>
+                  ))}
                 </View>
                 <Text style={styles.itemPrice}>{formatINR(item.price)}</Text>
               </View>

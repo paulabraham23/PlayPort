@@ -10,7 +10,7 @@ import { ValuePop } from '@/components/motion/ValuePop';
 import { colors, fonts, gradients, radii, shadows, spacing, typeScale, webShadows } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
 import { firstDisplayableImage } from '@/utils/images';
-import { cheapestPlanPrice, defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
+import { defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
 import type { Product } from '@/types';
 
 interface Props {
@@ -121,7 +121,7 @@ export function ProductCard({
 }: Props) {
   const normalized = normalizeProduct(product);
   const plan = defaultPlan(normalized);
-  const price = cheapestPlanPrice(normalized) ?? plan?.price ?? 0;
+  const price = plan?.price ?? 0;
   const planLabel = plan?.label ?? 'plan';
   const savings =
     product.compareAtPrice && product.compareAtPrice > price
@@ -147,7 +147,7 @@ export function ProductCard({
           <Text style={styles.compactTitle} numberOfLines={2}>
             {product.shortName}
           </Text>
-          <Text style={styles.unitChip}>1 kit · from {planLabel}</Text>
+          <Text style={styles.unitChip}>1 kit · {planLabel}</Text>
           <View style={styles.compactFooter}>
             <View>
               <Text style={styles.price}>{formatINR(price)}</Text>
@@ -221,7 +221,7 @@ export function ProductCard({
           <Text style={styles.title} numberOfLines={2}>
             {product.shortName}
           </Text>
-          <Text style={styles.unitChip}>Setup included · from {planLabel}</Text>
+          <Text style={styles.unitChip}>Setup included · {planLabel}</Text>
         </View>
       </PressableScale>
       <View style={styles.footer}>

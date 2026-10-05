@@ -10,7 +10,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { formatINR } from '@/utils/format';
-import { cheapestPlanPrice, normalizeProduct } from '@/utils/rentalPricing';
+import { defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
 
 export default function SearchDiscoveryScreen() {
   const { horizontalPadding } = useResponsive();
@@ -88,7 +88,9 @@ export default function SearchDiscoveryScreen() {
         {popular.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader eyebrow="Popular" title="Quick picks" />
-            {popular.map((product) => (
+            {popular.map((product) => {
+              const plan = defaultPlan(normalizeProduct(product));
+              return (
               <Pressable
                 key={product.id}
                 accessibilityRole="button"
@@ -98,12 +100,13 @@ export default function SearchDiscoveryScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.popularTitle}>{product.shortName}</Text>
                   <Text style={styles.popularMeta}>
-                    {formatINR(cheapestPlanPrice(normalizeProduct(product)) ?? 0)}+ · {product.etaMinutes}m
+                    {formatINR(plan?.price ?? 0)} · {plan?.label ?? 'plan'} · {product.etaMinutes}m
                   </Text>
                 </View>
                 <Ionicons name="search" size={16} color={colors.mutedText} />
               </Pressable>
-            ))}
+              );
+            })}
           </View>
         ) : (
           <Text style={styles.hint}>Search for kits by name — try PS5, projector, or VR.</Text>

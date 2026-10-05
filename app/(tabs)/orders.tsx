@@ -13,10 +13,13 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
+import { useNow } from '@/hooks/useNow';
 import { formatINR } from '@/utils/format';
+import { isEnRoute, locationAgeLabel, remainingEtaMinutes } from '@/utils/liveEta';
 import type { Order } from '@/types';
 
 const ACTIVE_STATUSES = new Set([
+  'pending_payment',
   'confirmed',
   'preparing',
   'out_for_delivery',
@@ -41,7 +44,7 @@ export default function OrdersScreen() {
   }, [orders]);
 
   const list = tab === 'active' ? active : past;
-  const live = active.find((o) => o.status === 'out_for_delivery' || o.liveDispatch);
+  const live = active.find((o) => o.status === 'out_for_delivery' || o.status === 'returning');
   const visibleList = list.filter((o) => !(tab === 'active' && live && o.id === live.id));
 
   if (!isAuthenticated) {
@@ -123,6 +126,10 @@ export default function OrdersScreen() {
 
 function LiveDispatchCard({ order }: { order: Order }) {
   const first = order.items[0];
+  const enRoute = isEnRoute(order.status);
+  const now = useNow(enRoute);
+  const mins = remainingEtaMinutes(order, now);
+  const age = locationAgeLabel(order.riderLocationUpdatedAt, now);
   return (
     <Card style={styles.liveCard} padded elevated>
       <View style={styles.liveTop}>
@@ -143,14 +150,18 @@ function LiveDispatchCard({ order }: { order: Order }) {
           </Text>
           <Text style={styles.liveMeta}>
             {order.riderName ? `${order.riderName} · ` : ''}
-            {order.riderDistanceKm ? `${order.riderDistanceKm} km away` : `ETA ${order.etaLabel}`}
+            {mins != null ? `${mins} min away` : 'Getting live location…'}
+            {order.riderDistanceKm ? ` · ${order.riderDistanceKm} km` : ''}
+            {age ? ` · ${age}` : ''}
           </Text>
           <Text style={styles.livePrice}>{formatINR(order.total)}</Text>
         </View>
       </View>
       <View style={styles.progressBlock}>
         <View style={styles.progressLabels}>
-          <Text style={styles.progressLabel}>En route</Text>
+          <Text style={styles.progressLabel}>
+            {order.status === 'returning' ? 'Pickup' : 'En route'}
+          </Text>
           <Text style={styles.progressPercent}>{order.progressPercent}%</Text>
         </View>
         <View style={styles.progressTrack}>

@@ -304,7 +304,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
         id: string;
         name: string;
         maxQuantity: number;
-        pricing: { perHour: number; perHourMaxPlanHours: number; flatPrice: number; flatMinPlanHours: number; tiers?: { upToHours: number; price: number }[] };
+        pricing: { perHour: number; perHourMaxPlanHours: number; flatPrice: number; flatMinPlanHours: number; tiers?: { upToHours: number; price: number; mode?: 'flat' | 'hourly' }[] };
       }[];
       const lineHours = line.hours ?? 12;
       let expectedAddons = 0;

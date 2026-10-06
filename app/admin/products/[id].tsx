@@ -79,11 +79,9 @@ export default function AdminProductEditScreen() {
   const [controllerHourCap, setControllerHourCap] = useState('6');
   const [controllerFlat, setControllerFlat] = useState('');
   const [controllerFlatFrom, setControllerFlatFrom] = useState('12');
-  const [controllerTiers, setControllerTiers] = useState<{ upToHours: string; price: string }[]>([
-    { upToHours: '6', price: '100' },
-    { upToHours: '12', price: '120' },
-    { upToHours: '24', price: '150' },
-  ]);
+  const [controllerTiers, setControllerTiers] = useState<
+    { upToHours: string; price: string; mode: 'flat' | 'hourly' }[]
+  >([{ upToHours: '', price: '', mode: 'hourly' }]);
   const [controllerMax, setControllerMax] = useState('3');
   const [ratingText, setRatingText] = useState('');
   const [tagsText, setTagsText] = useState('');
@@ -105,9 +103,7 @@ export default function AdminProductEditScreen() {
       setControllerFlat('');
       setControllerFlatFrom('12');
       setControllerTiers([
-        { upToHours: '6', price: '100' },
-        { upToHours: '12', price: '120' },
-        { upToHours: '24', price: '150' },
+        { upToHours: '', price: '', mode: 'hourly' },
       ]);
       setControllerMax('3');
       setRatingText('');
@@ -132,7 +128,11 @@ export default function AdminProductEditScreen() {
         setControllerFlatFrom(ctrl ? String(ctrl.pricing.flatMinPlanHours) : '12');
         setControllerTiers(
           ctrl?.pricing.tiers?.length
-            ? ctrl.pricing.tiers.map((t) => ({ upToHours: String(t.upToHours), price: String(t.price) }))
+            ? ctrl.pricing.tiers.map((t) => ({
+                upToHours: String(t.upToHours),
+                price: String(t.price),
+                mode: t.mode ?? 'flat',
+              }))
             : []
         );
         setControllerMax(ctrl ? String(ctrl.maxQuantity) : '3');
@@ -210,7 +210,11 @@ export default function AdminProductEditScreen() {
     const perHour = Math.max(0, num(controllerPerHour));
     const flatPrice = Math.max(0, num(controllerFlat));
     const tiers = controllerTiers
-      .map((t) => ({ upToHours: num(t.upToHours), price: num(t.price) }))
+      .map((t) => ({
+        upToHours: num(t.upToHours),
+        price: num(t.price),
+        mode: t.mode,
+      }))
       .filter((t) => t.upToHours > 0)
       .sort((a, b) => a.upToHours - b.upToHours);
     const controllerDraft: ProductAddon = {
@@ -533,51 +537,76 @@ export default function AdminProductEditScreen() {
 
       <Text style={adminStyles.cardTitle}>Extra controller for this product</Text>
       <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
-        Flat price per session length — e.g. ₹100 up to 6h · ₹120 up to 12h · ₹150 up to 24h.
+        Price per session length — e.g. ₹20/hr up to 6h, or a ₹150 flat fee up to 24h.
         The customer pays the first tier that covers their hours. Leave all rows empty to hide
         extra controllers on the product page.
       </Text>
       {controllerTiers.map((tier, index) => (
-        <View key={`tier-${index}`} style={adminStyles.row}>
-          <View style={[adminStyles.field, { flex: 1, marginBottom: 8 }]}>
-            <Text style={adminStyles.label}>Up to hours</Text>
-            <TextInput
-              style={adminStyles.input}
-              keyboardType="numeric"
-              value={tier.upToHours}
-              onChangeText={(t) =>
-                setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, upToHours: t } : r)))
-              }
-              placeholder="6"
-              placeholderTextColor={colors.mutedText}
-            />
+        <View key={`tier-${index}`} style={adminStyles.card}>
+          <View style={adminStyles.row}>
+            <View style={[adminStyles.field, { flex: 1, marginBottom: 8 }]}>
+              <Text style={adminStyles.label}>Up to hours</Text>
+              <TextInput
+                style={adminStyles.input}
+                keyboardType="numeric"
+                value={tier.upToHours}
+                onChangeText={(t) =>
+                  setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, upToHours: t } : r)))
+                }
+                placeholder="6"
+                placeholderTextColor={colors.mutedText}
+              />
+            </View>
+            <View style={[adminStyles.field, { flex: 1, marginBottom: 8, marginLeft: 8 }]}>
+              <Text style={adminStyles.label}>₹ amount</Text>
+              <TextInput
+                style={adminStyles.input}
+                keyboardType="numeric"
+                value={tier.price}
+                onChangeText={(t) =>
+                  setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, price: t } : r)))
+                }
+                placeholder={tier.mode === 'hourly' ? '20' : '100'}
+                placeholderTextColor={colors.mutedText}
+              />
+            </View>
           </View>
-          <View style={[adminStyles.field, { flex: 1, marginBottom: 8, marginLeft: 8 }]}>
-            <Text style={adminStyles.label}>Flat ₹</Text>
-            <TextInput
-              style={adminStyles.input}
-              keyboardType="numeric"
-              value={tier.price}
-              onChangeText={(t) =>
-                setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, price: t } : r)))
-              }
-              placeholder="100"
-              placeholderTextColor={colors.mutedText}
-            />
+          <View style={[adminStyles.row, { marginTop: 4 }]}>
+            {(['hourly', 'flat'] as const).map((m) => {
+              const on = tier.mode === m;
+              return (
+                <Pressable
+                  key={m}
+                  onPress={() =>
+                    setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, mode: m } : r)))
+                  }
+                  style={[adminStyles.chip, on && adminStyles.chipActive]}
+                >
+                  <Text style={[adminStyles.chipText, on && adminStyles.chipTextActive]}>
+                    {m === 'hourly' ? '₹ per hour' : 'Flat fee'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+            <Pressable
+              onPress={() => setControllerTiers((prev) => prev.filter((_, i) => i !== index))}
+              style={{ justifyContent: 'center', marginLeft: 'auto' }}
+            >
+              <Text style={{ color: colors.danger }}>Remove</Text>
+            </Pressable>
           </View>
-          <Pressable
-            onPress={() => setControllerTiers((prev) => prev.filter((_, i) => i !== index))}
-            style={{ justifyContent: 'center', marginLeft: 8, paddingTop: 18 }}
-          >
-            <Text style={{ color: colors.danger }}>Remove</Text>
-          </Pressable>
+          <Text style={[adminStyles.cardMeta, { marginTop: 6 }]}>
+            {tier.mode === 'hourly'
+              ? 'Customer pays this ₹ × session hours'
+              : 'Customer pays this ₹ once per session'}
+          </Text>
         </View>
       ))}
       <Button
         title="Add price tier"
         size="sm"
         variant="secondary"
-        onPress={() => setControllerTiers((prev) => [...prev, { upToHours: '', price: '' }])}
+        onPress={() => setControllerTiers((prev) => [...prev, { upToHours: '', price: '', mode: 'hourly' }])}
       />
       <Text style={[adminStyles.label, { marginTop: 12 }]}>Fallback hourly (only if no tiers above)</Text>
       <Text style={[adminStyles.subtitle, { marginBottom: spacing.sm }]}>
@@ -1019,11 +1048,11 @@ function ControllerPricePreview({
   hourCap: string;
   flat: string;
   flatFrom: string;
-  tiers: { upToHours: string; price: string }[];
+  tiers: { upToHours: string; price: string; mode: 'flat' | 'hourly' }[];
   plans: RentalPlan[];
 }) {
   const parsedTiers = tiers
-    .map((t) => ({ upToHours: num(t.upToHours), price: num(t.price) }))
+    .map((t) => ({ upToHours: num(t.upToHours), price: num(t.price), mode: t.mode }))
     .filter((t) => t.upToHours > 0)
     .sort((a, b) => a.upToHours - b.upToHours);
   const draft: ProductAddon = {

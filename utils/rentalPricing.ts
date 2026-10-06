@@ -145,16 +145,17 @@ export function isControllerAddon(addon: { id: string; name: string }): boolean 
   return addon.id === 'extra-controller' || /controller/i.test(addon.name);
 }
 
-/** Tiered flat lookup: smallest tier covering hours, else the largest tier. */
+/** Tiered lookup: smallest tier covering hours, else the largest tier. Hourly tiers multiply by hours. */
 export function priceForAddonTier(
-  tiers: { upToHours: number; price: number }[] | undefined,
+  tiers: { upToHours: number; price: number; mode?: 'flat' | 'hourly' }[] | undefined,
   hours: number
 ): number | null {
   const clean = (tiers ?? [])
     .filter((t) => t.upToHours > 0 && t.price >= 0)
     .sort((a, b) => a.upToHours - b.upToHours);
   if (!clean.length) return null;
-  return (clean.find((t) => hours <= t.upToHours) ?? clean[clean.length - 1]).price;
+  const tier = clean.find((t) => hours <= t.upToHours) ?? clean[clean.length - 1];
+  return tier.mode === 'hourly' ? tier.price * hours : tier.price;
 }
 
 /** How this product charges for one extra controller, in plain language. */
@@ -163,7 +164,9 @@ export function describeControllerPrice(addon: ProductAddon): string {
   if (tiers.length) {
     return [...tiers]
       .sort((a, b) => a.upToHours - b.upToHours)
-      .map((t) => `${formatINR(t.price)} up to ${t.upToHours}h`)
+      .map((t) =>
+        t.mode === 'hourly' ? `${formatINR(t.price)}/hr up to ${t.upToHours}h` : `${formatINR(t.price)} up to ${t.upToHours}h`
+      )
       .join(' · ');
   }
   const { perHour, perHourMaxPlanHours, flatPrice, flatMinPlanHours } = addon.pricing;

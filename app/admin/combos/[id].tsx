@@ -50,7 +50,9 @@ export default function AdminComboEditScreen() {
       price: 0,
     }))
   );
-  const [controllerTiers, setControllerTiers] = useState<{ upToHours: string; price: string }[]>([]);
+  const [controllerTiers, setControllerTiers] = useState<
+    { upToHours: string; price: string; mode: 'flat' | 'hourly' }[]
+  >([]);
   const [controllerMax, setControllerMax] = useState('3');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +77,11 @@ export default function AdminComboEditScreen() {
         const ctrl = (e.addons ?? []).find((a) => isControllerAddon(a));
         setControllerTiers(
           ctrl?.pricing.tiers?.length
-            ? ctrl.pricing.tiers.map((t) => ({ upToHours: String(t.upToHours), price: String(t.price) }))
+            ? ctrl.pricing.tiers.map((t) => ({
+                upToHours: String(t.upToHours),
+                price: String(t.price),
+                mode: t.mode ?? 'flat',
+              }))
             : []
         );
         setControllerMax(ctrl ? String(ctrl.maxQuantity) : '3');
@@ -139,6 +145,7 @@ export default function AdminComboEditScreen() {
         .map((t) => ({
           upToHours: Number(t.upToHours.replace(/[^0-9]/g, '')) || 0,
           price: Number(t.price.replace(/[^0-9]/g, '')) || 0,
+          mode: t.mode,
         }))
         .filter((t) => t.upToHours > 0)
         .sort((a, b) => a.upToHours - b.upToHours);
@@ -341,43 +348,63 @@ export default function AdminComboEditScreen() {
       </View>
       <Text style={adminStyles.cardTitle}>Extra controllers for this combo</Text>
       <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
-        Same prices as products — e.g. ₹100 up to 6h · ₹120 up to 12h · ₹150 up to 24h.
+        Same prices as products — per-hour rate or flat fee per session length.
         Leave every row empty and this combo offers no extra controllers.
       </Text>
       {controllerTiers.map((tier, index) => (
-        <View key={`ctier-${index}`} style={adminStyles.row}>
-          <View style={[adminStyles.field, { flex: 1, marginBottom: 8 }]}>
-            <Text style={adminStyles.label}>Up to hours</Text>
-            <TextInput
-              style={adminStyles.input}
-              keyboardType="numeric"
-              value={tier.upToHours}
-              onChangeText={(t) =>
-                setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, upToHours: t } : r)))
-              }
-              placeholder="6"
-              placeholderTextColor={colors.mutedText}
-            />
+        <View key={`ctier-${index}`} style={adminStyles.card}>
+          <View style={adminStyles.row}>
+            <View style={[adminStyles.field, { flex: 1, marginBottom: 8 }]}>
+              <Text style={adminStyles.label}>Up to hours</Text>
+              <TextInput
+                style={adminStyles.input}
+                keyboardType="numeric"
+                value={tier.upToHours}
+                onChangeText={(t) =>
+                  setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, upToHours: t } : r)))
+                }
+                placeholder="6"
+                placeholderTextColor={colors.mutedText}
+              />
+            </View>
+            <View style={[adminStyles.field, { flex: 1, marginBottom: 8, marginLeft: 8 }]}>
+              <Text style={adminStyles.label}>₹ amount</Text>
+              <TextInput
+                style={adminStyles.input}
+                keyboardType="numeric"
+                value={tier.price}
+                onChangeText={(t) =>
+                  setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, price: t } : r)))
+                }
+                placeholder={tier.mode === 'hourly' ? '20' : '100'}
+                placeholderTextColor={colors.mutedText}
+              />
+            </View>
           </View>
-          <View style={[adminStyles.field, { flex: 1, marginBottom: 8, marginLeft: 8 }]}>
-            <Text style={adminStyles.label}>Flat ₹</Text>
-            <TextInput
-              style={adminStyles.input}
-              keyboardType="numeric"
-              value={tier.price}
-              onChangeText={(t) =>
-                setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, price: t } : r)))
-              }
-              placeholder="100"
-              placeholderTextColor={colors.mutedText}
-            />
+          <View style={[adminStyles.row, { marginTop: 4 }]}>
+            {(['hourly', 'flat'] as const).map((m) => {
+              const on = tier.mode === m;
+              return (
+                <Pressable
+                  key={m}
+                  onPress={() =>
+                    setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, mode: m } : r)))
+                  }
+                  style={[adminStyles.chip, on && adminStyles.chipActive]}
+                >
+                  <Text style={[adminStyles.chipText, on && adminStyles.chipTextActive]}>
+                    {m === 'hourly' ? '₹ per hour' : 'Flat fee'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+            <Pressable
+              onPress={() => setControllerTiers((prev) => prev.filter((_, i) => i !== index))}
+              style={{ justifyContent: 'center', marginLeft: 'auto' }}
+            >
+              <Text style={{ color: colors.danger }}>Remove</Text>
+            </Pressable>
           </View>
-          <Pressable
-            onPress={() => setControllerTiers((prev) => prev.filter((_, i) => i !== index))}
-            style={{ justifyContent: 'center', marginLeft: 8, paddingTop: 18 }}
-          >
-            <Text style={{ color: colors.danger }}>Remove</Text>
-          </Pressable>
         </View>
       ))}
       <View style={[adminStyles.row, { marginBottom: spacing.md, flexWrap: 'wrap', gap: 8 }]}>
@@ -385,17 +412,17 @@ export default function AdminComboEditScreen() {
           title="Add price tier"
           size="sm"
           variant="secondary"
-          onPress={() => setControllerTiers((prev) => [...prev, { upToHours: '', price: '' }])}
+          onPress={() => setControllerTiers((prev) => [...prev, { upToHours: '', price: '', mode: 'hourly' }])}
         />
         <Button
-          title="Use 100 / 120 / 150"
+          title="Use 100 / 120 / 150 flat"
           size="sm"
           variant="secondary"
           onPress={() =>
             setControllerTiers([
-              { upToHours: '6', price: '100' },
-              { upToHours: '12', price: '120' },
-              { upToHours: '24', price: '150' },
+              { upToHours: '6', price: '100', mode: 'flat' },
+              { upToHours: '12', price: '120', mode: 'flat' },
+              { upToHours: '24', price: '150', mode: 'flat' },
             ])
           }
         />
@@ -478,13 +505,14 @@ function ControllerTierPreview({
   tiers,
   plans,
 }: {
-  tiers: { upToHours: string; price: string }[];
+  tiers: { upToHours: string; price: string; mode: 'flat' | 'hourly' }[];
   plans: RentalPlan[];
 }) {
   const parsed = tiers
     .map((t) => ({
       upToHours: Number(t.upToHours.replace(/[^0-9]/g, '')) || 0,
       price: Number(t.price.replace(/[^0-9]/g, '')) || 0,
+      mode: t.mode,
     }))
     .filter((t) => t.upToHours > 0)
     .sort((a, b) => a.upToHours - b.upToHours);

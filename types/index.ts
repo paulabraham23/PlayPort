@@ -44,9 +44,12 @@ export interface ProductHourlyRate {
 }
 
 export interface AddonPriceTier {
-  /** Flat price applies when session hours <= this. */
+  /** Tier applies when session hours <= this. */
   upToHours: number;
+  /** Flat fee for the session, or hourly rate when mode is 'hourly'. */
   price: number;
+  /** 'flat' = one fee per session · 'hourly' = price × session hours. Defaults to 'flat'. */
+  mode?: 'flat' | 'hourly';
 }
 
 export interface ProductAddonPricing {

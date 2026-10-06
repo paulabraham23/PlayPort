@@ -295,18 +295,51 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   for (const line of cart) {
     if (line.experienceId && !line.productId) {
       const expSnap = await db.collection('experiences').doc(line.experienceId).get();
-      const plans = (expSnap.data()?.plans ?? []) as { id?: string; hours?: number; price?: number }[];
+      if (!expSnap.exists) {
+        throw new HttpsError('not-found', `Combo ${line.name || line.experienceId} not found`);
+      }
+      const expData = expSnap.data()!;
+      const plans = (expData?.plans ?? []) as { id?: string; hours?: number; price?: number }[];
+      const expAddons = (expData?.addons ?? []) as {
+        id: string;
+        name: string;
+        maxQuantity: number;
+        pricing: { perHour: number; perHourMaxPlanHours: number; flatPrice: number; flatMinPlanHours: number; tiers?: { upToHours: number; price: number }[] };
+      }[];
+      const lineHours = line.hours ?? 12;
+      let expectedAddons = 0;
+      for (const a of line.addons ?? []) {
+        const addon = expAddons.find((x) => x.id === a.id);
+        if (!addon) {
+          throw new HttpsError(
+            'failed-precondition',
+            `Extra ${a.name || a.id} is not offered on ${line.name || line.experienceId}`
+          );
+        }
+        if (a.quantity > addon.maxQuantity) {
+          throw new HttpsError(
+            'failed-precondition',
+            `Only ${addon.maxQuantity}× ${addon.name} allowed`
+          );
+        }
+        expectedAddons += priceForAddon(addon, lineHours, a.quantity);
+      }
       if (plans.length) {
         const plan =
           plans.find((p) => p.id && p.id === line.planId) ??
           plans.find((p) => p.hours === line.hours);
-        const expected = (Number(plan?.price) || 0) * (line.quantity || 1);
+        const expected = (Number(plan?.price) || 0) * (line.quantity || 1) + expectedAddons * (line.quantity || 1);
         if (!plan || Math.abs(lineClientTotal(line) - expected) > 1) {
           throw new HttpsError(
             'failed-precondition',
             `Price mismatch for ${line.name || line.experienceId}`
           );
         }
+      } else if (Math.abs(lineClientTotal(line) - (line.unitPrice * (line.quantity || 1) + expectedAddons * (line.quantity || 1))) > 1) {
+        throw new HttpsError(
+          'failed-precondition',
+          `Price mismatch for ${line.name || line.experienceId}`
+        );
       }
       expectedSubtotal += lineClientTotal(line);
       continue;

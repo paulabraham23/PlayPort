@@ -7,6 +7,7 @@ import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
+import { ControllerAddonRow } from '@/components/products/ControllerAddonRow';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -15,9 +16,17 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
+import { useFeelStore } from '@/store/feelStore';
 import { gateCartAdd } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
-import { defaultExperiencePlan, experiencePlans } from '@/utils/rentalPricing';
+import {
+  addonsTotal,
+  defaultExperiencePlan,
+  describeControllerPrice,
+  experiencePlans,
+  isControllerAddon,
+  priceForAddon,
+} from '@/utils/rentalPricing';
 
 export default function ExperienceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,10 +40,25 @@ export default function ExperienceDetailScreen() {
   const experience = experiences.find((e) => e.id === id);
   const plans = experience ? experiencePlans(experience) : [];
   const [planId, setPlanId] = useState('');
+  const [addonQty, setAddonQty] = useState<Record<string, number>>({});
+  const showToast = useFeelStore((s) => s.showToast);
   const plan = plans.find((item) => item.id === planId) ?? (experience ? defaultExperiencePlan(experience) : null);
   const includedProducts = experience
     ? products.filter((p) => experience.productIds.includes(p.id))
     : [];
+  const controllerAddons = (experience?.addons ?? []).filter((a) => isControllerAddon(a));
+  const selectedAddons = Object.entries(addonQty)
+    .filter(([, q]) => q > 0)
+    .map(([addonId, quantity]) => ({ id: addonId, quantity }));
+  const addonLines = controllerAddons
+    .filter((a) => (addonQty[a.id] ?? 0) > 0)
+    .map((a) => {
+      const qty = Math.min(addonQty[a.id] ?? 0, a.maxQuantity);
+      const total = priceForAddon(a, plan?.hours ?? 12, qty);
+      return { id: a.id, name: a.name, quantity: qty, unitPrice: qty > 0 ? Math.round(total / qty) : 0 };
+    });
+  const extras = addonsTotal(addonLines);
+  const bundleTotal = (plan?.price ?? experience?.price ?? 0) + extras;
 
   if (!experience) {
     return (
@@ -122,6 +146,37 @@ export default function ExperienceDetailScreen() {
           </View>
         </View>
 
+        {controllerAddons.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Extra controllers</Text>
+            <Text style={styles.addonDesc}>
+              {controllerAddons.length === 1
+                ? `This combo: ${describeControllerPrice(controllerAddons[0])}`
+                : 'Each extra below uses this combo’s own price.'}
+            </Text>
+            {controllerAddons.map((addon) => (
+              <ControllerAddonRow
+                key={addon.id}
+                addon={addon}
+                hours={plan?.hours ?? 12}
+                quantity={addonQty[addon.id] ?? 0}
+                onIncrement={() =>
+                  setAddonQty((prev) => ({
+                    ...prev,
+                    [addon.id]: Math.min(addon.maxQuantity, (prev[addon.id] ?? 0) + 1),
+                  }))
+                }
+                onDecrement={() =>
+                  setAddonQty((prev) => ({
+                    ...prev,
+                    [addon.id]: Math.max(0, (prev[addon.id] ?? 0) - 1),
+                  }))
+                }
+              />
+            ))}
+          </View>
+        ) : null}
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>What&apos;s included</Text>
           <View style={styles.includes}>
@@ -176,8 +231,10 @@ export default function ExperienceDetailScreen() {
 
       <StickyBottomBar>
         <View style={{ flex: 1, minWidth: 140 }}>
-          <Text style={styles.stickyLabel}>Bundle total</Text>
-          <Text style={styles.stickyPrice}>{formatINR(plan?.price ?? experience.price)}</Text>
+          <Text style={styles.stickyLabel}>
+            Bundle total{extras > 0 ? ` · incl. ${formatINR(extras)} extras` : ''}
+          </Text>
+          <Text style={styles.stickyPrice}>{formatINR(bundleTotal)}</Text>
         </View>
         <Button
           title="Book combo"
@@ -189,10 +246,12 @@ export default function ExperienceDetailScreen() {
                 kind: 'experience',
                 experienceId: experience.id,
                 planId: chosen,
+                addons: selectedAddons,
               })
             )
               return;
-            addExperienceToCart(experience.id, chosen);
+            addExperienceToCart(experience.id, chosen, selectedAddons);
+            showToast(selectedAddons.length ? 'Combo + extras added' : 'Combo added');
             router.push('/cart');
           }}
           style={styles.bookBtn}
@@ -286,4 +345,11 @@ const styles = StyleSheet.create({
   stickyLabel: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12 },
   stickyPrice: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 18, marginTop: 2 },
   bookBtn: { minWidth: 160 },
+  addonDesc: {
+    color: colors.secondaryText,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    marginTop: -8,
+    lineHeight: 18,
+  },
 });

@@ -7,8 +7,14 @@ import { colors, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { adminGetExperience } from '@/lib/adminFirestore';
 import { useAdminStore } from '@/store/adminStore';
-import type { Experience, RentalPlan } from '@/types';
-import { DEFAULT_PLAN_TEMPLATES } from '@/utils/rentalPricing';
+import type { Experience, ProductAddon, RentalPlan } from '@/types';
+import {
+  DEFAULT_PLAN_TEMPLATES,
+  describeControllerPrice,
+  isControllerAddon,
+  priceForAddon,
+} from '@/utils/rentalPricing';
+import { formatINR } from '@/utils/format';
 
 const EMPTY: Experience = {
   id: '',
@@ -44,6 +50,8 @@ export default function AdminComboEditScreen() {
       price: 0,
     }))
   );
+  const [controllerTiers, setControllerTiers] = useState<{ upToHours: string; price: string }[]>([]);
+  const [controllerMax, setControllerMax] = useState('3');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +61,8 @@ export default function AdminComboEditScreen() {
       setChipsText('');
       setIncludesText('');
       setHowText('');
+      setControllerTiers([]);
+      setControllerMax('3');
       return;
     }
     void (async () => {
@@ -62,6 +72,13 @@ export default function AdminComboEditScreen() {
         setChipsText((e.chips ?? []).join(', '));
         setIncludesText((e.includes ?? []).join('\n'));
         setHowText((e.howItWorks ?? []).join('\n'));
+        const ctrl = (e.addons ?? []).find((a) => isControllerAddon(a));
+        setControllerTiers(
+          ctrl?.pricing.tiers?.length
+            ? ctrl.pricing.tiers.map((t) => ({ upToHours: String(t.upToHours), price: String(t.price) }))
+            : []
+        );
+        setControllerMax(ctrl ? String(ctrl.maxQuantity) : '3');
         setPlans(
           e.plans?.length
             ? e.plans
@@ -118,12 +135,33 @@ export default function AdminComboEditScreen() {
         return;
       }
       const featured = cleanedPlans.find((plan) => plan.popular) ?? cleanedPlans[0];
+      const tiers = controllerTiers
+        .map((t) => ({
+          upToHours: Number(t.upToHours.replace(/[^0-9]/g, '')) || 0,
+          price: Number(t.price.replace(/[^0-9]/g, '')) || 0,
+        }))
+        .filter((t) => t.upToHours > 0)
+        .sort((a, b) => a.upToHours - b.upToHours);
+      const controllerAddon: ProductAddon[] = tiers.length
+        ? [
+            {
+              id: 'extra-controller',
+              name: 'Extra Controller',
+              maxQuantity: Math.max(1, Number(controllerMax.replace(/[^0-9]/g, '')) || 1),
+              pricing: { perHour: 0, perHourMaxPlanHours: 6, flatPrice: 0, flatMinPlanHours: 12, tiers },
+            },
+          ]
+        : [];
+      if (controllerAddon[0]) {
+        controllerAddon[0].description = describeControllerPrice(controllerAddon[0]);
+      }
       await saveExperience({
         ...form,
         id: eid,
         plans: cleanedPlans,
         price: featured.price,
         durationLabel: featured.label,
+        addons: controllerAddon,
         chips: chipsText
           .split(',')
           .map((t) => t.trim())
@@ -301,6 +339,79 @@ export default function AdminComboEditScreen() {
           placeholderTextColor={colors.mutedText}
         />
       </View>
+      <Text style={adminStyles.cardTitle}>Extra controllers for this combo</Text>
+      <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
+        Same prices as products — e.g. ₹100 up to 6h · ₹120 up to 12h · ₹150 up to 24h.
+        Leave every row empty and this combo offers no extra controllers.
+      </Text>
+      {controllerTiers.map((tier, index) => (
+        <View key={`ctier-${index}`} style={adminStyles.row}>
+          <View style={[adminStyles.field, { flex: 1, marginBottom: 8 }]}>
+            <Text style={adminStyles.label}>Up to hours</Text>
+            <TextInput
+              style={adminStyles.input}
+              keyboardType="numeric"
+              value={tier.upToHours}
+              onChangeText={(t) =>
+                setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, upToHours: t } : r)))
+              }
+              placeholder="6"
+              placeholderTextColor={colors.mutedText}
+            />
+          </View>
+          <View style={[adminStyles.field, { flex: 1, marginBottom: 8, marginLeft: 8 }]}>
+            <Text style={adminStyles.label}>Flat ₹</Text>
+            <TextInput
+              style={adminStyles.input}
+              keyboardType="numeric"
+              value={tier.price}
+              onChangeText={(t) =>
+                setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, price: t } : r)))
+              }
+              placeholder="100"
+              placeholderTextColor={colors.mutedText}
+            />
+          </View>
+          <Pressable
+            onPress={() => setControllerTiers((prev) => prev.filter((_, i) => i !== index))}
+            style={{ justifyContent: 'center', marginLeft: 8, paddingTop: 18 }}
+          >
+            <Text style={{ color: colors.danger }}>Remove</Text>
+          </Pressable>
+        </View>
+      ))}
+      <View style={[adminStyles.row, { marginBottom: spacing.md, flexWrap: 'wrap', gap: 8 }]}>
+        <Button
+          title="Add price tier"
+          size="sm"
+          variant="secondary"
+          onPress={() => setControllerTiers((prev) => [...prev, { upToHours: '', price: '' }])}
+        />
+        <Button
+          title="Use 100 / 120 / 150"
+          size="sm"
+          variant="secondary"
+          onPress={() =>
+            setControllerTiers([
+              { upToHours: '6', price: '100' },
+              { upToHours: '12', price: '120' },
+              { upToHours: '24', price: '150' },
+            ])
+          }
+        />
+      </View>
+      <View style={adminStyles.field}>
+        <Text style={adminStyles.label}>Max extra controllers a customer can add</Text>
+        <TextInput
+          style={adminStyles.input}
+          keyboardType="numeric"
+          value={controllerMax}
+          onChangeText={setControllerMax}
+          placeholder="3"
+          placeholderTextColor={colors.mutedText}
+        />
+      </View>
+      <ControllerTierPreview tiers={controllerTiers} plans={plans} />
       <View style={adminStyles.field}>
         <Text style={adminStyles.label}>Chips (comma-separated)</Text>
         <TextInput
@@ -360,5 +471,47 @@ export default function AdminComboEditScreen() {
         />
       </View>
     </ScrollView>
+  );
+}
+
+function ControllerTierPreview({
+  tiers,
+  plans,
+}: {
+  tiers: { upToHours: string; price: string }[];
+  plans: RentalPlan[];
+}) {
+  const parsed = tiers
+    .map((t) => ({
+      upToHours: Number(t.upToHours.replace(/[^0-9]/g, '')) || 0,
+      price: Number(t.price.replace(/[^0-9]/g, '')) || 0,
+    }))
+    .filter((t) => t.upToHours > 0)
+    .sort((a, b) => a.upToHours - b.upToHours);
+  if (!parsed.length) {
+    return (
+      <Text style={[adminStyles.subtitle, { marginTop: 8, marginBottom: spacing.lg }]}>
+        No extra controllers on this combo until you add a tier above.
+      </Text>
+    );
+  }
+  const draft: ProductAddon = {
+    id: 'extra-controller',
+    name: 'Extra Controller',
+    maxQuantity: 1,
+    pricing: { perHour: 0, perHourMaxPlanHours: 6, flatPrice: 0, flatMinPlanHours: 12, tiers: parsed },
+  };
+  return (
+    <View style={{ marginTop: 8, marginBottom: spacing.lg, gap: 4 }}>
+      <Text style={adminStyles.label}>Customer sees</Text>
+      <Text style={adminStyles.cardMeta}>{describeControllerPrice(draft)}</Text>
+      {plans
+        .filter((p) => p.hours > 0)
+        .map((p) => (
+          <Text key={p.id || String(p.hours)} style={adminStyles.cardMeta}>
+            {p.label || `${p.hours}h`} · {formatINR(priceForAddon(draft, p.hours, 1))} each
+          </Text>
+        ))}
+    </View>
   );
 }

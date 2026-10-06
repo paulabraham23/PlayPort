@@ -47,6 +47,7 @@ import {
   experiencePlans,
   kitUnitPrice,
   normalizeProduct,
+  priceForAddon,
   resolveHours,
 } from '@/utils/rentalPricing';
 import type {
@@ -73,7 +74,7 @@ export type AddToCartOptions = {
 
 export type PendingCartAdd =
   | { kind: 'product'; productId: string; options?: AddToCartOptions }
-  | { kind: 'experience'; experienceId: string; planId?: string };
+  | { kind: 'experience'; experienceId: string; planId?: string; addons?: { id: string; quantity: number }[] };
 
 interface AppState {
   isAuthenticated: boolean;
@@ -105,7 +106,11 @@ interface AppState {
 
   queueCartAdd: (add: PendingCartAdd) => void;
   addProductToCart: (productId: string, options?: AddToCartOptions) => void;
-  addExperienceToCart: (experienceId: string, planId?: string) => void;
+  addExperienceToCart: (
+    experienceId: string,
+    planId?: string,
+    addons?: { id: string; quantity: number }[]
+  ) => void;
   updateCartQuantity: (cartItemId: string, quantity: number) => void;
   updateCartPlan: (
     cartItemId: string,
@@ -363,7 +368,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (pending?.kind === 'product') {
       get().addProductToCart(pending.productId, pending.options);
     } else if (pending?.kind === 'experience') {
-      get().addExperienceToCart(pending.experienceId, pending.planId);
+      get().addExperienceToCart(pending.experienceId, pending.planId, pending.addons);
     }
     if (pending) {
       set({ pendingCartAdd: null });
@@ -473,13 +478,33 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  addExperienceToCart: (experienceId, planId) => {
+  addExperienceToCart: (experienceId, planId, addonSelections = []) => {
     const exp = useCatalogStore.getState().experiences.find((e) => e.id === experienceId);
     if (!exp) return;
     const plan =
       experiencePlans(exp).find((p) => p.id === planId) ?? defaultExperiencePlan(exp);
+    const catalog = exp.addons ?? [];
+    const addonLines = addonSelections
+      .filter((s) => s.quantity > 0)
+      .map((s) => {
+        const addon = catalog.find((a) => a.id === s.id);
+        if (!addon) return null;
+        const qty = Math.min(s.quantity, addon.maxQuantity);
+        const total = priceForAddon(addon, plan.hours, qty);
+        return {
+          id: addon.id,
+          name: addon.name,
+          quantity: qty,
+          unitPrice: qty > 0 ? Math.round(total / qty) : 0,
+        };
+      })
+      .filter(Boolean) as CartItem['addons'];
+    const extras = addonsTotal(addonLines);
     const existing = get().cart.find(
-      (c) => c.experienceId === experienceId && c.planId === plan.id
+      (c) =>
+        c.experienceId === experienceId &&
+        c.planId === plan.id &&
+        JSON.stringify(c.addons ?? []) === JSON.stringify(addonLines)
     );
     let next: CartItem[];
     if (existing) {
@@ -499,8 +524,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         hours: plan.hours,
         pricingMode: 'package',
         unitPrice: plan.price,
-        addons: [],
-        addonsTotal: 0,
+        addons: addonLines,
+        addonsTotal: extras,
         quantity: 1,
         includesNote: exp.includes.slice(0, 2).join(' • '),
       };
@@ -537,6 +562,25 @@ export const useAppStore = create<AppState>((set, get) => ({
             plans.find((p) => p.id === patch.planId) ??
             plans.find((p) => p.id === c.planId) ??
             defaultExperiencePlan(exp);
+          const catalog = exp.addons ?? [];
+          const selected =
+            patch.addons ??
+            (c.addons ?? []).map((a) => ({ id: a.id, quantity: a.quantity }));
+          const addonLines = selected
+            .filter((s) => s.quantity > 0)
+            .map((s) => {
+              const addon = catalog.find((a) => a.id === s.id);
+              if (!addon) return null;
+              const qty = Math.min(s.quantity, addon.maxQuantity);
+              const total = priceForAddon(addon, plan.hours, qty);
+              return {
+                id: addon.id,
+                name: addon.name,
+                quantity: qty,
+                unitPrice: qty > 0 ? Math.round(total / qty) : 0,
+              };
+            })
+            .filter(Boolean) as CartItem['addons'];
           return {
             ...c,
             planId: plan.id,
@@ -545,6 +589,8 @@ export const useAppStore = create<AppState>((set, get) => ({
             hours: plan.hours,
             durationLabel: plan.label,
             unitPrice: plan.price,
+            addons: addonLines,
+            addonsTotal: addonsTotal(addonLines),
           };
         }
         if (!c.productId) return c;

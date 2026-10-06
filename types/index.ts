@@ -126,7 +126,7 @@ export interface Experience {
   id: string;
   name: string;
   description: string;
-  categoryId: CategoryId;
+  categoryId: string;
   image: string;
   price: number;
   durationLabel: string;
@@ -139,6 +139,8 @@ export interface Experience {
   howItWorks: string[];
   /** Hour packages customers pick on the combo. One combo, many lengths. */
   plans?: RentalPlan[];
+  /** Optional extra-controller pricing for this combo. Absent/empty = no extra controllers. */
+  addons?: ProductAddon[];
 }
 
 export interface CartItem {

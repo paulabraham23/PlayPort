@@ -52,9 +52,9 @@ export function FloatingCartBar({ bottomOffset = 12 }: Props) {
             style={styles.bar}
           >
             <View style={styles.left}>
-              <PulseOnChange pulseKey={cartCount}>
+              <PulseOnChange pulseKey={cartCount} style={styles.countSlot}>
                 <View style={styles.countBadge}>
-                  <ValuePop value={cartCount}>
+                  <ValuePop value={cartCount} style={styles.countPop}>
                     <Text style={styles.countText}>{cartCount > 9 ? '9+' : cartCount}</Text>
                   </ValuePop>
                 </View>
@@ -63,8 +63,10 @@ export function FloatingCartBar({ bottomOffset = 12 }: Props) {
                 <Text style={styles.label} numberOfLines={1}>
                   {cartCount} {cartCount === 1 ? 'item' : 'items'}
                 </Text>
-                <ValuePop value={totals.total}>
-                  <Text style={styles.total}>{formatINR(totals.total)}</Text>
+                <ValuePop value={totals.total} style={styles.totalPop}>
+                  <Text style={styles.total} numberOfLines={1}>
+                    {formatINR(totals.total)}
+                  </Text>
                 </ValuePop>
               </View>
             </View>
@@ -118,8 +120,11 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  left: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
-  meta: { flex: 1, minWidth: 0, gap: 1 },
+  left: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 },
+  meta: { flex: 1, minWidth: 0, gap: 2 },
+  countSlot: { flexShrink: 0, transformOrigin: 'right center' },
+  countPop: { transformOrigin: 'right center' },
+  totalPop: { alignSelf: 'flex-start', maxWidth: '100%', transformOrigin: 'left center' },
   countBadge: {
     minWidth: 28,
     height: 28,
@@ -128,6 +133,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(7,8,12,0.26)',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   countText: {
     color: colors.ctaPrimaryText,
@@ -143,6 +149,7 @@ const styles = StyleSheet.create({
     color: colors.ctaPrimaryText,
     fontFamily: fonts.heading,
     fontSize: typeScale.title,
+    lineHeight: 22,
   },
   cta: {
     flexDirection: 'row',

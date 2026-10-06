@@ -1,8 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
 import { QuantitySelector } from '@/components/cart/QuantitySelector';
 import { ControllerAddonRow } from '@/components/products/ControllerAddonRow';
@@ -17,8 +16,20 @@ import { useAppStore, useCartTotals } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
-import { addonsTotal, isControllerAddon, normalizeProduct } from '@/utils/rentalPricing';
-import type { CartItem } from '@/types';
+import { addonsTotal, experiencePlans, isControllerAddon, normalizeProduct } from '@/utils/rentalPricing';
+import type { CartItem, Experience, Product, RentalPlan } from '@/types';
+
+function plansForCartItem(item: CartItem, products: Product[], experiences: Experience[]): RentalPlan[] {
+  if (item.productId) {
+    const product = products.find((p) => p.id === item.productId);
+    return product ? normalizeProduct(product).plans.filter((plan) => plan.hours > 0) : [];
+  }
+  if (item.experienceId) {
+    const experience = experiences.find((e) => e.id === item.experienceId);
+    return experience ? experiencePlans(experience) : [];
+  }
+  return [];
+}
 
 export default function CartScreen() {
   const { horizontalPadding, useSplitPane } = useResponsive();
@@ -28,9 +39,9 @@ export default function CartScreen() {
   const updateCartPlan = useAppStore((s) => s.updateCartPlan);
   const removeFromCart = useAppStore((s) => s.removeFromCart);
   const products = useCatalogStore((s) => s.products);
+  const experiences = useCatalogStore((s) => s.experiences);
   const hub = useCatalogStore((s) => s.hub);
   const totals = useCartTotals();
-  const [editingItem, setEditingItem] = useState<CartItem | null>(null);
 
   const locationLabel =
     hub?.city && hub.city !== '—' ? hub.city : 'Your hub';
@@ -87,11 +98,6 @@ export default function CartScreen() {
                   {item.unitLabel ? (
                     <Text style={styles.durationText}>{item.unitLabel}</Text>
                   ) : null}
-                  {item.productId ? (
-                    <Pressable onPress={() => setEditingItem(item)}>
-                      <Text style={styles.edit}>Edit</Text>
-                    </Pressable>
-                  ) : null}
                 </View>
                 <View style={styles.priceRow}>
                   <Text style={styles.itemPrice}>
@@ -119,6 +125,44 @@ export default function CartScreen() {
           </View>
         ))}
       </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Change hours</Text>
+            <Text style={styles.note}>each kit keeps its own package</Text>
+          </View>
+          {cart.map((item) => {
+            const plans = plansForCartItem(item, products, experiences);
+            if (!plans.length) return null;
+            return (
+              <View key={item.id} style={styles.hoursCard}>
+                <Text style={styles.hoursName}>{item.name}</Text>
+                <View style={styles.planRow}>
+                  {plans.map((plan) => {
+                    const matchedById = plans.some((option) => option.id === item.planId);
+                    const selected = matchedById ? item.planId === plan.id : item.hours === plan.hours;
+                    return (
+                      <Pressable
+                        key={plan.id}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() =>
+                          updateCartPlan(item.id, { planId: plan.id, pricingMode: 'package' })
+                        }
+                        style={[styles.planChip, selected && styles.planChipOn]}
+                      >
+                        <Text style={[styles.planLabel, selected && styles.planLabelOn]}>{plan.label}</Text>
+                        <Text style={[styles.planPrice, selected && styles.planLabelOn]}>
+                          {formatINR(plan.price)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          })}
+        </View>
 
         {cart.some((item) => {
           const product = products.find((p) => p.id === item.productId);
@@ -224,49 +268,6 @@ export default function CartScreen() {
         />
       </StickyBottomBar>
 
-      <Modal visible={!!editingItem} transparent animationType="fade" onRequestClose={() => setEditingItem(null)}>
-        <View style={styles.modalOverlay}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Dismiss"
-            style={StyleSheet.absoluteFill}
-            onPress={() => setEditingItem(null)}
-          />
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Select plan</Text>
-            {(() => {
-              const product = editingItem?.productId
-                ? products.find((p) => p.id === editingItem.productId)
-                : undefined;
-              const plans = product ? normalizeProduct(product).plans : [];
-              return plans.map((d) => (
-              <Pressable
-                key={d.id}
-                accessibilityRole="button"
-                style={[
-                  styles.durationOption,
-                  editingItem?.planId === d.id && styles.durationSelected,
-                ]}
-                onPress={() => {
-                  if (editingItem) {
-                    updateCartPlan(editingItem.id, { planId: d.id, pricingMode: 'package' });
-                    setEditingItem(null);
-                  }
-                }}
-              >
-                <Text style={styles.durationOptionText}>{d.label}</Text>
-                <Text style={styles.durationOptionDesc}>{formatINR(d.price)} · {d.hours}h</Text>
-              </Pressable>
-              ));
-            })()}
-            <Button
-              title="Done"
-              variant="ghost"
-              onPress={() => setEditingItem(null)}
-            />
-          </View>
-        </View>
-      </Modal>
     </Screen>
   );
 }
@@ -315,7 +316,29 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   durationText: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, flex: 1 },
-  edit: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
+  hoursCard: {
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
+    padding: spacing.md,
+    gap: 10,
+  },
+  hoursName: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  planRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  planChip: {
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 88,
+  },
+  planChipOn: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTint },
+  planLabel: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  planLabelOn: { color: colors.primaryText },
+  planPrice: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 14, marginTop: 2 },
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

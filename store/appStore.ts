@@ -524,9 +524,29 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateCartPlan: (cartItemId, patch) => {
     const products = useCatalogStore.getState().products;
+    const experiences = useCatalogStore.getState().experiences;
     set({
       cart: get().cart.map((c) => {
-        if (c.id !== cartItemId || !c.productId) return c;
+        if (c.id !== cartItemId) return c;
+        if (c.experienceId && !c.productId) {
+          const exp = experiences.find((e) => e.id === c.experienceId);
+          if (!exp) return c;
+          const plans = experiencePlans(exp);
+          const plan =
+            plans.find((p) => p.id === patch.planId) ??
+            plans.find((p) => p.id === c.planId) ??
+            defaultExperiencePlan(exp);
+          return {
+            ...c,
+            planId: plan.id,
+            durationId: plan.id,
+            pricingMode: 'package' as const,
+            hours: plan.hours,
+            durationLabel: plan.label,
+            unitPrice: plan.price,
+          };
+        }
+        if (!c.productId) return c;
         const raw = products.find((p) => p.id === c.productId);
         if (!raw) return c;
         const product = normalizeProduct(raw);

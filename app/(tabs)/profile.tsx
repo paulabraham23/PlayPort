@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -38,6 +38,7 @@ export default function ProfileScreen() {
   const logout = useAppStore((s) => s.logout);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isRider, setIsRider] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -89,9 +90,9 @@ export default function ProfileScreen() {
         title: 'Security',
         items: [
           {
-            label: user.kycVerified ? 'Account verified' : 'Account security',
+            label: user.kycVerified ? 'Account verified' : 'Account',
             icon: 'shield-checkmark-outline',
-            href: '/profile/settings',
+            href: '/profile/account',
           },
         ],
       },
@@ -99,7 +100,7 @@ export default function ProfileScreen() {
         title: 'Support',
         items: [
           { label: 'Help & FAQs', icon: 'help-circle-outline', href: '/profile/help' },
-          { label: 'Sanitization Promise', icon: 'sparkles-outline', href: '/profile/help' },
+          { label: 'Sanitization Promise', icon: 'sparkles-outline', href: '/profile/sanitization' },
           { label: 'Settings', icon: 'settings-outline', href: '/profile/settings' },
         ],
       },
@@ -261,14 +262,32 @@ export default function ProfileScreen() {
               fullWidth
               style={styles.logout}
               icon={<Ionicons name="log-out-outline" size={18} color={colors.danger} />}
-              onPress={() => {
-                logout();
-                router.replace('/(tabs)');
-              }}
+              onPress={() => setConfirmLogout(true)}
             />
           </View>
         </View>
       </ScrollView>
+      <Modal visible={confirmLogout} transparent animationType="fade" onRequestClose={() => setConfirmLogout(false)}>
+        <View style={styles.logoutScrim}>
+          <View style={styles.logoutCard}>
+            <Text style={styles.logoutTitle}>Log out?</Text>
+            <Text style={styles.logoutBody}>
+              Your saved address stays on this account. You can log back in with the same number.
+            </Text>
+            <Button
+              title="Yes, log out"
+              variant="danger"
+              fullWidth
+              onPress={() => {
+                setConfirmLogout(false);
+                logout();
+                router.replace('/(tabs)');
+              }}
+            />
+            <Button title="Stay logged in" variant="ghost" fullWidth onPress={() => setConfirmLogout(false)} />
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -384,4 +403,21 @@ const styles = StyleSheet.create({
   },
   menuLabel: { flex: 1, color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg },
   logout: { marginTop: spacing.xl },
+  logoutScrim: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  logoutCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  logoutTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.title },
+  logoutBody: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.body, lineHeight: 22 },
 });

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -26,6 +26,7 @@ export default function LoginScreen() {
   const phoneDraft = useAppStore((s) => s.phoneDraft);
   const setPhoneDraft = useAppStore((s) => s.setPhoneDraft);
   const requestOtp = useAppStore((s) => s.requestOtp);
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const [localPhone, setLocalPhone] = useState(phoneDraft.replace(/\D/g, '').slice(-10) || '');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -37,6 +38,10 @@ export default function LoginScreen() {
     setPhoneDraft(digits);
   };
 
+  useEffect(() => {
+    if (isAuthenticated) router.replace('/(tabs)');
+  }, [isAuthenticated]);
+
   const canGetOtp = localPhone.length === 10 && !sending;
   const columnMax = formMaxWidth ?? 440;
 
@@ -46,7 +51,7 @@ export default function LoginScreen() {
     setSendError(null);
     try {
       await requestOtp(localPhone || phoneDraft);
-      router.push({ pathname: '/(auth)/otp', params: { next: returnTo } });
+      router.replace({ pathname: '/(auth)/otp', params: { next: returnTo } });
     } catch (e) {
       setSendError(e instanceof Error ? e.message : 'Could not send OTP');
     } finally {

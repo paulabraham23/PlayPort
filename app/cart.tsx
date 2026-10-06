@@ -184,7 +184,7 @@ export default function CartScreen() {
       <ScreenHeader
         title="Cart"
         subtitle={`${totals.count} item${totals.count === 1 ? '' : 's'}`}
-        onBack={() => router.back()}
+        onBack={() => router.replace('/(tabs)' as never)}
       />
       <ScrollView
         showsVerticalScrollIndicator={false}

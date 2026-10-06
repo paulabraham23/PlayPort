@@ -7,7 +7,8 @@ import { colors, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { adminGetExperience } from '@/lib/adminFirestore';
 import { useAdminStore } from '@/store/adminStore';
-import type { Experience } from '@/types';
+import type { Experience, RentalPlan } from '@/types';
+import { DEFAULT_PLAN_TEMPLATES } from '@/utils/rentalPricing';
 
 const EMPTY: Experience = {
   id: '',
@@ -37,6 +38,12 @@ export default function AdminComboEditScreen() {
   const [chipsText, setChipsText] = useState('');
   const [includesText, setIncludesText] = useState('');
   const [howText, setHowText] = useState('');
+  const [plans, setPlans] = useState<RentalPlan[]>(
+    DEFAULT_PLAN_TEMPLATES.filter((plan) => [1, 3, 6, 12].includes(plan.hours)).map((plan) => ({
+      ...plan,
+      price: 0,
+    }))
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +62,18 @@ export default function AdminComboEditScreen() {
         setChipsText((e.chips ?? []).join(', '));
         setIncludesText((e.includes ?? []).join('\n'));
         setHowText((e.howItWorks ?? []).join('\n'));
+        setPlans(
+          e.plans?.length
+            ? e.plans
+            : [
+                {
+                  id: 'combo',
+                  label: e.durationLabel || 'Session',
+                  hours: Number(String(e.durationLabel).match(/\d+/)?.[0]) || 12,
+                  price: e.price,
+                },
+              ]
+        );
       }
     })();
   }, [id, isNew]);
@@ -84,9 +103,27 @@ export default function AdminComboEditScreen() {
     }
     setSaving(true);
     try {
+      const cleanedPlans = plans
+        .map((plan) => ({
+          ...plan,
+          id: plan.id.trim() || `${plan.hours}h`,
+          label: plan.label.trim() || `${plan.hours} Hours`,
+          hours: Math.max(1, plan.hours),
+          price: Math.max(0, plan.price),
+        }))
+        .filter((plan) => plan.hours > 0);
+      if (!cleanedPlans.length) {
+        setError('Add at least one package, such as 1 hour, 3 hours, and 6 hours');
+        setSaving(false);
+        return;
+      }
+      const featured = cleanedPlans.find((plan) => plan.popular) ?? cleanedPlans[0];
       await saveExperience({
         ...form,
         id: eid,
+        plans: cleanedPlans,
+        price: featured.price,
+        durationLabel: featured.label,
         chips: chipsText
           .split(',')
           .map((t) => t.trim())
@@ -114,7 +151,9 @@ export default function AdminComboEditScreen() {
       contentContainerStyle={[adminStyles.scroll, { paddingHorizontal: horizontalPadding, paddingTop: spacing.xl }]}
     >
       <Text style={adminStyles.title}>{isNew ? 'New combo' : 'Edit combo'}</Text>
-      <Text style={adminStyles.subtitle}>Full experience / bundle parameters</Text>
+      <Text style={adminStyles.subtitle}>
+        One combo, several packages. Name it once — for example PS5 + Meta Quest 2 — then set 1 hour, 3 hours, and 6 hours. Don’t make a separate combo for each length.
+      </Text>
 
       {isNew ? (
         <View style={adminStyles.field}>
@@ -135,7 +174,6 @@ export default function AdminComboEditScreen() {
           ['description', 'Description'],
           ['image', 'Image URL'],
           ['tag', 'Tag'],
-          ['durationLabel', 'Duration label'],
           ['people', 'People'],
           ['categoryId', 'Category ID'],
         ] as const
@@ -167,16 +205,92 @@ export default function AdminComboEditScreen() {
         </View>
       ) : null}
 
-      <View style={adminStyles.field}>
-        <Text style={adminStyles.label}>Price (₹)</Text>
-        <TextInput
-          style={adminStyles.input}
-          keyboardType="numeric"
-          value={String(form.price ?? 0)}
-          onChangeText={(t) => setField('price', Number(t.replace(/[^0-9]/g, '')) || 0)}
-          placeholderTextColor={colors.mutedText}
+      <Text style={adminStyles.cardTitle}>Packages</Text>
+      <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
+        Customers pick one of these on the combo, the same way they pick a rental plan on a product.
+      </Text>
+      <View style={[adminStyles.row, { marginBottom: spacing.md, flexWrap: 'wrap', gap: 8 }]}>
+        <Button
+          title="1h / 3h / 6h / 12h"
+          size="sm"
+          variant="secondary"
+          onPress={() =>
+            setPlans(
+              DEFAULT_PLAN_TEMPLATES.filter((plan) => [1, 3, 6, 12].includes(plan.hours)).map((plan) => ({
+                ...plan,
+                price: plans.find((existing) => existing.hours === plan.hours)?.price ?? 0,
+              }))
+            )
+          }
+        />
+        <Button
+          title="Add package"
+          size="sm"
+          variant="secondary"
+          onPress={() =>
+            setPlans((prev) => [
+              ...prev,
+              { id: `${prev.length + 1}h`, label: 'New package', hours: 1, price: 0 },
+            ])
+          }
         />
       </View>
+      {plans.map((plan, index) => (
+        <View key={`plan-${index}`} style={adminStyles.card}>
+          <View style={adminStyles.row}>
+            <View style={[adminStyles.field, { flex: 1.4, marginBottom: 0 }]}>
+              <Text style={adminStyles.label}>Label</Text>
+              <TextInput
+                style={adminStyles.input}
+                value={plan.label}
+                onChangeText={(t) =>
+                  setPlans((prev) => prev.map((row, i) => (i === index ? { ...row, label: t } : row)))
+                }
+                placeholderTextColor={colors.mutedText}
+              />
+            </View>
+            <View style={[adminStyles.field, { flex: 0.7, marginBottom: 0, marginLeft: 8 }]}>
+              <Text style={adminStyles.label}>Hours</Text>
+              <TextInput
+                style={adminStyles.input}
+                keyboardType="numeric"
+                value={String(plan.hours)}
+                onChangeText={(t) =>
+                  setPlans((prev) =>
+                    prev.map((row, i) =>
+                      i === index ? { ...row, hours: Number(t.replace(/[^0-9]/g, '')) || 0 } : row
+                    )
+                  )
+                }
+                placeholderTextColor={colors.mutedText}
+              />
+            </View>
+            <View style={[adminStyles.field, { flex: 0.8, marginBottom: 0, marginLeft: 8 }]}>
+              <Text style={adminStyles.label}>Price ₹</Text>
+              <TextInput
+                style={adminStyles.input}
+                keyboardType="numeric"
+                value={plan.price ? String(plan.price) : ''}
+                onChangeText={(t) =>
+                  setPlans((prev) =>
+                    prev.map((row, i) =>
+                      i === index ? { ...row, price: Number(t.replace(/[^0-9]/g, '')) || 0 } : row
+                    )
+                  )
+                }
+                placeholder="0"
+                placeholderTextColor={colors.mutedText}
+              />
+            </View>
+          </View>
+          <Button
+            title="Remove"
+            size="sm"
+            variant="ghost"
+            onPress={() => setPlans((prev) => prev.filter((_, i) => i !== index))}
+          />
+        </View>
+      ))}
       <View style={adminStyles.field}>
         <Text style={adminStyles.label}>ETA minutes</Text>
         <TextInput

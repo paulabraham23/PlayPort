@@ -12,14 +12,16 @@ export function UnitGamesEditor({
 }: {
   unit: InventoryUnit;
   productName?: string;
-  onSave: (games: string[]) => Promise<void> | void;
+  onSave: (patch: { skuLabel: string; games: string[] }) => Promise<void> | void;
 }) {
+  const [name, setName] = useState(unit.skuLabel);
   const [text, setText] = useState((unit.games ?? []).join(', '));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    setName(unit.skuLabel);
     setText((unit.games ?? []).join(', '));
-  }, [unit.id, unit.updatedAt]);
+  }, [unit.id, unit.skuLabel, unit.updatedAt]);
 
   const save = async () => {
     setSaving(true);
@@ -28,7 +30,10 @@ export function UnitGamesEditor({
         .split(',')
         .map((g) => g.trim())
         .filter(Boolean);
-      await onSave(games);
+      await onSave({
+        skuLabel: name.trim() || unit.skuLabel,
+        games,
+      });
     } finally {
       setSaving(false);
     }
@@ -36,7 +41,14 @@ export function UnitGamesEditor({
 
   return (
     <View style={{ gap: 8 }}>
-      <Text style={adminStyles.cardTitle}>{unit.skuLabel}</Text>
+      <Text style={adminStyles.label}>Name customers see</Text>
+      <TextInput
+        style={adminStyles.input}
+        value={name}
+        onChangeText={setName}
+        placeholder="PS5 Slim"
+        placeholderTextColor={colors.mutedText}
+      />
       <Text style={adminStyles.cardMeta}>
         {productName ? `${productName} · ` : ''}
         {unit.productId} · {unit.hubId} · {unit.status}
@@ -54,7 +66,7 @@ export function UnitGamesEditor({
         placeholder="FIFA 24, GTA V, God of War"
         placeholderTextColor={colors.mutedText}
       />
-      <Button title={saving ? 'Saving…' : 'Save games'} size="sm" variant="secondary" onPress={() => void save()} />
+      <Button title={saving ? 'Saving…' : 'Save this console'} size="sm" variant="secondary" onPress={() => void save()} />
     </View>
   );
 }

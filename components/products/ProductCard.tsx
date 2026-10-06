@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 import { KenBurns } from '@/components/motion/KenBurns';
 import { PressableScale } from '@/components/motion/PressableScale';
@@ -11,15 +12,23 @@ import { colors, fonts, gradients, radii, shadows, spacing, typeScale, webShadow
 import { formatINR } from '@/utils/format';
 import { firstDisplayableImage } from '@/utils/images';
 import { defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
-import type { Product } from '@/types';
+import type { InventoryUnit, Product } from '@/types';
+
+export type CardSelection = {
+  planId: string;
+  inventoryUnitId?: string;
+};
 
 interface Props {
   product: Product;
   onPress?: () => void;
-  onAdd?: () => void;
-  onIncrement?: () => void;
-  onDecrement?: () => void;
+  onAdd?: (selection: CardSelection) => void;
+  onIncrement?: (selection: CardSelection) => void;
+  onDecrement?: (selection: CardSelection) => void;
   quantityInCart?: number;
+  quantityFor?: (selection: CardSelection) => number;
+  /** Physical kits the customer can choose, each with its own games. */
+  units?: InventoryUnit[];
   onRent?: () => void;
   compact?: boolean;
   wished?: boolean;
@@ -87,13 +96,14 @@ function CartAction({
 }
 
 function RatingRow({ rating, count }: { rating: number; count: number }) {
+  if (count <= 0 && rating <= 0) return null;
   return (
     <View style={styles.ratingRow}>
       <View style={styles.ratingChip}>
         <Ionicons name="star" size={10} color={colors.warning} />
         <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text>
       </View>
-      <Text style={styles.ratingCount}>{count}+ reviews</Text>
+      {count > 0 ? <Text style={styles.ratingCount}>{count}+ reviews</Text> : null}
     </View>
   );
 }
@@ -106,6 +116,68 @@ function ZoomImage({ uri, style }: { uri: string; style: object }) {
   );
 }
 
+function ChoiceChips({
+  plans,
+  planId,
+  units,
+  unitId,
+  onPlan,
+  onUnit,
+}: {
+  plans: { id: string; label: string; hours: number }[];
+  planId: string;
+  units: InventoryUnit[];
+  unitId?: string;
+  onPlan: (id: string) => void;
+  onUnit: (id: string) => void;
+}) {
+  if (plans.length < 2 && units.length < 2) return null;
+  return (
+    <View style={styles.choices}>
+      {plans.length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choiceRow}>
+          {plans.map((plan) => {
+            const on = plan.id === planId;
+            return (
+              <Pressable
+                key={plan.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+                onPress={() => onPlan(plan.id)}
+                style={[styles.choiceChip, on && styles.choiceChipOn]}
+              >
+                <Text style={[styles.choiceText, on && styles.choiceTextOn]}>{plan.label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+      {units.length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choiceRow}>
+          {units.map((unit) => {
+            const on = unit.id === unitId;
+            const games = (unit.games ?? []).slice(0, 2).join(' · ');
+            return (
+              <Pressable
+                key={unit.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+                onPress={() => onUnit(unit.id)}
+                style={[styles.choiceChip, on && styles.choiceChipOn]}
+              >
+                <Text style={[styles.choiceText, on && styles.choiceTextOn]} numberOfLines={1}>
+                  {unit.skuLabel}
+                  {games ? ` · ${games}` : ''}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+    </View>
+  );
+}
+
 export function ProductCard({
   product,
   onPress,
@@ -114,57 +186,89 @@ export function ProductCard({
   onDecrement,
   onRent,
   quantityInCart = 0,
+  quantityFor,
+  units = [],
   compact,
   wished,
   onToggleWishlist,
   fill,
 }: Props) {
   const normalized = normalizeProduct(product);
-  const plan = defaultPlan(normalized);
+  const plans = normalized.plans.filter((plan) => plan.hours > 0);
+  const [planId, setPlanId] = useState(defaultPlan(normalized)?.id ?? plans[0]?.id ?? '');
+  const [unitId, setUnitId] = useState(units[0]?.id);
+  const activePlanId = plans.some((item) => item.id === planId)
+    ? planId
+    : defaultPlan(normalized)?.id ?? plans[0]?.id ?? '';
+  const activeUnitId = units.some((unit) => unit.id === unitId) ? unitId : units[0]?.id;
+  const plan = plans.find((item) => item.id === activePlanId) ?? defaultPlan(normalized);
   const price = plan?.price ?? 0;
   const planLabel = plan?.label ?? 'plan';
+  const selection: CardSelection = {
+    planId: plan?.id ?? activePlanId,
+    inventoryUnitId: units.length ? activeUnitId : undefined,
+  };
+  const quantity = quantityFor?.(selection) ?? quantityInCart;
   const savings =
     product.compareAtPrice && product.compareAtPrice > price
       ? Math.round(((product.compareAtPrice - price) / product.compareAtPrice) * 100)
       : 0;
   const soldOut = product.availabilityLabel?.startsWith('No');
   const imageUri = firstDisplayableImage(product.images);
-  const handleAdd = onAdd ?? onRent;
+  const add = () => {
+    if (onAdd) onAdd(selection);
+    else onRent?.();
+  };
+  const increment = () => (onIncrement ?? onAdd)?.(selection);
+  const decrement = () => onDecrement?.(selection);
+  const choices = (
+    <ChoiceChips
+      plans={plans}
+      planId={activePlanId}
+      units={units}
+      unitId={selection.inventoryUnitId}
+      onPlan={setPlanId}
+      onUnit={setUnitId}
+    />
+  );
 
   if (compact) {
     return (
-      <PressableScale onPress={onPress} scaleTo={0.98} style={styles.compact}>
-        <View style={styles.compactImageWrap}>
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.compactImage} contentFit="cover" />
-          ) : null}
-          <View style={styles.compactEta}>
-            <Text style={styles.etaBadgeText}>{product.etaMinutes}m</Text>
-          </View>
-        </View>
-        <View style={styles.compactBody}>
-          <RatingRow rating={product.rating} count={product.reviewCount} />
-          <Text style={styles.compactTitle} numberOfLines={2}>
-            {product.shortName}
-          </Text>
-          <Text style={styles.unitChip}>1 kit · {planLabel}</Text>
-          <View style={styles.compactFooter}>
-            <View>
-              <Text style={styles.price}>{formatINR(price)}</Text>
-              {product.compareAtPrice ? (
-                <Text style={styles.mrp}>{formatINR(product.compareAtPrice)}</Text>
-              ) : null}
+      <View style={styles.compact}>
+        <PressableScale onPress={onPress} scaleTo={0.98}>
+          <View style={styles.compactImageWrap}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.compactImage} contentFit="cover" />
+            ) : null}
+            <View style={styles.compactEta}>
+              <Text style={styles.etaBadgeText}>{product.etaMinutes}m</Text>
             </View>
-            <CartAction
-              quantity={quantityInCart}
-              productName={product.shortName}
-              onAdd={handleAdd}
-              onIncrement={onIncrement ?? handleAdd}
-              onDecrement={onDecrement}
-            />
           </View>
+          <View style={styles.compactBody}>
+            <RatingRow rating={product.rating} count={product.reviewCount} />
+            <Text style={styles.compactTitle} numberOfLines={2}>
+              {product.shortName}
+            </Text>
+            <Text style={styles.unitChip}>1 kit · {planLabel}</Text>
+          </View>
+        </PressableScale>
+        {choices}
+        <View style={[styles.compactFooter, { paddingHorizontal: spacing.md, paddingBottom: spacing.md }]}>
+          <View>
+            <Text style={styles.price}>{formatINR(price)}</Text>
+            {product.compareAtPrice ? (
+              <Text style={styles.mrp}>{formatINR(product.compareAtPrice)}</Text>
+            ) : null}
+          </View>
+          <CartAction
+            quantity={quantity}
+            productName={product.shortName}
+            onAdd={add}
+            onIncrement={increment}
+            onDecrement={decrement}
+          />
         </View>
-      </PressableScale>
+      </View>
     );
   }
 
@@ -224,6 +328,7 @@ export function ProductCard({
           <Text style={styles.unitChip}>Setup included · {planLabel}</Text>
         </View>
       </PressableScale>
+      {choices}
       <View style={styles.footer}>
         <View style={styles.priceCol}>
           <View style={styles.priceRow}>
@@ -239,11 +344,11 @@ export function ProductCard({
           ) : null}
         </View>
         <CartAction
-          quantity={quantityInCart}
+          quantity={quantity}
           productName={product.shortName}
-          onAdd={handleAdd}
-          onIncrement={onIncrement ?? handleAdd}
-          onDecrement={onDecrement}
+          onAdd={add}
+          onIncrement={increment}
+          onDecrement={decrement}
         />
       </View>
     </Animated.View>
@@ -422,6 +527,27 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     marginTop: 1,
   },
+  choices: { gap: 6, paddingHorizontal: spacing.md, paddingBottom: 4 },
+  choiceRow: { gap: 6, paddingRight: spacing.md },
+  choiceChip: {
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    maxWidth: 220,
+  },
+  choiceChipOn: {
+    borderColor: colors.playportOrange,
+    backgroundColor: colors.orangeTint,
+  },
+  choiceText: {
+    color: colors.secondaryText,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+  },
+  choiceTextOn: { color: colors.primaryText },
   badge: {
     color: colors.secondaryText,
     fontFamily: fonts.body,

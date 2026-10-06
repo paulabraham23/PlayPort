@@ -291,6 +291,20 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   let expectedSubtotal = 0;
   for (const line of cart) {
     if (line.experienceId && !line.productId) {
+      const expSnap = await db.collection('experiences').doc(line.experienceId).get();
+      const plans = (expSnap.data()?.plans ?? []) as { id?: string; hours?: number; price?: number }[];
+      if (plans.length) {
+        const plan =
+          plans.find((p) => p.id && p.id === line.planId) ??
+          plans.find((p) => p.hours === line.hours);
+        const expected = (Number(plan?.price) || 0) * (line.quantity || 1);
+        if (!plan || Math.abs(lineClientTotal(line) - expected) > 1) {
+          throw new HttpsError(
+            'failed-precondition',
+            `Price mismatch for ${line.name || line.experienceId}`
+          );
+        }
+      }
       expectedSubtotal += lineClientTotal(line);
       continue;
     }

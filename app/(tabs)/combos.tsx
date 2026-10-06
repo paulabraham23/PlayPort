@@ -21,9 +21,9 @@ export default function CombosScreen() {
   const showToast = useFeelStore((s) => s.showToast);
   const cols = Math.max(1, experienceColumns);
 
-  const bookCombo = (id: string, name: string) => {
-    if (!gateCartAdd('/(tabs)/combos', { kind: 'experience', experienceId: id })) return;
-    addExperienceToCart(id);
+  const bookCombo = (id: string, name: string, planId: string) => {
+    if (!gateCartAdd('/(tabs)/combos', { kind: 'experience', experienceId: id, planId })) return;
+    addExperienceToCart(id, planId);
     showToast(`Added ${name}`);
   };
 
@@ -43,7 +43,7 @@ export default function CombosScreen() {
                 <ExperienceCard
                   experience={experience}
                   onPress={() => router.push(`/experience/${experience.id}`)}
-                  onBook={() => bookCombo(experience.id, experience.name)}
+                  onBook={(planId) => bookCombo(experience.id, experience.name, planId)}
                 />
               </EnterUp>
             ))}

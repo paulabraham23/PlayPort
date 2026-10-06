@@ -37,9 +37,12 @@ export default function WishlistScreen() {
               onToggleWishlist={() => toggle(product.id)}
               quantityInCart={cart.filter((c) => c.productId === product.id).reduce((n, c) => n + c.quantity, 0)}
               onPress={() => router.push(`/product/${product.id}`)}
-              onAdd={() => {
+              onAdd={(selection) => {
                 if (!ensureLoggedIn('/wishlist')) return;
-                addProductToCart(product.id);
+                addProductToCart(product.id, {
+                  planId: selection.planId,
+                  inventoryUnitId: selection.inventoryUnitId,
+                });
                 showToast(`Added ${product.shortName}`);
               }}
             />

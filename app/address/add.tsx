@@ -97,7 +97,7 @@ export default function AddAddressScreen() {
     if (!canSave) return;
     setSaving(true);
     try {
-      const id = addAddress({
+      const id = await addAddress({
         label: label.trim(),
         type,
         line1: line1.trim(),

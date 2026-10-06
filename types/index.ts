@@ -129,6 +129,8 @@ export interface Experience {
   includes: string[];
   productIds: string[];
   howItWorks: string[];
+  /** Hour packages customers pick on the combo. One combo, many lengths. */
+  plans?: RentalPlan[];
 }
 
 export interface CartItem {

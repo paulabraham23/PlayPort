@@ -100,7 +100,7 @@ export default function ProductDetailScreen() {
   if (!product || !normalized) {
     return (
       <Screen showHeader={false}>
-        <ScreenHeader title="Item Detail" onBack={() => router.back()} />
+        <ScreenHeader title="Item Detail" onBack={() => router.replace('/(tabs)' as never)} />
         <EmptyState
           title="Product not found"
           subtitle="This kit may have moved hubs."
@@ -203,7 +203,7 @@ export default function ProductDetailScreen() {
 
   return (
     <Screen showHeader={false} edges={['top']}>
-      <ScreenHeader title="Item Detail" onBack={() => router.back()} />
+      <ScreenHeader title="Item Detail" onBack={() => router.replace('/(tabs)' as never)} />
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -235,9 +235,9 @@ export default function ProductDetailScreen() {
 
         {productUnits.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader eyebrow="Units" title="Choose your kit" />
+            <SectionHeader eyebrow="Your console" title="Choose which one" />
             <Text style={styles.addonDesc}>
-              Each unit has its own game lineup. Pick yours — tap Games for the full list.
+              Each console is a different set. The games on it are not the same as the next one. Tap Games to see that set.
             </Text>
             {productUnits.map((unit) => {
               const selected = unitId === unit.id;
@@ -396,15 +396,11 @@ export default function ProductDetailScreen() {
           </View>
         </View>
 
+        {productReviews.length > 0 ? (
         <View style={styles.section}>
           <View style={styles.sectionTop}>
             <SectionHeader eyebrow="Reviews" title="Customer reviews" />
             <Text style={styles.metaLabel}>{product.rating.toFixed(1)} / 5</Text>
-          </View>
-          <View style={styles.ratingCard}>
-            <Text style={styles.bigRating}>{product.rating.toFixed(2)}</Text>
-            <Text style={styles.stars}>★★★★★</Text>
-            <Text style={styles.reviewCount}>{product.reviewCount}+ ratings</Text>
           </View>
           {productReviews.map((review) => (
             <View key={review.id} style={styles.reviewCard}>
@@ -416,10 +412,8 @@ export default function ProductDetailScreen() {
               <Text style={styles.reviewText}>{review.text}</Text>
             </View>
           ))}
-          {!productReviews.length ? (
-            <Text style={styles.noReviews}>Be the first to verify this kit after your session.</Text>
-          ) : null}
         </View>
+        ) : null}
 
         {related.length > 0 ? (
           <View style={styles.section}>
@@ -432,25 +426,35 @@ export default function ProductDetailScreen() {
                   compact={productColumns === 1}
                   quantityInCart={qtyFor(item.id)}
                   onPress={() => router.push(`/product/${item.id}`)}
-                  onAdd={() => {
+                  onAdd={(selection) => {
+                    const options = {
+                      planId: selection.planId,
+                      inventoryUnitId: selection.inventoryUnitId,
+                    };
                     if (
                       !gateCartAdd(`/product/${item.id}`, {
                         kind: 'product',
                         productId: item.id,
+                        options,
                       })
                     )
                       return;
-                    addProductToCart(item.id);
+                    addProductToCart(item.id, options);
                   }}
-                  onIncrement={() => {
+                  onIncrement={(selection) => {
+                    const options = {
+                      planId: selection.planId,
+                      inventoryUnitId: selection.inventoryUnitId,
+                    };
                     if (
                       !gateCartAdd(`/product/${item.id}`, {
                         kind: 'product',
                         productId: item.id,
+                        options,
                       })
                     )
                       return;
-                    addProductToCart(item.id);
+                    addProductToCart(item.id, options);
                   }}
                   onDecrement={() => {
                     const cartId = cartItemIdFor(item.id);

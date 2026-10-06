@@ -15,7 +15,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { gateCartAdd } from '@/utils/authGate';
-import { defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
+import type { CardSelection } from '@/components/products/ProductCard';
 import { formatINR, searchProducts } from '@/utils/format';
 
 export default function SearchResultsScreen() {
@@ -28,10 +28,12 @@ export default function SearchResultsScreen() {
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
   const cart = useAppStore((s) => s.cart);
   const products = useCatalogStore((s) => s.products);
+  const units = useCatalogStore((s) => s.units);
 
-  const addKit = (productId: string) => {
-    const product = products.find((p) => p.id === productId);
-    const options = product ? { planId: defaultPlan(normalizeProduct(product))?.id } : undefined;
+  const addKit = (productId: string, selection?: CardSelection) => {
+    const options = selection
+      ? { planId: selection.planId, inventoryUnitId: selection.inventoryUnitId }
+      : undefined;
     if (!gateCartAdd('/search/results', { kind: 'product', productId, options })) return;
     addProductToCart(productId, options);
   };
@@ -45,10 +47,13 @@ export default function SearchResultsScreen() {
   const listProducts = results.filter((p) => p.id !== featured?.id);
   const setupsReady = results.length || 0;
 
-  const qtyFor = (productId: string) =>
-    cart.filter((c) => c.productId === productId).reduce((sum, c) => sum + c.quantity, 0);
-  const cartItemIdFor = (productId: string) =>
-    cart.find((c) => c.productId === productId)?.id;
+  const lineFor = (productId: string, selection: CardSelection) =>
+    cart.find(
+      (item) =>
+        item.productId === productId &&
+        item.planId === selection.planId &&
+        (item.inventoryUnitId ?? '') === (selection.inventoryUnitId ?? '')
+    );
 
   const submit = (value: string) => {
     const trimmed = value.trim();
@@ -69,7 +74,7 @@ export default function SearchResultsScreen() {
           value={query}
           onChangeText={setQuery}
           showBack
-          onBack={() => router.back()}
+          onBack={() => router.replace('/(tabs)' as never)}
           onSubmit={() => submit(query)}
           onClear={() => setQuery('')}
         />
@@ -149,14 +154,14 @@ export default function SearchResultsScreen() {
                   key={product.id}
                   product={product}
                   compact={productColumns === 1}
-                  quantityInCart={qtyFor(product.id)}
+                  units={units.filter((unit) => unit.productId === product.id && unit.status === 'available')}
+                  quantityFor={(selection) => lineFor(product.id, selection)?.quantity ?? 0}
                   onPress={() => router.push(`/product/${product.id}`)}
-                  onAdd={() => addKit(product.id)}
-                  onIncrement={() => addKit(product.id)}
-                  onDecrement={() => {
-                    const cartId = cartItemIdFor(product.id);
-                    const qty = qtyFor(product.id);
-                    if (cartId) updateCartQuantity(cartId, qty - 1);
+                  onAdd={(selection) => addKit(product.id, selection)}
+                  onIncrement={(selection) => addKit(product.id, selection)}
+                  onDecrement={(selection) => {
+                    const line = lineFor(product.id, selection);
+                    if (line) updateCartQuantity(line.id, line.quantity - 1);
                   }}
                 />
               ))}

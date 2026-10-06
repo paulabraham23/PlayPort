@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -16,6 +17,7 @@ import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { gateCartAdd } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
+import { defaultExperiencePlan, experiencePlans } from '@/utils/rentalPricing';
 
 export default function ExperienceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,6 +29,9 @@ export default function ExperienceDetailScreen() {
   const products = useCatalogStore((s) => s.products);
 
   const experience = experiences.find((e) => e.id === id);
+  const plans = experience ? experiencePlans(experience) : [];
+  const [planId, setPlanId] = useState('');
+  const plan = plans.find((item) => item.id === planId) ?? (experience ? defaultExperiencePlan(experience) : null);
   const includedProducts = experience
     ? products.filter((p) => experience.productIds.includes(p.id))
     : [];
@@ -34,7 +39,7 @@ export default function ExperienceDetailScreen() {
   if (!experience) {
     return (
       <Screen showHeader={false}>
-        <ScreenHeader title="Combo" onBack={() => router.back()} />
+        <ScreenHeader title="Combo" onBack={() => router.replace('/(tabs)/combos' as never)} />
         <EmptyState
           title="Combo not found"
           subtitle="This bundle may have rotated out."
@@ -74,8 +79,8 @@ export default function ExperienceDetailScreen() {
           <Text style={styles.metaText}>{experience.people}</Text>
         </View>
         <Text style={styles.price}>
-          {formatINR(experience.price)}
-          <Text style={styles.duration}> {experience.durationLabel}</Text>
+          {formatINR(plan?.price ?? experience.price)}
+          <Text style={styles.duration}> {plan?.label ?? experience.durationLabel}</Text>
         </Text>
       </View>
     </View>
@@ -83,7 +88,7 @@ export default function ExperienceDetailScreen() {
 
   return (
     <Screen showHeader={false} edges={['top']}>
-      <ScreenHeader title="Combo" onBack={() => router.back()} />
+      <ScreenHeader title="Combo" onBack={() => router.replace('/(tabs)/combos' as never)} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
@@ -94,6 +99,27 @@ export default function ExperienceDetailScreen() {
         <View style={[styles.topBlock, useSplitPane && styles.topBlockSplit]}>
           {heroBlock}
           {summaryBlock}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Choose a package</Text>
+          <View style={styles.planRow}>
+            {plans.map((item) => {
+              const on = item.id === (plan?.id ?? '');
+              return (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setPlanId(item.id)}
+                  style={[styles.planChip, on && styles.planChipOn]}
+                >
+                  <Text style={[styles.planLabel, on && styles.planLabelOn]}>{item.label}</Text>
+                  <Text style={[styles.planPrice, on && styles.planLabelOn]}>{formatINR(item.price)}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -132,9 +158,13 @@ export default function ExperienceDetailScreen() {
                   product={product}
                   compact={productColumns === 1}
                   onPress={() => router.push(`/product/${product.id}`)}
-                  onAdd={() => {
-                    if (!gateCartAdd('/cart', { kind: 'product', productId: product.id })) return;
-                    addProductToCart(product.id);
+                  onAdd={(selection) => {
+                    const options = {
+                      planId: selection.planId,
+                      inventoryUnitId: selection.inventoryUnitId,
+                    };
+                    if (!gateCartAdd('/cart', { kind: 'product', productId: product.id, options })) return;
+                    addProductToCart(product.id, options);
                     router.push('/cart');
                   }}
                 />
@@ -147,14 +177,22 @@ export default function ExperienceDetailScreen() {
       <StickyBottomBar>
         <View style={{ flex: 1, minWidth: 140 }}>
           <Text style={styles.stickyLabel}>Bundle total</Text>
-          <Text style={styles.stickyPrice}>{formatINR(experience.price)}</Text>
+          <Text style={styles.stickyPrice}>{formatINR(plan?.price ?? experience.price)}</Text>
         </View>
         <Button
           title="Book combo"
           icon={<Ionicons name="flash" size={16} color={colors.white} />}
           onPress={() => {
-            if (!gateCartAdd('/cart', { kind: 'experience', experienceId: experience.id })) return;
-            addExperienceToCart(experience.id);
+            const chosen = plan?.id;
+            if (
+              !gateCartAdd('/cart', {
+                kind: 'experience',
+                experienceId: experience.id,
+                planId: chosen,
+              })
+            )
+              return;
+            addExperienceToCart(experience.id, chosen);
             router.push('/cart');
           }}
           style={styles.bookBtn}
@@ -166,6 +204,20 @@ export default function ExperienceDetailScreen() {
 
 const styles = StyleSheet.create({
   scroll: { gap: spacing.lg, paddingTop: spacing.sm },
+  planRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  planChip: {
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minWidth: 96,
+  },
+  planChipOn: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTint },
+  planLabel: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  planLabelOn: { color: colors.primaryText },
+  planPrice: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 15, marginTop: 2 },
   topBlock: { gap: spacing.lg },
   topBlockSplit: {
     flexDirection: 'row',

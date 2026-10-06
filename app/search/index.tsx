@@ -45,7 +45,7 @@ export default function SearchDiscoveryScreen() {
           onChangeText={setQuery}
           autoFocus
           showBack
-          onBack={() => router.back()}
+          onBack={() => router.replace('/(tabs)' as never)}
           onSubmit={() => runSearch(query)}
           onClear={() => setQuery('')}
         />

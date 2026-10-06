@@ -11,7 +11,7 @@ import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { gateCartAdd } from '@/utils/authGate';
-import { defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
+import type { CardSelection } from '@/components/products/ProductCard';
 
 const CARD_GAP = 16;
 
@@ -25,19 +25,28 @@ export default function HomeScreen() {
   const cart = useAppStore((s) => s.cart);
   const showToast = useFeelStore((s) => s.showToast);
   const products = useCatalogStore((s) => s.products);
+  const units = useCatalogStore((s) => s.units);
   const ready = useCatalogStore((s) => s.ready);
   const catalogError = useCatalogStore((s) => s.error);
   const hydrate = useCatalogStore((s) => s.hydrate);
   const wishlist = useWishlistStore((s) => s.ids);
   const toggleWishlist = useWishlistStore((s) => s.toggle);
 
-  const qtyFor = (productId: string) =>
-    cart.filter((c) => c.productId === productId).reduce((sum, c) => sum + c.quantity, 0);
+  const lineFor = (productId: string, selection: CardSelection) =>
+    cart.find(
+      (item) =>
+        item.productId === productId &&
+        item.planId === selection.planId &&
+        (item.inventoryUnitId ?? '') === (selection.inventoryUnitId ?? '')
+    );
 
-  const cartItemIdFor = (productId: string) => cart.find((c) => c.productId === productId)?.id;
-
-  const addKit = (product: (typeof products)[0]) => {
-    const options = { planId: defaultPlan(normalizeProduct(product))?.id };
+  const addKit = (product: (typeof products)[0], selection: CardSelection) => {
+    const unit = units.find((item) => item.id === selection.inventoryUnitId);
+    const options = {
+      planId: selection.planId,
+      inventoryUnitId: selection.inventoryUnitId,
+      unitLabel: unit?.skuLabel,
+    };
     if (!gateCartAdd('/(tabs)', { kind: 'product', productId: product.id, options })) return;
     addProductToCart(product.id, options);
     showToast(`Added ${product.shortName}`);
@@ -75,15 +84,15 @@ export default function HomeScreen() {
                 product={product}
                 wished={wishlist.includes(product.id)}
                 onToggleWishlist={() => toggleWishlist(product.id)}
-                quantityInCart={qtyFor(product.id)}
+                units={units.filter((unit) => unit.productId === product.id && unit.status === 'available')}
+                quantityFor={(selection) => lineFor(product.id, selection)?.quantity ?? 0}
                 onPress={() => router.push(`/product/${product.id}`)}
-                onAdd={() => addKit(product)}
-                onIncrement={() => addKit(product)}
-                onDecrement={() => {
+                onAdd={(selection) => addKit(product, selection)}
+                onIncrement={(selection) => addKit(product, selection)}
+                onDecrement={(selection) => {
                   if (!isAuthenticated) return;
-                  const id = cartItemIdFor(product.id);
-                  const qty = qtyFor(product.id);
-                  if (id) updateCartQuantity(id, qty - 1);
+                  const line = lineFor(product.id, selection);
+                  if (line) updateCartQuantity(line.id, line.quantity - 1);
                 }}
               />
             </View>

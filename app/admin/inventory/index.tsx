@@ -164,7 +164,7 @@ export default function AdminInventoryScreen() {
             <UnitGamesEditor
               unit={u}
               productName={products.find((p) => p.id === u.productId)?.shortName}
-              onSave={(games) => saveUnit({ ...u, games, updatedAt: new Date().toISOString() })}
+              onSave={(patch) => saveUnit({ ...u, ...patch, updatedAt: new Date().toISOString() })}
             />
             <View style={adminStyles.row}>
               {STATUSES.map((s) => (

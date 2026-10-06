@@ -51,6 +51,14 @@ function num(t: string): number {
   return Number(t.replace(/[^0-9]/g, '')) || 0;
 }
 
+/** Keep a trailing dot while typing, e.g. "4." before "4.8". */
+function decimalText(t: string): string {
+  const cleaned = t.replace(/[^\d.]/g, '');
+  const dot = cleaned.indexOf('.');
+  if (dot === -1) return cleaned;
+  return `${cleaned.slice(0, dot + 1)}${cleaned.slice(dot + 1).replace(/\./g, '')}`;
+}
+
 export default function AdminProductEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isNew = id === 'new';
@@ -72,6 +80,7 @@ export default function AdminProductEditScreen() {
   const [controllerFlat, setControllerFlat] = useState('');
   const [controllerFlatFrom, setControllerFlatFrom] = useState('12');
   const [controllerMax, setControllerMax] = useState('3');
+  const [ratingText, setRatingText] = useState('');
   const [tagsText, setTagsText] = useState('');
   const [requirementsText, setRequirementsText] = useState('');
   const [includes, setIncludes] = useState<IncludeRow[]>([]);
@@ -91,6 +100,7 @@ export default function AdminProductEditScreen() {
       setControllerFlat('');
       setControllerFlatFrom('12');
       setControllerMax('3');
+      setRatingText('');
       setTagsText('');
       setRequirementsText('');
       setIncludes([]);
@@ -112,6 +122,7 @@ export default function AdminProductEditScreen() {
         setControllerFlatFrom(ctrl ? String(ctrl.pricing.flatMinPlanHours) : '12');
         setControllerMax(ctrl ? String(ctrl.maxQuantity) : '3');
         setAddons((n.addons ?? []).filter((a) => !isControllerAddon(a)));
+        setRatingText(n.rating ? String(n.rating) : '');
         setTagsText((n.tags ?? []).join(', '));
         setRequirementsText((n.requirements ?? []).join('\n'));
         setIncludes((n.includes ?? []).map((i) => ({ ...i })));
@@ -238,6 +249,7 @@ export default function AdminProductEditScreen() {
           .split('\n')
           .map((t) => t.trim())
           .filter(Boolean),
+        rating: Number.isFinite(Number(ratingText)) ? Math.max(0, Number(ratingText) || 0) : 0,
         images: (form.images ?? []).map((u) => u.trim()).filter(Boolean),
         includes: includes
           .map((row) => ({
@@ -560,9 +572,9 @@ export default function AdminProductEditScreen() {
         plans={plans}
       />
 
-      <Text style={adminStyles.cardTitle}>Physical units and games</Text>
+      <Text style={adminStyles.cardTitle}>Selectable consoles</Text>
       <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
-        Customers pick a unit on the product page and see only the games saved on that unit.
+        Each row is a choice on the product, separate from the product itself. Name it what the customer should tap (PS5 Slim, PS5 with FIFA) and list only the games on that console.
       </Text>
       {isNew ? (
         <Text style={[adminStyles.subtitle, { marginBottom: spacing.lg }]}>
@@ -575,7 +587,9 @@ export default function AdminProductEditScreen() {
               <UnitGamesEditor
                 unit={unit}
                 productName={form.shortName || form.name}
-                onSave={(games) => saveUnit({ ...unit, games, updatedAt: new Date().toISOString() })}
+                onSave={(patch) =>
+                  saveUnit({ ...unit, ...patch, updatedAt: new Date().toISOString() })
+                }
               />
             </View>
           ))}
@@ -813,8 +827,8 @@ export default function AdminProductEditScreen() {
         <TextInput
           style={adminStyles.input}
           keyboardType="decimal-pad"
-          value={String(form.rating ?? 0)}
-          onChangeText={(t) => setField('rating', Number(t) || 0)}
+          value={ratingText}
+          onChangeText={(t) => setRatingText(decimalText(t))}
           placeholderTextColor={colors.mutedText}
         />
       </View>

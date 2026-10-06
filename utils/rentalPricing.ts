@@ -81,6 +81,34 @@ function legacyPlansFromPriceByDuration(
     .sort((a, b) => a.hours - b.hours);
 }
 
+/** Packages on a combo. Older combos with one price still book as a single plan. */
+export function experiencePlans(experience: { plans?: RentalPlan[]; price: number; durationLabel: string }): RentalPlan[] {
+  const plans = (experience.plans ?? [])
+    .filter((plan) => plan.hours > 0)
+    .map((plan) => ({ ...plan, price: Math.max(0, plan.price) }))
+    .sort((a, b) => a.hours - b.hours);
+  if (plans.length) return plans;
+  const parsed = Number(String(experience.durationLabel).match(/\d+/)?.[0]);
+  const hours = parsed > 0 ? parsed : 12;
+  return [
+    {
+      id: 'combo',
+      label: experience.durationLabel?.trim() || `${hours} Hours`,
+      hours,
+      price: experience.price,
+    },
+  ];
+}
+
+export function defaultExperiencePlan(experience: {
+  plans?: RentalPlan[];
+  price: number;
+  durationLabel: string;
+}): RentalPlan {
+  const plans = experiencePlans(experience);
+  return plans.find((plan) => plan.popular) ?? plans[0];
+}
+
 export function defaultPlan(product: Product): RentalPlan | null {
   const p = normalizeProduct(product);
   if (!p.plans.length) return null;

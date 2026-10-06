@@ -42,7 +42,9 @@ import { isPlaceholderName } from '@/utils/onboarding';
 import {
   addonsTotal,
   computeAddonLines,
+  defaultExperiencePlan,
   defaultPlan,
+  experiencePlans,
   kitUnitPrice,
   normalizeProduct,
   resolveHours,
@@ -71,7 +73,7 @@ export type AddToCartOptions = {
 
 export type PendingCartAdd =
   | { kind: 'product'; productId: string; options?: AddToCartOptions }
-  | { kind: 'experience'; experienceId: string };
+  | { kind: 'experience'; experienceId: string; planId?: string };
 
 interface AppState {
   isAuthenticated: boolean;
@@ -103,7 +105,7 @@ interface AppState {
 
   queueCartAdd: (add: PendingCartAdd) => void;
   addProductToCart: (productId: string, options?: AddToCartOptions) => void;
-  addExperienceToCart: (experienceId: string) => void;
+  addExperienceToCart: (experienceId: string, planId?: string) => void;
   updateCartQuantity: (cartItemId: string, quantity: number) => void;
   updateCartPlan: (
     cartItemId: string,
@@ -121,7 +123,7 @@ interface AppState {
   syncCartRemote: () => void;
 
   selectAddress: (id: string) => void;
-  addAddress: (address: Omit<Address, 'id'>) => string;
+  addAddress: (address: Omit<Address, 'id'>) => Promise<string>;
   updateAddress: (id: string, patch: Partial<Address>) => void;
   deleteAddress: (id: string) => void;
   setDefaultAddress: (id: string) => void;
@@ -249,7 +251,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   hydrateUserData: async (userId) => {
     try {
-      const [cart, addresses, orders, notifications, reviews] = await Promise.all([
+      const [cartR, addressesR, ordersR, notificationsR, reviewsR] = await Promise.allSettled([
         fetchUserCart(userId),
         fetchUserAddresses(userId),
         fetchUserOrders(userId),
@@ -257,9 +259,20 @@ export const useAppStore = create<AppState>((set, get) => ({
         fetchReviews(),
       ]);
 
+      const cart = cartR.status === 'fulfilled' ? cartR.value : get().cart;
+      const orders = ordersR.status === 'fulfilled' ? ordersR.value : get().orders;
+      const notifications =
+        notificationsR.status === 'fulfilled' ? notificationsR.value : get().notifications;
+      const reviews = reviewsR.status === 'fulfilled' ? reviewsR.value : get().reviews;
+      const addresses =
+        addressesR.status === 'fulfilled' ? addressesR.value : get().addresses;
+      if (addressesR.status === 'rejected') {
+        console.warn('addresses failed to load', addressesR.reason);
+      }
+
       const legacy = addresses.filter((a) => LEGACY_MOCK_ADDRESS_IDS.has(a.id));
       const realAddresses = addresses.filter((a) => !LEGACY_MOCK_ADDRESS_IDS.has(a.id));
-      if (legacy.length) {
+      if (addressesR.status === 'fulfilled' && legacy.length) {
         void Promise.all(legacy.map((a) => deleteAddressDoc(userId, a.id))).catch(() => {});
       }
 
@@ -302,13 +315,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     } catch (e) {
       console.warn('hydrateUserData failed', e);
-      set({
-        addresses: [],
-        selectedAddressId: null,
-        orders: [],
-        notifications: [],
-        reviews: [],
-      });
     }
   },
 
@@ -356,7 +362,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (pending?.kind === 'product') {
       get().addProductToCart(pending.productId, pending.options);
     } else if (pending?.kind === 'experience') {
-      get().addExperienceToCart(pending.experienceId);
+      get().addExperienceToCart(pending.experienceId, pending.planId);
     }
     if (pending) {
       set({ pendingCartAdd: null });
@@ -466,10 +472,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  addExperienceToCart: (experienceId) => {
+  addExperienceToCart: (experienceId, planId) => {
     const exp = useCatalogStore.getState().experiences.find((e) => e.id === experienceId);
     if (!exp) return;
-    const existing = get().cart.find((c) => c.experienceId === experienceId);
+    const plan =
+      experiencePlans(exp).find((p) => p.id === planId) ?? defaultExperiencePlan(exp);
+    const existing = get().cart.find(
+      (c) => c.experienceId === experienceId && c.planId === plan.id
+    );
     let next: CartItem[];
     if (existing) {
       next = get().cart.map((c) =>
@@ -477,17 +487,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       );
     } else {
       const item: CartItem = {
-        id: `cart-exp-${experienceId}-${Date.now()}`,
+        id: `cart-exp-${experienceId}-${plan.id}-${Date.now()}`,
         experienceId,
         name: exp.name,
         image: exp.image,
         categoryLabel: exp.tag,
-        planId: 'combo',
-        durationId: 'combo',
-        durationLabel: exp.durationLabel.replace('/', '').trim() || 'Night',
-        hours: 12,
+        planId: plan.id,
+        durationId: plan.id,
+        durationLabel: plan.label,
+        hours: plan.hours,
         pricingMode: 'package',
-        unitPrice: exp.price,
+        unitPrice: plan.price,
         addons: [],
         addonsTotal: 0,
         quantity: 1,
@@ -568,29 +578,23 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   selectAddress: (id) => set({ selectedAddressId: id }),
 
-  addAddress: (address) => {
+  addAddress: async (address) => {
     const id = `addr-${Date.now()}`;
     const next = address.isDefault
       ? get().addresses.map((a) => ({ ...a, isDefault: false }))
       : get().addresses;
     const created = { ...address, id };
-    set({
-      addresses: [...next, created],
-      selectedAddressId: address.isDefault ? id : get().selectedAddressId,
-    });
     const uid = get().user?.id;
     if (uid && get().isAuthenticated) {
-      void (async () => {
-        try {
-          if (address.isDefault) {
-            await Promise.all(next.map((a) => upsertAddress(uid, { ...a, isDefault: false })));
-          }
-          await upsertAddress(uid, created);
-        } catch (e) {
-          console.warn('addAddress failed', e);
-        }
-      })();
+      if (address.isDefault) {
+        await Promise.all(next.map((a) => upsertAddress(uid, { ...a, isDefault: false })));
+      }
+      await upsertAddress(uid, created);
     }
+    set({
+      addresses: [...next, created],
+      selectedAddressId: address.isDefault ? id : get().selectedAddressId ?? id,
+    });
     return id;
   },
 

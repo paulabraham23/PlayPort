@@ -90,6 +90,11 @@ export default function ProfileScreen() {
         title: 'Security',
         items: [
           {
+            label: 'Edit profile',
+            icon: 'person-outline',
+            href: '/profile/account',
+          },
+          {
             label: user.kycVerified ? 'Account verified' : 'Account',
             icon: 'shield-checkmark-outline',
             href: '/profile/account',
@@ -171,6 +176,7 @@ export default function ProfileScreen() {
                 <View style={styles.userMeta}>
                   <Text style={styles.userName}>{user.name}</Text>
                   <Text style={styles.userPhone}>{user.phone}</Text>
+                  {user.email ? <Text style={styles.userEmail}>{user.email}</Text> : null}
                 </View>
                 {user.kycVerified ? (
                   <Badge
@@ -181,6 +187,15 @@ export default function ProfileScreen() {
                   />
                 ) : null}
               </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Edit profile"
+                onPress={() => router.push('/profile/account' as never)}
+                style={styles.editProfileBtn}
+              >
+                <Ionicons name="pencil-outline" size={16} color={colors.playportOrange} />
+                <Text style={styles.editProfileText}>Edit profile</Text>
+              </Pressable>
             </Card>
 
             {activeOrder ? (
@@ -329,7 +344,7 @@ const styles = StyleSheet.create({
   desktopCol: { gap: spacing.lg },
   desktopColLeft: { flex: 1, minWidth: 0 },
   desktopColRight: { flex: 1.15, minWidth: 0 },
-  userCard: { gap: 0 },
+  userCard: { gap: spacing.md },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: {
     width: 64,
@@ -343,6 +358,17 @@ const styles = StyleSheet.create({
   userMeta: { flex: 1, gap: 4 },
   userName: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },
   userPhone: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  userEmail: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.small },
+  editProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: radii.md,
+    backgroundColor: colors.orangeTint,
+  },
+  editProfileText: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
   statsRow: { flexDirection: 'row', gap: 10 },
   statsRowDesktop: { gap: 14 },
   stat: {

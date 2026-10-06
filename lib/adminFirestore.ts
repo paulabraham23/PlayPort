@@ -57,11 +57,26 @@ function mapDocs<T extends { id: string }>(snap: Awaited<ReturnType<typeof getDo
 }
 
 function stripUndefined(data: DocumentData): DocumentData {
-  const cleaned: DocumentData = {};
-  for (const [key, value] of Object.entries(data)) {
-    if (value !== undefined) cleaned[key] = value;
+  return deepClean(data);
+}
+
+/**
+ * Firestore rejects `undefined` even nested inside objects/arrays
+ * (e.g. an empty include-row tag). Remove them at every level so a
+ * single empty optional field can never fail the whole save.
+ */
+function deepClean<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((v) => deepClean(v)) as unknown as T;
   }
-  return cleaned;
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      if (item !== undefined) out[key] = deepClean(item);
+    }
+    return out as unknown as T;
+  }
+  return value;
 }
 
 function isFunctionsUnavailable(err: unknown): boolean {

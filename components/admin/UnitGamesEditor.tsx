@@ -15,25 +15,26 @@ export function UnitGamesEditor({
   onSave: (patch: { skuLabel: string; games: string[] }) => Promise<void> | void;
 }) {
   const [name, setName] = useState(unit.skuLabel);
-  const [text, setText] = useState((unit.games ?? []).join(', '));
+  const [text, setText] = useState((unit.games ?? []).join('\n'));
   const [saving, setSaving] = useState(false);
+  const [savedTick, setSavedTick] = useState(false);
 
   useEffect(() => {
     setName(unit.skuLabel);
-    setText((unit.games ?? []).join(', '));
+    setText((unit.games ?? []).join('\n'));
   }, [unit.id, unit.skuLabel, unit.updatedAt]);
+
+  const parsed = parseGames(text);
 
   const save = async () => {
     setSaving(true);
     try {
-      const games = text
-        .split(',')
-        .map((g) => g.trim())
-        .filter(Boolean);
       await onSave({
         skuLabel: name.trim() || unit.skuLabel,
-        games,
+        games: parsed,
       });
+      setSavedTick(true);
+      setTimeout(() => setSavedTick(false), 2000);
     } finally {
       setSaving(false);
     }
@@ -54,19 +55,28 @@ export function UnitGamesEditor({
         {unit.productId} · {unit.hubId} · {unit.status}
       </Text>
       {(unit.games ?? []).length ? (
-        <Text style={adminStyles.cardMeta}>On this unit: {unit.games!.join(' · ')}</Text>
+        <Text style={adminStyles.cardMeta}>On this unit ({unit.games!.length}): {unit.games!.join(' · ')}</Text>
       ) : (
         <Text style={adminStyles.cardMeta}>No games listed yet. Customers will see an empty list.</Text>
       )}
-      <Text style={adminStyles.label}>Games (comma separated)</Text>
+      <Text style={adminStyles.label}>Games — one per line (or comma-separated){parsed.length ? ` · ${parsed.length} entered` : ''}</Text>
       <TextInput
-        style={adminStyles.input}
+        style={[adminStyles.input, { minHeight: 120, textAlignVertical: 'top' }]}
         value={text}
         onChangeText={setText}
-        placeholder="FIFA 24, GTA V, God of War"
+        placeholder={'FC26\nGTA V\nGod of War'}
         placeholderTextColor={colors.mutedText}
+        multiline
       />
-      <Button title={saving ? 'Saving…' : 'Save this console'} size="sm" variant="secondary" onPress={() => void save()} />
+      <Button title={saving ? 'Saving…' : savedTick ? 'Saved ✓' : `Save this console${parsed.length ? ` (${parsed.length} games)` : ''}`} size="sm" variant="secondary" onPress={() => void save()} />
     </View>
   );
+}
+
+/** Split on newlines and commas so "FC26, GTA V\nGod of War" all work. */
+export function parseGames(text: string): string[] {
+  return text
+    .split(/[\n,]+/)
+    .map((g) => g.trim())
+    .filter(Boolean);
 }

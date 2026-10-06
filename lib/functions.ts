@@ -86,6 +86,44 @@ export async function callCompleteReturn(orderId: string) {
   return res.data;
 }
 
+export type ExtensionQuote = {
+  ok: boolean;
+  orderId: string;
+  additionalHours: number;
+  available: boolean;
+  newEndAt: string;
+  subtotal: number;
+  taxes: number;
+  total: number;
+  perItem: { name: string; price: number }[];
+  options: number[];
+};
+
+export async function callGetExtensionQuote(
+  orderId: string,
+  additionalHours: number
+): Promise<ExtensionQuote> {
+  const fn = httpsCallable<{ orderId: string; additionalHours: number }, ExtensionQuote>(
+    functions,
+    'getExtensionQuote'
+  );
+  const res = await fn({ orderId, additionalHours });
+  return res.data;
+}
+
+export async function callExtendBooking(
+  orderId: string,
+  additionalHours: number,
+  provider: 'demo' | 'razorpay' = 'demo'
+): Promise<{ ok: boolean; orderId: string; newEndAt: string; extensionTotal: number }> {
+  const fn = httpsCallable<
+    { orderId: string; additionalHours: number; provider?: 'demo' | 'razorpay' },
+    { ok: boolean; orderId: string; newEndAt: string; extensionTotal: number }
+  >(functions, 'extendBooking');
+  const res = await fn({ orderId, additionalHours, provider });
+  return res.data;
+}
+
 export async function callReleaseExpiredHolds() {
   const fn = httpsCallable<Record<string, never>, { releasedReservations: number }>(
     functions,

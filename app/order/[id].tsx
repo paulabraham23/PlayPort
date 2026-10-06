@@ -78,6 +78,8 @@ export default function OrderDetailScreen() {
   const cancellable =
     order.status === 'pending_payment' || order.status === 'confirmed' || order.status === 'preparing';
   const canReturn = order.status === 'active' || order.status === 'delivered' || order.status === 'returning';
+  const canExtend =
+    (order.status === 'delivered' || order.status === 'active') && order.paymentStatus === 'paid';
   const liveMinutes = remainingEtaMinutes(order, now);
   const liveAge = locationAgeLabel(order.riderLocationUpdatedAt, now);
   const showRider = Boolean(order.riderName) && !['cancelled', 'refunded', 'pending_payment'].includes(order.status);
@@ -257,6 +259,15 @@ export default function OrderDetailScreen() {
         </Card>
 
         <View style={styles.actions}>
+          {canExtend ? (
+            <Button
+              title={`Extend session · ends ${formatReturnLabel(order.endAt, '')}`}
+              fullWidth
+              icon={<Ionicons name="add-circle-outline" size={20} color={colors.white} />}
+              onPress={() => router.push(`/order/extend/${order.id}` as never)}
+              style={styles.extendBtn}
+            />
+          ) : null}
           {trackable ? (
             <Button
               title="Track Live Delivery"
@@ -423,4 +434,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   actions: { gap: spacing.sm },
+  extendBtn: { minHeight: 56 },
 });

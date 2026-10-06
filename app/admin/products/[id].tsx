@@ -79,6 +79,11 @@ export default function AdminProductEditScreen() {
   const [controllerHourCap, setControllerHourCap] = useState('6');
   const [controllerFlat, setControllerFlat] = useState('');
   const [controllerFlatFrom, setControllerFlatFrom] = useState('12');
+  const [controllerTiers, setControllerTiers] = useState<{ upToHours: string; price: string }[]>([
+    { upToHours: '6', price: '100' },
+    { upToHours: '12', price: '120' },
+    { upToHours: '24', price: '150' },
+  ]);
   const [controllerMax, setControllerMax] = useState('3');
   const [ratingText, setRatingText] = useState('');
   const [tagsText, setTagsText] = useState('');
@@ -99,6 +104,11 @@ export default function AdminProductEditScreen() {
       setControllerHourCap('6');
       setControllerFlat('');
       setControllerFlatFrom('12');
+      setControllerTiers([
+        { upToHours: '6', price: '100' },
+        { upToHours: '12', price: '120' },
+        { upToHours: '24', price: '150' },
+      ]);
       setControllerMax('3');
       setRatingText('');
       setTagsText('');
@@ -120,6 +130,11 @@ export default function AdminProductEditScreen() {
         setControllerHourCap(ctrl ? String(ctrl.pricing.perHourMaxPlanHours) : '6');
         setControllerFlat(ctrl && ctrl.pricing.flatPrice > 0 ? String(ctrl.pricing.flatPrice) : '');
         setControllerFlatFrom(ctrl ? String(ctrl.pricing.flatMinPlanHours) : '12');
+        setControllerTiers(
+          ctrl?.pricing.tiers?.length
+            ? ctrl.pricing.tiers.map((t) => ({ upToHours: String(t.upToHours), price: String(t.price) }))
+            : []
+        );
         setControllerMax(ctrl ? String(ctrl.maxQuantity) : '3');
         setAddons((n.addons ?? []).filter((a) => !isControllerAddon(a)));
         setRatingText(n.rating ? String(n.rating) : '');
@@ -194,6 +209,10 @@ export default function AdminProductEditScreen() {
     }
     const perHour = Math.max(0, num(controllerPerHour));
     const flatPrice = Math.max(0, num(controllerFlat));
+    const tiers = controllerTiers
+      .map((t) => ({ upToHours: num(t.upToHours), price: num(t.price) }))
+      .filter((t) => t.upToHours > 0)
+      .sort((a, b) => a.upToHours - b.upToHours);
     const controllerDraft: ProductAddon = {
       id: 'extra-controller',
       name: 'Extra Controller',
@@ -203,10 +222,11 @@ export default function AdminProductEditScreen() {
         perHourMaxPlanHours: Math.max(1, num(controllerHourCap) || 1),
         flatPrice,
         flatMinPlanHours: Math.max(1, num(controllerFlatFrom) || 1),
+        ...(tiers.length ? { tiers } : {}),
       },
     };
     controllerDraft.description = describeControllerPrice(controllerDraft);
-    const controllerAddon = perHour > 0 || flatPrice > 0 ? [controllerDraft] : [];
+    const controllerAddon = perHour > 0 || flatPrice > 0 || tiers.length > 0 ? [controllerDraft] : [];
     setSaving(true);
     try {
       const product: Product = {
@@ -254,10 +274,10 @@ export default function AdminProductEditScreen() {
         includes: includes
           .map((row) => ({
             title: row.title.trim(),
-            detail: row.detail.trim(),
+            detail: row.detail.trim() || row.title.trim(),
             tag: row.tag?.trim() || undefined,
           }))
-          .filter((row) => row.title && row.detail),
+          .filter((row) => row.title),
       };
       // Drop legacy field so Firestore stores the new shape
       delete (product as { priceByDuration?: unknown }).priceByDuration;
@@ -317,7 +337,7 @@ export default function AdminProductEditScreen() {
         />
       </View>
       <View style={adminStyles.field}>
-        <Text style={adminStyles.label}>Description</Text>
+        <Text style={adminStyles.label}>Description — shows on the product page under the title</Text>
         <TextInput
           style={[adminStyles.input, { minHeight: 100, textAlignVertical: 'top' }]}
           value={form.description}
@@ -513,7 +533,55 @@ export default function AdminProductEditScreen() {
 
       <Text style={adminStyles.cardTitle}>Extra controller for this product</Text>
       <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
-        This price is only for this kit. Leave both amounts at 0 to hide extra controllers on the product page.
+        Flat price per session length — e.g. ₹100 up to 6h · ₹120 up to 12h · ₹150 up to 24h.
+        The customer pays the first tier that covers their hours. Leave all rows empty to hide
+        extra controllers on the product page.
+      </Text>
+      {controllerTiers.map((tier, index) => (
+        <View key={`tier-${index}`} style={adminStyles.row}>
+          <View style={[adminStyles.field, { flex: 1, marginBottom: 8 }]}>
+            <Text style={adminStyles.label}>Up to hours</Text>
+            <TextInput
+              style={adminStyles.input}
+              keyboardType="numeric"
+              value={tier.upToHours}
+              onChangeText={(t) =>
+                setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, upToHours: t } : r)))
+              }
+              placeholder="6"
+              placeholderTextColor={colors.mutedText}
+            />
+          </View>
+          <View style={[adminStyles.field, { flex: 1, marginBottom: 8, marginLeft: 8 }]}>
+            <Text style={adminStyles.label}>Flat ₹</Text>
+            <TextInput
+              style={adminStyles.input}
+              keyboardType="numeric"
+              value={tier.price}
+              onChangeText={(t) =>
+                setControllerTiers((prev) => prev.map((r, i) => (i === index ? { ...r, price: t } : r)))
+              }
+              placeholder="100"
+              placeholderTextColor={colors.mutedText}
+            />
+          </View>
+          <Pressable
+            onPress={() => setControllerTiers((prev) => prev.filter((_, i) => i !== index))}
+            style={{ justifyContent: 'center', marginLeft: 8, paddingTop: 18 }}
+          >
+            <Text style={{ color: colors.danger }}>Remove</Text>
+          </Pressable>
+        </View>
+      ))}
+      <Button
+        title="Add price tier"
+        size="sm"
+        variant="secondary"
+        onPress={() => setControllerTiers((prev) => [...prev, { upToHours: '', price: '' }])}
+      />
+      <Text style={[adminStyles.label, { marginTop: 12 }]}>Fallback hourly (only if no tiers above)</Text>
+      <Text style={[adminStyles.subtitle, { marginBottom: spacing.sm }]}>
+        Used only when every tier row is empty or removed.
       </Text>
       <Text style={adminStyles.label}>₹ per hour, used until the hour cap</Text>
       <View style={adminStyles.row}>
@@ -569,6 +637,7 @@ export default function AdminProductEditScreen() {
         hourCap={controllerHourCap}
         flat={controllerFlat}
         flatFrom={controllerFlatFrom}
+        tiers={controllerTiers}
         plans={plans}
       />
 
@@ -794,11 +863,14 @@ export default function AdminProductEditScreen() {
         {imageError ? <Text style={{ color: colors.danger, marginTop: 8 }}>{imageError}</Text> : null}
       </View>
       <View style={adminStyles.field}>
-        <Text style={adminStyles.label}>Tags (comma-separated)</Text>
+        <Text style={adminStyles.label}>
+          Tags — comma-separated, e.g. gaming, ps5, family{tagsText.trim() ? ` · ${tagsText.split(',').map((t) => t.trim()).filter(Boolean).length} tags` : ''}
+        </Text>
         <TextInput
           style={adminStyles.input}
           value={tagsText}
           onChangeText={setTagsText}
+          placeholder="gaming, ps5, family"
           placeholderTextColor={colors.mutedText}
         />
       </View>
@@ -843,7 +915,11 @@ export default function AdminProductEditScreen() {
         />
       </View>
 
-      <Text style={adminStyles.cardTitle}>What’s included</Text>
+      <Text style={adminStyles.cardTitle}>What’s included{includes.length ? ` (${includes.filter((r) => r.title.trim()).length} rows)` : ''}</Text>
+      <Text style={[adminStyles.subtitle, { marginBottom: spacing.md }]}>
+        What comes in the box with this package — each row needs a title; the detail can be left
+        blank and the title will be used. Rows with an empty title are skipped on save.
+      </Text>
       {includes.map((row, index) => (
         <View key={`inc-${index}`} style={adminStyles.card}>
           <TextInput
@@ -890,7 +966,9 @@ export default function AdminProductEditScreen() {
 
       <Text style={[adminStyles.cardTitle, { marginTop: spacing.lg }]}>Requirements</Text>
       <View style={adminStyles.field}>
-        <Text style={adminStyles.label}>One requirement per line</Text>
+        <Text style={adminStyles.label}>
+          One requirement per line{requirementsText.trim() ? ` · ${requirementsText.split('\n').map((t) => t.trim()).filter(Boolean).length} requirements` : ''}
+        </Text>
         <TextInput
           style={[adminStyles.input, { minHeight: 88, textAlignVertical: 'top' }]}
           value={requirementsText}
@@ -934,14 +1012,20 @@ function ControllerPricePreview({
   hourCap,
   flat,
   flatFrom,
+  tiers,
   plans,
 }: {
   perHour: string;
   hourCap: string;
   flat: string;
   flatFrom: string;
+  tiers: { upToHours: string; price: string }[];
   plans: RentalPlan[];
 }) {
+  const parsedTiers = tiers
+    .map((t) => ({ upToHours: num(t.upToHours), price: num(t.price) }))
+    .filter((t) => t.upToHours > 0)
+    .sort((a, b) => a.upToHours - b.upToHours);
   const draft: ProductAddon = {
     id: 'extra-controller',
     name: 'Extra Controller',
@@ -951,12 +1035,13 @@ function ControllerPricePreview({
       perHourMaxPlanHours: Math.max(1, num(hourCap) || 1),
       flatPrice: Math.max(0, num(flat)),
       flatMinPlanHours: Math.max(1, num(flatFrom) || 1),
+      ...(parsedTiers.length ? { tiers: parsedTiers } : {}),
     },
   };
-  if (draft.pricing.perHour <= 0 && draft.pricing.flatPrice <= 0) {
+  if (draft.pricing.perHour <= 0 && draft.pricing.flatPrice <= 0 && !parsedTiers.length) {
     return (
       <Text style={[adminStyles.subtitle, { marginTop: 8, marginBottom: spacing.lg }]}>
-        Hidden on the product page until you set an hourly or flat price.
+        Hidden on the product page until you set an hourly, flat, or tier price.
       </Text>
     );
   }

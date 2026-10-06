@@ -11,6 +11,9 @@ import { defineString } from 'firebase-functions/params';
 import {
   cartItemHours,
   expectedLineTotal,
+  normalizeFnProduct,
+  priceForAddon,
+  priceForHourly,
   type FnCartItem,
   type FnProduct,
 } from './rentalPricing';
@@ -742,6 +745,231 @@ export const releaseExpiredInventoryHoldSchedule = onSchedule(
     logger.info('Expired holds released', result);
   }
 );
+
+// ——— extendBooking ———
+
+const EXTENDABLE_STATUSES = ['delivered', 'active'];
+const EXTENSION_OPTIONS = [1, 2, 3, 6, 12];
+
+function parseExtraQty(label: string): number {
+  const m = label.match(/(\d+)\s*[×x]/);
+  return m ? Number(m[1]) || 0 : 0;
+}
+
+function parseExtraName(label: string): string {
+  const m = label.match(/[×x]\s*(.+?)\s*·/);
+  return (m?.[1] ?? '').trim().toLowerCase();
+}
+
+/** Per-unit kit price for an extension chunk. Prefers hourly, then exact plan, else pro-rated plan rate. */
+function extensionKitPrice(product: FnProduct, extraHours: number): number {
+  const p = normalizeFnProduct(product);
+  if (product.hourly?.enabled) return priceForHourly(product, extraHours);
+  const exact = p.plans.find((x) => x.hours === extraHours);
+  if (exact) return exact.price;
+  const sorted = [...p.plans].filter((x) => x.price > 0).sort((a, b) => a.hours - b.hours);
+  if (!sorted.length) return 0;
+  const cover = sorted.find((x) => x.hours >= extraHours) ?? sorted[sorted.length - 1];
+  return Math.round((cover.price / cover.hours) * extraHours);
+}
+
+async function computeExtensionQuote(orderId: string, extraHours: number) {
+  if (!Number.isInteger(extraHours) || extraHours < 1 || extraHours > 24) {
+    throw new HttpsError('invalid-argument', 'additionalHours must be 1–24');
+  }
+  const ref = db.collection('orders').doc(orderId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Order not found');
+  const order = snap.data()!;
+
+  if (order.paymentStatus !== 'paid') {
+    throw new HttpsError('failed-precondition', 'Order is not paid');
+  }
+  if (!EXTENDABLE_STATUSES.includes(order.status)) {
+    throw new HttpsError('failed-precondition', 'Only live sessions can be extended');
+  }
+  if (!order.endAt) throw new HttpsError('failed-precondition', 'Order has no end time');
+
+  const oldEndMs = new Date(order.endAt).getTime();
+  if (Number.isNaN(oldEndMs)) throw new HttpsError('failed-precondition', 'Invalid order end time');
+  const newEndMs = oldEndMs + extraHours * 60 * 60 * 1000;
+  const newEndIso = new Date(newEndMs).toISOString();
+
+  // Availability: every held unit must be free in [oldEnd, newEnd].
+  const reservationIds: string[] = order.reservationIds ?? [];
+  const now = Date.now();
+  const unitIds: string[] = [];
+  for (const rid of reservationIds) {
+    const rSnap = await db.collection('inventory_reservations').doc(rid).get();
+    const unitId = rSnap.data()?.inventoryUnitId as string | undefined;
+    if (!unitId) continue;
+    unitIds.push(unitId);
+    const busy = await unitHasOverlap(unitId, oldEndMs, newEndMs, now, orderId);
+    if (busy) {
+      throw new HttpsError('resource-exhausted', 'Kit is already booked after your slot — try fewer hours');
+    }
+  }
+
+  // Price per product group (units × kit rate + addons repriced for extra hours).
+  const items: Array<{ productId?: string | null; name: string; price: number }> =
+    order.items ?? [];
+  const byProduct = new Map<string, number>();
+  for (const rid of reservationIds) {
+    const rSnap = await db.collection('inventory_reservations').doc(rid).get();
+    const pid = rSnap.data()?.productId as string | undefined;
+    if (pid) byProduct.set(pid, (byProduct.get(pid) ?? 0) + 1);
+  }
+  // Fallback for orders without reservations (legacy): one unit per product line.
+  if (!byProduct.size) {
+    for (const it of items) {
+      if (it.productId) byProduct.set(it.productId as string, (byProduct.get(it.productId as string) ?? 0) + 1);
+    }
+  }
+
+  let extSubtotal = 0;
+  const perItem: Array<{ name: string; price: number }> = [];
+  for (const it of items) {
+    const pid = (it.productId as string | undefined) ?? undefined;
+    const units = (pid && byProduct.get(pid)) || 1;
+    // Split shared product units evenly across its lines.
+    const linesForProduct = items.filter((x) => x.productId === it.productId).length || 1;
+    const share = units / linesForProduct;
+    let lineExt = 0;
+    if (pid) {
+      const pSnap = await db.collection('products').doc(pid).get();
+      if (pSnap.exists) {
+        const product = pSnap.data() as FnProduct;
+        lineExt += extensionKitPrice(product, extraHours) * share;
+        const catalog = normalizeFnProduct(product).addons ?? [];
+        for (const extra of (it as { extras?: string[] }).extras ?? []) {
+          const qty = parseExtraQty(extra);
+          const nm = parseExtraName(extra);
+          if (!qty || !nm) continue;
+          const addon = catalog.find((a) => a.name.toLowerCase() === nm);
+          if (addon) lineExt += priceForAddon(addon, extraHours, qty) * share;
+        }
+      } else {
+        // Unknown product: pro-rate original line price.
+        const origHours = Math.max(1, Math.round((oldEndMs - new Date(order.startAt).getTime()) / 3600000));
+        lineExt += Math.round(((it.price ?? 0) / origHours) * extraHours);
+      }
+    } else {
+      // Combo/experience line without product link: pro-rate.
+      const origHours = Math.max(1, Math.round((oldEndMs - new Date(order.startAt).getTime()) / 3600000));
+      lineExt += Math.round(((it.price ?? 0) / origHours) * extraHours);
+    }
+    lineExt = Math.round(lineExt);
+    extSubtotal += lineExt;
+    perItem.push({ name: it.name, price: lineExt });
+  }
+
+  extSubtotal = Math.round(extSubtotal);
+  const taxes = Math.round(extSubtotal * 0.05);
+  const total = extSubtotal + taxes;
+  return { order, ref, oldEndMs, newEndMs, newEndIso, extSubtotal, taxes, total, perItem, unitIds, reservationIds };
+}
+
+export const getExtensionQuote = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const { orderId, additionalHours } = request.data as { orderId: string; additionalHours: number };
+  if (!orderId) throw new HttpsError('invalid-argument', 'orderId required');
+  const snap = await db.collection('orders').doc(orderId).get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Order not found');
+  if (snap.data()?.userId !== uid) throw new HttpsError('permission-denied', 'Not your order');
+  const q = await computeExtensionQuote(orderId, additionalHours);
+  return {
+    ok: true,
+    orderId,
+    additionalHours,
+    available: true,
+    newEndAt: q.newEndIso,
+    subtotal: q.extSubtotal,
+    taxes: q.taxes,
+    total: q.total,
+    perItem: q.perItem,
+    options: EXTENSION_OPTIONS,
+  };
+});
+
+export const extendBooking = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const { orderId: id, additionalHours, provider = 'demo' } = request.data as {
+    orderId: string;
+    additionalHours: number;
+    provider?: 'demo' | 'razorpay';
+  };
+  if (!id) throw new HttpsError('invalid-argument', 'orderId required');
+
+  const ref = db.collection('orders').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Order not found');
+  if (snap.data()?.userId !== uid) throw new HttpsError('permission-denied', 'Not your order');
+
+  const q = await computeExtensionQuote(id, additionalHours);
+  const nowIso = new Date().toISOString();
+
+  // Charge for the extension (demo inline; Razorpay keys → still recorded inline for now).
+  const paymentId = `${provider}_${randomBytes(6).toString('hex')}`;
+  await db.collection('payments').doc(paymentId).set({
+    id: paymentId,
+    orderId: id,
+    userId: uid,
+    amount: q.total,
+    currency: 'INR',
+    provider,
+    providerRef: paymentId,
+    status: 'paid',
+    kind: 'extension',
+    additionalHours,
+    createdAt: nowIso,
+  });
+
+  await Promise.all(
+    q.reservationIds.map((rid) =>
+      db.collection('inventory_reservations').doc(rid).update({
+        endAt: q.newEndIso,
+        updatedAt: nowIso,
+      })
+    )
+  );
+
+  const order = q.order;
+  const nextItems = (order.items ?? []).map((it: DocumentData, idx: number) => ({
+    ...it,
+    price: (it.price ?? 0) + (q.perItem[idx]?.price ?? 0),
+    durationLabel: `${it.durationLabel} +${additionalHours}h ext`,
+    returnLabel: `Returns ${formatInIndia(new Date(q.newEndMs))}`,
+  }));
+
+  const extensionRecord = {
+    additionalHours,
+    subtotal: q.extSubtotal,
+    taxes: q.taxes,
+    total: q.total,
+    newEndAt: q.newEndIso,
+    paymentId,
+    createdAt: nowIso,
+  };
+
+  await ref.update({
+    endAt: q.newEndIso,
+    items: nextItems,
+    subtotal: (order.subtotal ?? 0) + q.extSubtotal,
+    taxes: (order.taxes ?? 0) + q.taxes,
+    total: (order.total ?? 0) + q.total,
+    extensions: FieldValue.arrayUnion(extensionRecord),
+    updatedAt: nowIso,
+  });
+
+  await pushNotification(uid, {
+    title: 'Session extended',
+    body: `${id} extended by ${additionalHours}h — new return ${formatInIndia(new Date(q.newEndMs))}.`,
+    type: 'order',
+    orderId: id,
+  });
+
+  return { ok: true, orderId: id, newEndAt: q.newEndIso, extensionTotal: q.total };
+});
 
 // ——— Razorpay ———
 

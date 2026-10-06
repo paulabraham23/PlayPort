@@ -132,6 +132,7 @@ interface AppState {
   placeOrder: (fail?: boolean) => Promise<{ ok: boolean; orderId?: string; error?: string }>;
   cancelOrder: (orderId: string, reason: string) => Promise<void>;
   completeReturn: (orderId: string) => Promise<void>;
+  applyOrderExtension: (orderId: string, patch: Partial<Order>) => void;
 
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
@@ -779,6 +780,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       orders: get().orders.map((o) =>
         o.id === orderId ? { ...o, status: 'completed', progressPercent: 100 } : o
       ),
+    });
+  },
+
+  applyOrderExtension: (orderId, patch) => {
+    set({
+      orders: get().orders.map((o) => (o.id === orderId ? { ...o, ...patch } : o)),
     });
   },
 

@@ -43,6 +43,12 @@ export interface ProductHourlyRate {
   maxHours?: number;
 }
 
+export interface AddonPriceTier {
+  /** Flat price applies when session hours <= this. */
+  upToHours: number;
+  price: number;
+}
+
 export interface ProductAddonPricing {
   perHour: number;
   /** Use per-hour pricing when selected plan hours <= this (e.g. 6). */
@@ -50,6 +56,8 @@ export interface ProductAddonPricing {
   flatPrice: number;
   /** Use flat pricing when selected plan hours >= this (e.g. 12). */
   flatMinPlanHours: number;
+  /** Optional tiered flats, e.g. [{upToHours:6,price:100},{upToHours:12,price:120},{upToHours:24,price:150}]. Takes precedence when non-empty. */
+  tiers?: AddonPriceTier[];
 }
 
 export interface ProductAddon {
@@ -271,6 +279,18 @@ export interface Order {
   endAt?: string;
   holdExpiresAt?: string | null;
   razorpayOrderId?: string;
+  /** Paid session extensions — each pushes endAt forward. */
+  extensions?: OrderExtension[];
+}
+
+export interface OrderExtension {
+  additionalHours: number;
+  subtotal: number;
+  taxes: number;
+  total: number;
+  newEndAt: string;
+  paymentId: string;
+  createdAt: string;
 }
 
 /** Delivery partner profile — doc id usually matches Auth uid after bind. */

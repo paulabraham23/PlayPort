@@ -24,6 +24,7 @@ export type FnAddon = {
     perHourMaxPlanHours: number;
     flatPrice: number;
     flatMinPlanHours: number;
+    tiers?: { upToHours: number; price: number }[];
   };
 };
 
@@ -97,6 +98,12 @@ export function priceForHourly(product: FnProduct, hours: number): number {
 export function priceForAddon(addon: FnAddon, hours: number, quantity = 1): number {
   const q = Math.max(0, quantity);
   if (q <= 0) return 0;
+  const tiers = (addon.pricing.tiers ?? [])
+    .filter((t) => t.upToHours > 0 && t.price >= 0)
+    .sort((a, b) => a.upToHours - b.upToHours);
+  if (tiers.length) {
+    return ((tiers.find((t) => hours <= t.upToHours) ?? tiers[tiers.length - 1]).price * q);
+  }
   const { pricing } = addon;
   const useFlat = pricing.flatPrice > 0 && hours >= pricing.flatMinPlanHours;
   const unit = useFlat ? pricing.flatPrice : pricing.perHour * hours;

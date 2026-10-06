@@ -204,13 +204,23 @@ export default function OrderTrackScreen() {
 
         {order ? (
           <>
+            {(order.status === 'delivered' || order.status === 'active') &&
+            order.paymentStatus === 'paid' ? (
+              <Button
+                title="Extend session"
+                fullWidth
+                icon={<Ionicons name="add-circle-outline" size={20} color={colors.white} />}
+                onPress={() => router.push(`/order/extend/${order.id}` as never)}
+                style={{ marginTop: spacing.lg, minHeight: 56 }}
+              />
+            ) : null}
             <Button
               title="View order details"
               fullWidth
               onPress={() =>
                 router.push({ pathname: '/order/[id]', params: { id: order.id } })
               }
-              style={{ marginTop: spacing.lg }}
+              style={{ marginTop: spacing.sm }}
             />
             <Button
               title="Back to orders"

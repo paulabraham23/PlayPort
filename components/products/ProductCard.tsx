@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   },
   imageRatio: { aspectRatio: 1.05 },
   imageFill: { flex: 1 },
-  image: { width: '100%', height: '100%' },
+  image: { ...StyleSheet.absoluteFill },
   sheen: { ...StyleSheet.absoluteFill },
   etaBadge: {
     position: 'absolute',

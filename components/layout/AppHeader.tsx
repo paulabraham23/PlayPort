@@ -10,6 +10,7 @@ import { PlayPortWordmark } from '@/components/brand/PlayPortWordmark';
 import { colors, fonts, layout, radii, spacing, typeScale, webShadows } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartCount } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 
 function DeliveryPlace({
@@ -63,9 +64,21 @@ export function AppHeader({
 }: Props) {
   const cartCount = useCartCount();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const addresses = useAppStore((s) => s.addresses);
+  const selectedAddressId = useAppStore((s) => s.selectedAddressId);
+  const hub = useCatalogStore((s) => s.hub);
   const { horizontalPadding, contentWidth } = useResponsive();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const place = 'Durgha Dairy products';
+  // Dynamic drop location: selected address → hub city → prompt to set one.
+  const selected =
+    addresses.find((a) => a.id === selectedAddressId) ??
+    addresses.find((a) => a.isDefault) ??
+    addresses[0];
+  const place = selected
+    ? `${selected.label} · ${selected.area || selected.city}`
+    : hub?.city && hub.city !== '—'
+      ? hub.city
+      : 'Set location';
 
   const openAddress = () => {
     if (!isAuthenticated) {

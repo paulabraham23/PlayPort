@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
+import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { ProductCard } from '@/components/products/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors, layout, spacing } from '@/constants/theme';
+import { colors, fonts, layout, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartCount } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
@@ -16,7 +17,7 @@ import type { CardSelection } from '@/components/products/ProductCard';
 const CARD_GAP = 16;
 
 export default function HomeScreen() {
-  const { horizontalPadding } = useResponsive();
+  const { horizontalPadding, productColumns, gap, isDesktop, isTablet } = useResponsive();
   const cartCount = useCartCount();
   const [viewport, setViewport] = useState(0);
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
@@ -53,50 +54,78 @@ export default function HomeScreen() {
   };
 
   const cartInset = cartCount > 0 ? layout.floatingCartHeight + 20 : 0;
+  // Phones keep the full-bleed peek + snap cards. Tablets and desktops get a
+  // proper multi-column grid — one giant card per screen looks broken there.
+  const gridMode = isTablet || isDesktop;
   const visible = Math.max(viewport - cartInset, 0);
   const cardHeight = visible > 0 ? (visible - CARD_GAP) / 1.5 : 0;
   const stride = cardHeight + CARD_GAP;
+
+  const renderCard = (product: (typeof products)[0]) => (
+    <ProductCard
+      fill={!gridMode}
+      product={product}
+      wished={wishlist.includes(product.id)}
+      onToggleWishlist={() => toggleWishlist(product.id)}
+      units={units.filter((unit) => unit.productId === product.id && unit.status === 'available')}
+      quantityFor={(selection) => lineFor(product.id, selection)?.quantity ?? 0}
+      onPress={() => router.push(`/product/${product.id}`)}
+      onAdd={(selection) => addKit(product, selection)}
+      onIncrement={(selection) => addKit(product, selection)}
+      onDecrement={(selection) => {
+        if (!isAuthenticated) return;
+        const line = lineFor(product.id, selection);
+        if (line) updateCartQuantity(line.id, line.quantity - 1);
+      }}
+    />
+  );
 
   return (
     <Screen showCart showFloatingCart showSearch>
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
-        onLayout={(event) => setViewport(event.nativeEvent.layout.height)}
-        snapToInterval={stride > 0 ? stride : undefined}
+        onLayout={gridMode ? undefined : (event) => setViewport(event.nativeEvent.layout.height)}
+        snapToInterval={!gridMode && stride > 0 ? stride : undefined}
         snapToAlignment="start"
         decelerationRate="fast"
-        disableIntervalMomentum
+        disableIntervalMomentum={!gridMode}
         contentContainerStyle={{
           paddingHorizontal: horizontalPadding,
-          paddingBottom: cardHeight > 0 ? Math.max(visible - cardHeight, spacing.lg) : spacing.huge,
+          paddingTop: gridMode ? spacing.lg : 0,
+          paddingBottom: gridMode
+            ? spacing.huge
+            : cardHeight > 0
+              ? Math.max(visible - cardHeight, spacing.lg)
+              : spacing.huge,
           backgroundColor: colors.surfaceAlt,
           flexGrow: 1,
         }}
       >
         {!ready ? (
           <ActivityIndicator color={colors.playportOrange} style={{ marginTop: 24 }} />
-        ) : products.length && cardHeight > 0 ? (
-          products.map((product) => (
-            <View key={product.id} style={{ height: cardHeight, marginBottom: CARD_GAP }}>
-              <ProductCard
-                fill
-                product={product}
-                wished={wishlist.includes(product.id)}
-                onToggleWishlist={() => toggleWishlist(product.id)}
-                units={units.filter((unit) => unit.productId === product.id && unit.status === 'available')}
-                quantityFor={(selection) => lineFor(product.id, selection)?.quantity ?? 0}
-                onPress={() => router.push(`/product/${product.id}`)}
-                onAdd={(selection) => addKit(product, selection)}
-                onIncrement={(selection) => addKit(product, selection)}
-                onDecrement={(selection) => {
-                  if (!isAuthenticated) return;
-                  const line = lineFor(product.id, selection);
-                  if (line) updateCartQuantity(line.id, line.quantity - 1);
-                }}
-              />
-            </View>
-          ))
+        ) : products.length && (gridMode || cardHeight > 0) ? (
+          gridMode ? (
+            <>
+              <View style={styles.heading}>
+                <Text style={styles.headingTitle}>Kits at your hub</Text>
+                <Text style={styles.headingSub}>
+                  {products.length} available · delivered & set up
+                </Text>
+              </View>
+              <ResponsiveGrid columns={productColumns} gap={gap}>
+                {products.map((product) => (
+                  <View key={product.id}>{renderCard(product)}</View>
+                ))}
+              </ResponsiveGrid>
+            </>
+          ) : (
+            products.map((product) => (
+              <View key={product.id} style={{ height: cardHeight, marginBottom: CARD_GAP }}>
+                {renderCard(product)}
+              </View>
+            ))
+          )
         ) : products.length ? null : (
           <EmptyState
             icon="cube-outline"
@@ -119,4 +148,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surfaceAlt,
   },
+  heading: { marginBottom: 4 },
+  headingTitle: { fontFamily: fonts.heading, fontSize: typeScale.display, color: colors.primaryText },
+  headingSub: { fontFamily: fonts.body, fontSize: typeScale.body, color: colors.secondaryText, marginTop: 2 },
 });

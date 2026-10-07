@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
+import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { ProductCard } from '@/components/products/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -13,7 +14,7 @@ import { useWishlistStore } from '@/store/wishlistStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 
 export default function WishlistScreen() {
-  const { horizontalPadding, gap } = useResponsive();
+  const { horizontalPadding, productColumns, gap } = useResponsive();
   const ids = useWishlistStore((s) => s.ids);
   const toggle = useWishlistStore((s) => s.toggle);
   const products = useCatalogStore((s) => s.products);
@@ -29,24 +30,27 @@ export default function WishlistScreen() {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding, gap }]}
       >
         {saved.length ? (
-          saved.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              wished
-              onToggleWishlist={() => toggle(product.id)}
-              quantityInCart={cart.filter((c) => c.productId === product.id).reduce((n, c) => n + c.quantity, 0)}
-              onPress={() => router.push(`/product/${product.id}`)}
-              onAdd={(selection) => {
-                if (!ensureLoggedIn('/wishlist')) return;
-                addProductToCart(product.id, {
-                  planId: selection.planId,
-                  inventoryUnitId: selection.inventoryUnitId,
-                });
-                showToast(`Added ${product.shortName}`);
-              }}
-            />
-          ))
+          <ResponsiveGrid columns={productColumns} gap={gap}>
+            {saved.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                compact={productColumns === 1}
+                wished
+                onToggleWishlist={() => toggle(product.id)}
+                quantityInCart={cart.filter((c) => c.productId === product.id).reduce((n, c) => n + c.quantity, 0)}
+                onPress={() => router.push(`/product/${product.id}`)}
+                onAdd={(selection) => {
+                  if (!ensureLoggedIn('/wishlist')) return;
+                  addProductToCart(product.id, {
+                    planId: selection.planId,
+                    inventoryUnitId: selection.inventoryUnitId,
+                  });
+                  showToast(`Added ${product.shortName}`);
+                }}
+              />
+            ))}
+          </ResponsiveGrid>
         ) : (
           <EmptyState
             icon="heart-outline"

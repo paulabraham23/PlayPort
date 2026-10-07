@@ -22,7 +22,7 @@ export default function SearchResultsScreen() {
   const { q } = useLocalSearchParams<{ q?: string }>();
   const initial = typeof q === 'string' ? q : '';
   const [query, setQuery] = useState(initial);
-  const { horizontalPadding, productColumns, gap } = useResponsive();
+  const { horizontalPadding, productColumns, gap, useSplitPane } = useResponsive();
   const pushRecentSearch = useAppStore((s) => s.pushRecentSearch);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
@@ -117,33 +117,39 @@ export default function SearchResultsScreen() {
                     <Badge label={`★ ${featured.rating} (${featured.reviewCount}+)`} />
                   </View>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push(`/product/${featured.id}`)}
-                  style={styles.featuredImageWrap}
-                >
-                  <Image source={{ uri: featured.images[0] }} style={styles.featuredImage} contentFit="cover" />
-                </Pressable>
-                <View style={styles.tagRow}>
-                  {featured.tags.slice(0, 3).map((tag) => (
-                    <Badge key={tag} label={tag} color={colors.primaryText} backgroundColor="rgba(0,0,0,0.55)" />
-                  ))}
-                </View>
-                <Text style={styles.featuredTitle}>{featured.name}</Text>
-                <Text style={styles.featuredDesc}>{featured.description}</Text>
-                <View style={styles.featuredFooter}>
-                  <View>
-                    <Text style={styles.featuredPrice}>
-                      {formatINR((featured.plans?.find(p=>p.popular)?.price) ?? (featured.plans?.[0]?.price) ?? 0)} / plan
+                <View style={[styles.featuredMain, useSplitPane && styles.featuredMainSplit]}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push(`/product/${featured.id}`)}
+                    style={[styles.featuredImageWrap, useSplitPane && styles.featuredImageSplit]}
+                  >
+                    <Image source={{ uri: featured.images[0] }} style={styles.featuredImage} contentFit="cover" />
+                  </Pressable>
+                  <View style={[styles.featuredBody, useSplitPane && styles.featuredBodySplit]}>
+                    <View style={styles.tagRow}>
+                      {featured.tags.slice(0, 3).map((tag) => (
+                        <Badge key={tag} label={tag} color={colors.primaryText} backgroundColor="rgba(0,0,0,0.55)" />
+                      ))}
+                    </View>
+                    <Text style={styles.featuredTitle}>{featured.name}</Text>
+                    <Text style={styles.featuredDesc} numberOfLines={useSplitPane ? 4 : undefined}>
+                      {featured.description}
                     </Text>
-                    {featured.compareAtPrice ? (
-                      <Text style={styles.strike}>{formatINR(featured.compareAtPrice)}</Text>
-                    ) : null}
+                    <View style={styles.featuredFooter}>
+                      <View>
+                        <Text style={styles.featuredPrice}>
+                          {formatINR((featured.plans?.find(p=>p.popular)?.price) ?? (featured.plans?.[0]?.price) ?? 0)} / plan
+                        </Text>
+                        {featured.compareAtPrice ? (
+                          <Text style={styles.strike}>{formatINR(featured.compareAtPrice)}</Text>
+                        ) : null}
+                      </View>
+                      <Button
+                        title="Add to cart"
+                        onPress={() => addKit(featured.id)}
+                      />
+                    </View>
                   </View>
-                  <Button
-                    title="Add to cart"
-                    onPress={() => addKit(featured.id)}
-                  />
                 </View>
               </View>
             ) : null}
@@ -228,6 +234,8 @@ const styles = StyleSheet.create({
   },
   featuredBadges: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
   featuredMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  featuredMain: { gap: 10 },
+  featuredMainSplit: { flexDirection: 'row', gap: spacing.lg, alignItems: 'stretch' },
   featuredImageWrap: {
     width: '100%',
     aspectRatio: 16 / 9,
@@ -235,6 +243,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.surfaceAlt,
   },
+  featuredImageSplit: { flex: 1.15, width: undefined, aspectRatio: undefined, minHeight: 300, minWidth: 0 },
+  featuredBody: { gap: 10, minWidth: 0 },
+  featuredBodySplit: { flex: 1, justifyContent: 'center' },
   featuredImage: { width: '100%', height: '100%' },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   featuredTitle: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.headline },

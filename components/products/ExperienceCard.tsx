@@ -32,10 +32,14 @@ export function ExperienceCard({ experience, onPress, onBook }: Props) {
         </View>
         <Image source={{ uri: experience.image }} style={styles.image} contentFit="cover" />
         <View style={styles.body}>
-          <Text style={styles.title}>{experience.name}</Text>
-          <Text style={styles.desc}>{experience.description}</Text>
+          <Text style={styles.title} numberOfLines={2}>
+            {experience.name}
+          </Text>
+          <Text style={styles.desc} numberOfLines={2}>
+            {experience.description}
+          </Text>
           <View style={styles.chips}>
-            {experience.chips.map((chip) => (
+            {experience.chips.slice(0, 3).map((chip) => (
               <Badge key={chip} label={chip} />
             ))}
           </View>
@@ -106,10 +110,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     paddingTop: 8,
   },
-  price: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 18 },
+  price: { color: colors.primaryText, fontFamily: fonts.monoMedium, fontSize: 18, flexShrink: 1 },
   duration: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13 },
 });

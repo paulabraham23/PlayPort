@@ -367,7 +367,9 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         boxShadow: webShadows.soft,
-        transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+        /* box-shadow only — a transform transition here fights Reanimated's
+           entering/hover springs and makes cards visibly bump. */
+        transition: 'box-shadow 0.2s ease',
       } as object,
       default: {},
     }),

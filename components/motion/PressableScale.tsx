@@ -67,7 +67,9 @@ export function PressableScale({
       onHoverIn={
         Platform.OS === 'web'
           ? () => {
-              scale.value = withSpring(1.025, { damping: 16, stiffness: 300 });
+              // Gentle lift only — scaling the whole card up on hover reads as
+              // a bump, especially inside snap-scroll lists.
+              scale.value = withSpring(1.008, { damping: 22, stiffness: 380 });
               y.value = withTiming(-2, { duration: 140 });
             }
           : undefined

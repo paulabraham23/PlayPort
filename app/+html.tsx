@@ -92,7 +92,8 @@ img, video, canvas, svg {
 }
 [role="button"], [role="tab"], button, a {
   cursor: pointer;
-  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease;
+  /* No transition on transform/opacity here — Reanimated drives those
+     per-frame on hover/press and a CSS transition makes them lag then snap. */
 }
 input, textarea, select {
   outline: none;

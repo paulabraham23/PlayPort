@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { riderGetOrder, watchOrder } from '@/lib/riderFirestore';
+import { geocodeAddress } from '@/lib/deliveryEta';
 import { useRiderStore } from '@/store/riderStore';
 import type { Order, OrderStatus } from '@/types';
 import { useNow } from '@/hooks/useNow';
@@ -58,9 +59,45 @@ export default function RiderOrderDetailScreen() {
   const liveMinutes = remainingEtaMinutes(order, now);
   const liveAge = locationAgeLabel(order?.riderLocationUpdatedAt, now);
 
-  const mapsUrl = order?.addressFull
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.addressFull)}`
-    : null;
+  const hasDropoffCoords =
+    order != null &&
+    Number.isFinite(order.dropoffLat) &&
+    Number.isFinite(order.dropoffLng) &&
+    !(Math.abs(order.dropoffLat as number) < 0.001 && Math.abs(order.dropoffLng as number) < 0.001);
+
+  const mapsUrl = hasDropoffCoords
+    ? // Exact pin + turn-by-turn — avoids ambiguous text search (e.g. multiple "Green Meadows").
+      `https://www.google.com/maps/dir/?api=1&destination=${order?.dropoffLat},${order?.dropoffLng}`
+    : order?.addressFull
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.addressFull)}`
+      : null;
+
+  const openMaps = async () => {
+    // Prefer exact coords. If the order was created before dropoffLat/Lng
+    // was saved, geocode on-demand so we still get a direct pin.
+    if (hasDropoffCoords && order) {
+      await Linking.openURL(
+        `https://www.google.com/maps/dir/?api=1&destination=${order.dropoffLat},${order.dropoffLng}`
+      );
+      return;
+    }
+    const q = order?.addressFull || order?.addressLabel || '';
+    if (!q) return;
+    try {
+      const geo = await geocodeAddress(q);
+      if (geo) {
+        await Linking.openURL(
+          `https://www.google.com/maps/dir/?api=1&destination=${geo.lat},${geo.lng}`
+        );
+        return;
+      }
+    } catch {
+      // fall through to text search
+    }
+    await Linking.openURL(
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
+    );
+  };
 
   const isMine = order?.riderId && rider && order.riderId === rider.id;
   const canClaim = order && !order.riderId && ['confirmed', 'preparing'].includes(order.status);
@@ -119,7 +156,7 @@ export default function RiderOrderDetailScreen() {
             title="Open in Maps"
             size="sm"
             variant="secondary"
-            onPress={() => void Linking.openURL(mapsUrl)}
+            onPress={() => void openMaps()}
           />
         ) : null}
       </View>

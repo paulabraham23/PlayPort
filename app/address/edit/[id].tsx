@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { deleteField } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -13,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { PlacesAutocomplete } from '@/components/address/PlacesAutocomplete';
+import { LocationPinSection, type PinGuess } from '@/components/address/LocationPinSection';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
@@ -49,6 +51,13 @@ export default function EditAddressScreen() {
   const [instructions, setInstructions] = useState(existing?.instructions ?? '');
   const [isDefault, setIsDefault] = useState(existing?.isDefault ?? false);
   const [hydrated, setHydrated] = useState(Boolean(existing));
+  // Exact delivery pin — preserved from the saved address unless re-locked.
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(() =>
+    Number.isFinite(existing?.lat) && Number.isFinite(existing?.lng)
+      ? { lat: existing!.lat as number, lng: existing!.lng as number }
+      : null
+  );
+  const [placeId, setPlaceId] = useState<string | undefined>(existing?.placeId);
 
   useEffect(() => {
     if (!isAuthenticated) ensureLoggedIn(`/address/edit/${id}`);
@@ -108,12 +117,24 @@ export default function EditAddressScreen() {
     contactName.trim() &&
     phone.trim().length >= 10;
 
+  const applyGuess = (guess?: PinGuess) => {
+    if (!guess) return;
+    if (guess.line1) setLine1((v) => v || guess.line1!);
+    if (guess.area) setArea((v) => v || guess.area!);
+    if (guess.city) setCity((v) => v || guess.city!);
+    if (guess.pincode) setPincode((v) => v || guess.pincode!);
+  };
+
   const onPlaceSelected = (place: ResolvedPlaceAddress) => {
     if (place.line1) setLine1(place.line1);
     if (place.line2) setLine2(place.line2);
     if (place.area) setArea(place.area);
     if (place.city) setCity(place.city);
     if (place.pincode) setPincode(place.pincode.replace(/\D/g, '').slice(0, 6));
+    if (Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
+      setPin({ lat: place.lat as number, lng: place.lng as number });
+      setPlaceId(place.placeId || undefined);
+    }
   };
 
   const onSave = () => {
@@ -132,6 +153,10 @@ export default function EditAddressScreen() {
       isDefault,
       etaMinutes: area.toLowerCase().includes('whitefield') ? 90 : existing.etaMinutes,
       inRapidZone: !area.toLowerCase().includes('whitefield'),
+      ...(pin
+        ? { lat: pin.lat, lng: pin.lng }
+        : { lat: deleteField() as unknown as number, lng: deleteField() as unknown as number }),
+      ...(placeId ? { placeId } : { placeId: deleteField() as unknown as string }),
     });
     if (isDefault) selectAddress(id);
     router.back();
@@ -165,6 +190,19 @@ export default function EditAddressScreen() {
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
         >
           <PlacesAutocomplete onPlaceSelected={onPlaceSelected} />
+
+          <LocationPinSection
+            lat={pin?.lat}
+            lng={pin?.lng}
+            onPinLocked={(coords, guess) => {
+              setPin(coords);
+              applyGuess(guess);
+            }}
+            onPinCleared={() => {
+              setPin(null);
+              setPlaceId(undefined);
+            }}
+          />
 
           <Field label="Label" value={label} onChangeText={setLabel} placeholder="Home, Studio…" />
 

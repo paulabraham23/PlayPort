@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -73,30 +73,42 @@ export default function RiderOrderDetailScreen() {
       : null;
 
   const openMaps = async () => {
-    // Prefer exact coords. If the order was created before dropoffLat/Lng
-    // was saved, geocode on-demand so we still get a direct pin.
+    // Exact doorstep pin first (Zepto-style: coords saved with the address).
+    // If the order predates pins, geocode on-demand so we still get a direct
+    // pin instead of an ambiguous text search.
+    let dest: string | null = null;
     if (hasDropoffCoords && order) {
-      await Linking.openURL(
-        `https://www.google.com/maps/dir/?api=1&destination=${order.dropoffLat},${order.dropoffLng}`
-      );
-      return;
-    }
-    const q = order?.addressFull || order?.addressLabel || '';
-    if (!q) return;
-    try {
-      const geo = await geocodeAddress(q);
-      if (geo) {
+      dest = `${order.dropoffLat},${order.dropoffLng}`;
+    } else {
+      const q = order?.addressFull || order?.addressLabel || '';
+      if (!q) return;
+      try {
+        const geo = await geocodeAddress(q);
+        if (geo) dest = `${geo.lat},${geo.lng}`;
+      } catch {
+        dest = null;
+      }
+      if (!dest) {
         await Linking.openURL(
-          `https://www.google.com/maps/dir/?api=1&destination=${geo.lat},${geo.lng}`
+          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
         );
         return;
       }
-    } catch {
-      // fall through to text search
     }
-    await Linking.openURL(
-      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
-    );
+    // Android: jump straight into turn-by-turn in Google Maps.
+    // iOS/web: universal link opens the route to the exact pin.
+    if (Platform.OS === 'android') {
+      const navUrl = `google.navigation:q=${dest}`;
+      try {
+        if (await Linking.canOpenURL(navUrl)) {
+          await Linking.openURL(navUrl);
+          return;
+        }
+      } catch {
+        // fall through to universal link
+      }
+    }
+    await Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${dest}`);
   };
 
   const isMine = order?.riderId && rider && order.riderId === rider.id;

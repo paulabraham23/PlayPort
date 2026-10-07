@@ -736,6 +736,10 @@ export const useAppStore = create<AppState>((set, get) => ({
           ]
             .filter(Boolean)
             .join(', '),
+          // Exact pin travels with the order — rider navigates to the doorstep.
+          ...(Number.isFinite(address.lat) && Number.isFinite(address.lng)
+            ? { dropoffLat: address.lat as number, dropoffLng: address.lng as number }
+            : {}),
           paymentMethodLabel: payment?.label ?? 'UPI',
           subtotal: totals.itemsTotal,
           taxes: totals.taxes,

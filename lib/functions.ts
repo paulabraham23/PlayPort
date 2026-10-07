@@ -16,6 +16,9 @@ export type CreateBookingInput = {
   cart: CartItem[];
   addressLabel: string;
   addressFull: string;
+  /** Exact delivery pin locked on the address (Zepto-style). */
+  dropoffLat?: number;
+  dropoffLng?: number;
   paymentMethodLabel: string;
   subtotal: number;
   taxes: number;

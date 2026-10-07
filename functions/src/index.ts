@@ -259,6 +259,8 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     cart,
     addressLabel,
     addressFull,
+    dropoffLat: dropoffLatInput,
+    dropoffLng: dropoffLngInput,
     paymentMethodLabel,
     subtotal,
     taxes,
@@ -269,6 +271,8 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     cart: CartItem[];
     addressLabel: string;
     addressFull: string;
+    dropoffLat?: number;
+    dropoffLng?: number;
     paymentMethodLabel: string;
     subtotal: number;
     taxes: number;
@@ -486,6 +490,14 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     setupIncluded: true,
     liveDispatch: false,
     riderId: null,
+    // Exact delivery pin from the saved address (Zepto-style) — rider
+    // navigates to these coords instead of a fuzzy text search.
+    ...(Number.isFinite(dropoffLatInput) &&
+    Number.isFinite(dropoffLngInput) &&
+    Math.abs(dropoffLatInput as number) <= 90 &&
+    Math.abs(dropoffLngInput as number) <= 180
+      ? { dropoffLat: dropoffLatInput, dropoffLng: dropoffLngInput }
+      : {}),
     // 4-digit handover code — customer reads it to the rider before mark-delivered.
     deliveryOtp: String(Math.floor(1000 + Math.random() * 9000)),
   };

@@ -186,6 +186,10 @@ export interface Address {
   isDefault: boolean;
   etaMinutes: number;
   inRapidZone: boolean;
+  /** Exact delivery pin (Zepto-style) — locked from Places autocomplete or device GPS. */
+  lat?: number;
+  lng?: number;
+  placeId?: string;
 }
 
 export interface PaymentMethod {

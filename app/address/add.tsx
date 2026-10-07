@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { PlacesAutocomplete } from '@/components/address/PlacesAutocomplete';
+import { LocationPinSection, type PinGuess } from '@/components/address/LocationPinSection';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
@@ -73,6 +74,9 @@ export default function AddAddressScreen() {
   const [instructions, setInstructions] = useState('');
   const [isDefault, setIsDefault] = useState(isOnboarding || false);
   const [saving, setSaving] = useState(false);
+  // Exact delivery pin — from Places search or GPS lock (Zepto-style).
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [placeId, setPlaceId] = useState<string | undefined>(undefined);
 
   const canSave =
     label.trim() &&
@@ -84,6 +88,14 @@ export default function AddAddressScreen() {
     phone.trim().length >= 10 &&
     !saving;
 
+  const applyGuess = (guess?: PinGuess) => {
+    if (!guess) return;
+    if (guess.line1) setLine1((v) => v || guess.line1!);
+    if (guess.area) setArea((v) => v || guess.area!);
+    if (guess.city) setCity((v) => (v === 'Bengaluru' || !v ? guess.city! : v));
+    if (guess.pincode) setPincode((v) => v || guess.pincode!);
+  };
+
   const onPlaceSelected = (place: ResolvedPlaceAddress) => {
     if (place.line1) setLine1(place.line1);
     if (place.line2) setLine2(place.line2);
@@ -91,6 +103,11 @@ export default function AddAddressScreen() {
     if (place.city) setCity(place.city);
     if (place.pincode) setPincode(place.pincode.replace(/\D/g, '').slice(0, 6));
     if (!label.trim()) setLabel(place.area || place.city || 'Home');
+    // Lock the exact rooftop pin — this is what the rider navigates to.
+    if (Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
+      setPin({ lat: place.lat as number, lng: place.lng as number });
+      setPlaceId(place.placeId || undefined);
+    }
   };
 
   const onSave = async () => {
@@ -111,6 +128,8 @@ export default function AddAddressScreen() {
         isDefault: isOnboarding ? true : isDefault,
         etaMinutes: hub?.etaMinutes ?? 32,
         inRapidZone: true,
+        ...(pin ? { lat: pin.lat, lng: pin.lng } : {}),
+        ...(placeId ? { placeId } : {}),
       });
       selectAddress(id);
 
@@ -158,6 +177,19 @@ export default function AddAddressScreen() {
           contentContainerStyle={[styles.scroll, { paddingHorizontal: horizontalPadding }]}
         >
           <PlacesAutocomplete onPlaceSelected={onPlaceSelected} />
+
+          <LocationPinSection
+            lat={pin?.lat}
+            lng={pin?.lng}
+            onPinLocked={(coords, guess) => {
+              setPin(coords);
+              applyGuess(guess);
+            }}
+            onPinCleared={() => {
+              setPin(null);
+              setPlaceId(undefined);
+            }}
+          />
 
           <Field label="Label" value={label} onChangeText={setLabel} placeholder="Home, Studio…" />
 

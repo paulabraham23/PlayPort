@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { deleteField } from 'firebase/firestore';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -23,6 +23,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import type { ResolvedPlaceAddress } from '@/lib/places';
 import { useAppStore } from '@/store/appStore';
+import { useLocationDraftStore } from '@/store/locationDraftStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import type { Address } from '@/types';
 
@@ -64,8 +65,7 @@ export default function EditAddressScreen() {
   }, [isAuthenticated, id]);
 
   useEffect(() => {
-    if (!existing || hydrated) return;
-    setLabel(existing.label);
+    if (!existing || hydrated) return;    setLabel(existing.label);
     setType(existing.type);
     setLine1(existing.line1);
     setLine2(existing.line2 ?? '');
@@ -78,6 +78,24 @@ export default function EditAddressScreen() {
     setIsDefault(existing.isDefault);
     setHydrated(true);
   }, [existing, hydrated]);
+
+  // Pinned on the map screen (/address/locate) → prefill + lock here.
+  useFocusEffect(
+    useCallback(() => {
+      const picked = useLocationDraftStore.getState().draft;
+      if (!picked) return;
+      useLocationDraftStore.getState().clearDraft();
+      setPin({ lat: picked.lat, lng: picked.lng });
+      setPlaceId(undefined);
+      const a = picked.address;
+      if (a) {
+        if (a.line1) setLine1(a.line1);
+        if (a.area) setArea(a.area);
+        if (a.city) setCity(a.city);
+        if (a.pincode) setPincode(a.pincode);
+      }
+    }, [])
+  );
 
   if (!isAuthenticated) {
     return (
@@ -202,6 +220,7 @@ export default function EditAddressScreen() {
               setPin(null);
               setPlaceId(undefined);
             }}
+            onPickOnMap={() => router.push('/address/locate' as never)}
           />
 
           <Field label="Label" value={label} onChangeText={setLabel} placeholder="Home, Studio…" />

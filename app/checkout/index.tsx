@@ -14,6 +14,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
+import { formatSlot, formatWindow, isValidScheduledStart } from '@/utils/serviceHours';
 
 export default function CheckoutScreen() {
   const { horizontalPadding } = useResponsive();
@@ -23,6 +24,9 @@ export default function CheckoutScreen() {
   const addresses = useAppStore((s) => s.addresses);
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
   const totals = useCartTotals();
+  const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
+  const maxHours = Math.max(1, ...cart.map((c) => c.hours ?? 3));
   const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
 
   useEffect(() => {
@@ -105,17 +109,32 @@ export default function CheckoutScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Delivery & Return Timing</Text>
-          <View style={styles.timingRow}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.timingHeader}>
-                <Text style={styles.timingLabel}>Express dropoff</Text>
-                <Badge label="20–35 MINS" />
+          {scheduledValid && scheduledStartAt ? (
+            <View style={styles.timingRow}>
+              <Ionicons name="calendar-outline" size={16} color={colors.playportOrange} />
+              <View style={{ flex: 1 }}>
+                <View style={styles.timingHeader}>
+                  <Text style={styles.timingLabel}>Scheduled dropoff</Text>
+                  <Badge label="SCHEDULED" />
+                </View>
+                <Text style={styles.timingValue}>
+                  {formatSlot(scheduledStartAt)} · {formatWindow(scheduledStartAt, maxHours)}
+                </Text>
               </View>
-              <Text style={styles.timingValue}>
-                Rider heads out after payment — live minutes on Track once accepted.
-              </Text>
             </View>
-          </View>
+          ) : (
+            <View style={styles.timingRow}>
+              <View style={{ flex: 1 }}>
+                <View style={styles.timingHeader}>
+                  <Text style={styles.timingLabel}>Express dropoff</Text>
+                  <Badge label="20–35 MINS" />
+                </View>
+                <Text style={styles.timingValue}>
+                  Rider heads out after payment — live minutes on Track once accepted.
+                </Text>
+              </View>
+            </View>
+          )}
           <View style={styles.divider} />
           <View style={styles.timingRow}>
             <Ionicons name="calendar-outline" size={16} color={colors.secondaryText} />

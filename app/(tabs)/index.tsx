@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
+import { ServiceHoursBanner } from '@/components/layout/ServiceHoursBanner';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { ProductCard } from '@/components/products/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -107,6 +108,7 @@ export default function HomeScreen() {
         ) : products.length && (gridMode || cardHeight > 0) ? (
           gridMode ? (
             <>
+              <ServiceHoursBanner />
               <View style={styles.heading}>
                 <Text style={styles.headingTitle}>Kits at your hub</Text>
                 <Text style={styles.headingSub}>
@@ -120,11 +122,14 @@ export default function HomeScreen() {
               </ResponsiveGrid>
             </>
           ) : (
-            products.map((product) => (
+            <>
+              <ServiceHoursBanner />
+              {products.map((product) => (
               <View key={product.id} style={{ height: cardHeight, marginBottom: CARD_GAP }}>
                 {renderCard(product)}
               </View>
-            ))
+              ))}
+            </>
           )
         ) : products.length ? null : (
           <EmptyState

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +22,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import type { ResolvedPlaceAddress } from '@/lib/places';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
+import { useLocationDraftStore } from '@/store/locationDraftStore';
 import { ensureLoggedIn, resolveAuthNext } from '@/utils/authGate';
 import type { Address } from '@/types';
 
@@ -42,6 +43,25 @@ export default function AddAddressScreen() {
   useEffect(() => {
     if (!isAuthenticated) ensureLoggedIn('/address/add');
   }, [isAuthenticated]);
+
+  // Pinned on the map screen (/address/locate) → prefill + lock here.
+  useFocusEffect(
+    useCallback(() => {
+      const picked = useLocationDraftStore.getState().draft;
+      if (!picked) return;
+      useLocationDraftStore.getState().clearDraft();
+      setPin({ lat: picked.lat, lng: picked.lng });
+      setPlaceId(undefined);
+      const a = picked.address;
+      if (a) {
+        if (a.line1) setLine1(a.line1);
+        if (a.area) setArea(a.area);
+        if (a.city) setCity(a.city);
+        if (a.pincode) setPincode(a.pincode);
+        setLabel((v) => v || a.area || a.city || 'Home');
+      }
+    }, [])
+  );
 
   if (!isAuthenticated) {
     return (
@@ -189,6 +209,7 @@ export default function AddAddressScreen() {
               setPin(null);
               setPlaceId(undefined);
             }}
+            onPickOnMap={() => router.push('/address/locate' as never)}
           />
 
           <Field label="Label" value={label} onChangeText={setLabel} placeholder="Home, Studio…" />

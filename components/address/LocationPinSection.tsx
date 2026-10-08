@@ -17,13 +17,15 @@ interface Props {
   /** Fired when a pin is locked (GPS or place search). Guess prefills text fields. */
   onPinLocked: (coords: { lat: number; lng: number }, guess?: PinGuess) => void;
   onPinCleared: () => void;
+  /** Open the full map pin screen (Zepto-style drag-the-map). */
+  onPickOnMap?: () => void;
 }
 
 /**
  * Zepto-style pin lock: the exact GPS point is saved with the address so the
  * rider navigates to the doorstep, not a fuzzy text-search match.
  */
-export function LocationPinSection({ lat, lng, onPinLocked, onPinCleared }: Props) {
+export function LocationPinSection({ lat, lng, onPinLocked, onPinCleared, onPickOnMap }: Props) {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -124,6 +126,17 @@ export function LocationPinSection({ lat, lng, onPinLocked, onPinCleared }: Prop
           {locating ? 'Locking your spot…' : hasPin ? 'Re-lock my current spot' : 'Use my current location'}
         </Text>
       </Pressable>
+      {onPickOnMap ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Choose location on map"
+          onPress={onPickOnMap}
+          style={styles.mapBtn}
+        >
+          <Ionicons name="map-outline" size={18} color={colors.primaryText} />
+          <Text style={styles.mapText}>Choose on map instead</Text>
+        </Pressable>
+      ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
@@ -177,5 +190,15 @@ const styles = StyleSheet.create({
   },
   gpsBtnBusy: { opacity: 0.7 },
   gpsText: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
+  mapBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radii.md,
+    paddingVertical: 12,
+  },
+  mapText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
   error: { color: colors.danger, fontFamily: fonts.body, fontSize: typeScale.caption },
 });

@@ -136,6 +136,59 @@ export async function searchPlaces(
     .filter((s): s is PlacesSuggestion => Boolean(s));
 }
 
+export type ReverseGeocodedAddress = {
+  formattedAddress: string;
+  line1: string;
+  area: string;
+  city: string;
+  pincode: string;
+  state?: string;
+};
+
+/**
+ * Zepto-style pin → address: turn confirmed map coords into address text.
+ * Uses the legacy Geocoding API (same key as forward geocoding).
+ */
+export async function reverseGeocodeLatLng(
+  lat: number,
+  lng: number
+): Promise<ReverseGeocodedAddress | null> {
+  if (!PLACES_KEY) return null;
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&region=in&language=en&key=${PLACES_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      results?: Array<{
+        formatted_address?: string;
+        address_components?: Array<{ long_name?: string; short_name?: string; types?: string[] }>;
+      }>;
+    };
+    const best = data.results?.[0];
+    if (!best) return null;
+    const comp = (type: string) =>
+      best.address_components?.find((c) => c.types?.includes(type))?.long_name ?? '';
+    const premise = comp('premise');
+    const streetNumber = comp('street_number');
+    const route = comp('route');
+    const neighborhood =
+      comp('sublocality_level_1') || comp('sublocality') || comp('neighborhood');
+    const city = comp('locality') || comp('administrative_area_level_2') || comp('postal_town');
+    const pincode = comp('postal_code').replace(/\D/g, '').slice(0, 6);
+    const lineParts = [premise, streetNumber, route].filter(Boolean);
+    return {
+      formattedAddress: best.formatted_address ?? '',
+      line1: lineParts.join(', ') || best.formatted_address?.split(',')[0]?.trim() || '',
+      area: neighborhood || city,
+      city: city || 'Bengaluru',
+      pincode,
+      state: comp('administrative_area_level_1') || undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function resolvePlace(
   placeId: string,
   sessionToken: string

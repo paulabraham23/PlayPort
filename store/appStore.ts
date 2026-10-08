@@ -37,6 +37,7 @@ import {
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { calcCartTotals } from '@/utils/format';
+import { isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
 import { formatFunctionsError } from '@/utils/functionsError';
 import { isPlaceholderName } from '@/utils/onboarding';
 import {
@@ -95,6 +96,8 @@ interface AppState {
   paymentError: string | null;
   pendingOrderId: string | null;
   pendingCartAdd: PendingCartAdd | null;
+  /** ISO start for a scheduled order; null = ASAP. */
+  scheduledStartAt: string | null;
 
   bootstrapAuth: () => () => void;
   setPhoneDraft: (phone: string) => void;
@@ -128,6 +131,7 @@ interface AppState {
   syncCartRemote: () => void;
 
   selectAddress: (id: string) => void;
+  setScheduledStartAt: (iso: string | null) => void;
   addAddress: (address: Omit<Address, 'id'>) => Promise<string>;
   updateAddress: (id: string, patch: Partial<Address>) => void;
   deleteAddress: (id: string) => void;
@@ -186,6 +190,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   paymentError: null,
   pendingOrderId: null,
   pendingCartAdd: null,
+  scheduledStartAt: null,
 
   bootstrapAuth: () => {
     const unsub = watchAuth(async (firebaseUser) => {
@@ -645,6 +650,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   selectAddress: (id) => set({ selectedAddressId: id }),
 
+  setScheduledStartAt: (iso) => set({ scheduledStartAt: iso }),
+
   addAddress: async (address) => {
     const id = `addr-${Date.now()}`;
     const next = address.isDefault
@@ -699,9 +706,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectPaymentMethod: (id) => set({ selectedPaymentMethodId: id, paymentError: null }),
 
   placeOrder: async (fail = false) => {
-    const { cart, addresses, selectedAddressId, selectedPaymentMethodId, paymentMethods, user, pendingOrderId } =
+    const { cart, addresses, selectedAddressId, selectedPaymentMethodId, paymentMethods, user, pendingOrderId, scheduledStartAt } =
       get();
     if (!user?.id) return { ok: false, error: 'Sign in required' };
+
+    // Scheduled start wins when valid; otherwise ASAP. Closed nights force scheduling.
+    const now = new Date();
+    const scheduledOk = isValidScheduledStart(scheduledStartAt, now);
+    if (scheduledStartAt && !scheduledOk) {
+      return { ok: false, error: 'That slot passed — pick a new time.' };
+    }
+    if (!isServiceOpen(now) && !scheduledOk) {
+      return { ok: false, error: 'We’re closed 12–8 AM. Schedule for 8 AM onwards.' };
+    }
+    const startAt = scheduledOk
+      ? new Date(scheduledStartAt as string).toISOString()
+      : new Date(now.getTime() + 45 * 60 * 1000).toISOString();
 
     const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
     if (!address?.line1 && !address?.area) {
@@ -744,7 +764,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           subtotal: totals.itemsTotal,
           taxes: totals.taxes,
           total: totals.total,
-          startAt: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+          startAt,
         });
         orderId = booking.orderId;
         bookingOrder = booking.order as Order;
@@ -788,6 +808,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         lastOrderId: orderId!,
         paymentError: null,
         pendingOrderId: null,
+        scheduledStartAt: null,
         orders: get().orders.map((o) =>
           o.id === orderId
             ? {

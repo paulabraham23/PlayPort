@@ -293,6 +293,21 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   if (Number.isNaN(startAt.getTime())) {
     throw new HttpsError('invalid-argument', 'Invalid startAt');
   }
+  // Service hours (IST): dropoffs run 8 AM – midnight. Scheduled starts must
+  // land inside the window; the session itself may run overnight (e.g. 4 PM – 4 AM).
+  if (startAt.getTime() < now - 5 * 60 * 1000) {
+    throw new HttpsError('invalid-argument', 'That slot already passed — pick a new time');
+  }
+  if (startAt.getTime() > now + 8 * 24 * 60 * 60 * 1000) {
+    throw new HttpsError('invalid-argument', 'Bookings open up to 7 days ahead');
+  }
+  const startIstHour = new Date(startAt.getTime() + 5.5 * 60 * 60 * 1000).getUTCHours();
+  if (startIstHour < 8 || startIstHour >= 24) {
+    throw new HttpsError(
+      'failed-precondition',
+      'We’re closed 12–8 AM. Schedule your dropoff from 8 AM onwards.'
+    );
+  }
 
   // Server-side reprice for product lines
   let expectedSubtotal = 0;
@@ -434,7 +449,6 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   const id = orderId();
   const reservationIds: string[] = [];
   const batch = db.batch();
-
   for (const a of unitAssignments) {
     const resRef = db.collection('inventory_reservations').doc();
     reservationIds.push(resRef.id);
@@ -466,7 +480,8 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     startAt: startIso,
     endAt: endIso,
     reservationIds,
-    etaLabel: 'Complete payment to confirm',
+    etaLabel:
+      startAt.getTime() - now > 3 * 60 * 60 * 1000 ? 'Scheduled dropoff' : 'Complete payment to confirm',
     addressLabel,
     addressFull,
     items: cart.map((c) => ({

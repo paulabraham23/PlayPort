@@ -36,6 +36,12 @@
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400" }
       ]
+    },
+    {
+      "source": "/((?!_expo|manifest\\.json|firebase-messaging-sw\\.js|robots\\.txt|favicon\\.ico|favicon-.*\\.png|apple-touch-icon\\.png|icon-.*\\.png|.*\\..*).*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+      ]
     }
   ],
   "rewrites": [

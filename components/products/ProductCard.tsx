@@ -236,20 +236,22 @@ export function ProductCard({
     return (
       <View style={styles.compact}>
         <PressableScale onPress={onPress} scaleTo={0.98}>
-          <View style={styles.compactImageWrap}>
-            {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.compactImage} contentFit="cover" />
-            ) : null}
-            <View style={styles.compactEta}>
-              <Text style={styles.etaBadgeText}>{product.etaMinutes}m</Text>
+          <View style={styles.compactTop}>
+            <View style={styles.compactImageWrap}>
+              {imageUri ? (
+                <Image source={{ uri: imageUri }} style={styles.compactImage} contentFit="cover" />
+              ) : null}
+              <View style={styles.compactEta}>
+                <Text style={styles.etaBadgeText}>{product.etaMinutes}m</Text>
+              </View>
             </View>
-          </View>
-          <View style={styles.compactBody}>
-            <RatingRow rating={product.rating} count={product.reviewCount} />
-            <Text style={styles.compactTitle} numberOfLines={2}>
-              {product.shortName}
-            </Text>
-            <Text style={styles.unitChip}>1 kit · {planLabel}</Text>
+            <View style={styles.compactBody}>
+              <RatingRow rating={product.rating} count={product.reviewCount} />
+              <Text style={styles.compactTitle} numberOfLines={2}>
+                {product.shortName}
+              </Text>
+              <Text style={styles.unitChip}>1 kit · {planLabel}</Text>
+            </View>
           </View>
         </PressableScale>
         {choices}
@@ -614,14 +616,18 @@ const styles = StyleSheet.create({
   },
   compact: {
     width: '100%',
-    flexDirection: 'row',
-    gap: spacing.md,
     backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
     padding: spacing.md,
+    gap: spacing.sm,
     ...shadows.soft,
+  },
+  compactTop: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'flex-start',
   },
   compactImageWrap: { position: 'relative' },
   compactImage: {

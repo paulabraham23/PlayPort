@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
@@ -34,6 +34,14 @@ type State =
  */
 export function AvailabilityBlock({ items, hubId, startIso, onApplySlot }: Props) {
   const [state, setState] = useState<State>({ kind: 'idle' });
+  // A verdict belongs to the exact window + items checked. Any change
+  // (new slot, plan, quantity, cart edit) invalidates it back to idle.
+  const contextKey = `${startIso ?? 'asap'}|${items
+    .map((i) => `${i.productId}:${i.hours}:${i.quantity ?? 1}`)
+    .join(',')}|${hubId ?? ''}`;
+  useEffect(() => {
+    setState({ kind: 'idle' });
+  }, [contextKey]);
 
   const check = async () => {
     if (!items.length) return;

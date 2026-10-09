@@ -61,7 +61,9 @@ export default function HomeScreen() {
   const visible = Math.max(viewport - cartInset, 0);
   // Peek cards give the photo whatever the text block doesn't take — a taller
   // frame keeps phone photos long on every screen size.
-  const cardHeight = visible > 0 ? (visible - CARD_GAP) / 1.32 : 0;
+  // Card height intentionally ignores the cart inset: otherwise every card
+  // resizes (and snap points jump) the moment the floating cart bar appears.
+  const cardHeight = viewport > 0 ? (viewport - CARD_GAP) / 1.32 : 0;
   const stride = cardHeight + CARD_GAP;
 
   const renderCard = (product: (typeof products)[0]) => (

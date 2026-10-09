@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
 import { QuantitySelector } from '@/components/cart/QuantitySelector';
+import { AvailabilityBlock } from '@/components/booking/AvailabilityBlock';
 import { ControllerAddonRow } from '@/components/products/ControllerAddonRow';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -183,6 +184,22 @@ export default function CartScreen() {
           {open ? 'Rider heads out ~45 min after payment.' : 'ASAP resumes at 8 AM.'}
         </Text>
       )}
+      <AvailabilityBlock
+        items={cart
+          .filter((c) => c.productId)
+          .map((c) => ({
+            productId: c.productId as string,
+            hours: c.hours,
+            quantity: c.quantity,
+            name: c.name,
+          }))}
+        hubId={hub?.id}
+        startIso={schedMode === 'scheduled' && scheduledValid ? (scheduledStartAt as string) : null}
+        onApplySlot={(iso) => {
+          setScheduledStartAt(iso);
+          setSchedMode('scheduled');
+        }}
+      />
     </View>
   );
 

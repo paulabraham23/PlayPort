@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
+import { AvailabilityBlock } from '@/components/booking/AvailabilityBlock';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
@@ -60,6 +61,8 @@ export default function ProductDetailScreen() {
   const updateCartQuantity = useAppStore((s) => s.updateCartQuantity);
   const products = useCatalogStore((s) => s.products);
   const units = useCatalogStore((s) => s.units);
+  const hub = useCatalogStore((s) => s.hub);
+  const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
   const showToast = useFeelStore((s) => s.showToast);
 
   const product = products.find((p) => p.id === id);
@@ -230,6 +233,15 @@ export default function ProductDetailScreen() {
             onModeChange={setMode}
             onPlanChange={setPlanId}
             onHourlyHoursChange={setHourlyHours}
+          />
+          <AvailabilityBlock
+            items={[{ productId: product.id, hours, name: product.shortName }]}
+            hubId={hub?.id}
+            startIso={null}
+            onApplySlot={(iso) => {
+              setScheduledStartAt(iso);
+              showToast('Slot set — add to cart to book it');
+            }}
           />
         </View>
 

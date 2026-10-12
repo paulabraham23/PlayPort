@@ -4,6 +4,7 @@ import {
   daySlots,
   formatSlot,
   formatWindow,
+  isDispatchable,
   isServiceOpen,
   isValidScheduledStart,
   nextOpenStart,
@@ -83,5 +84,28 @@ describe('formatting + next opening', () => {
   it('nextOpenStart points at 8 AM (same day before, next day after)', () => {
     expect(nextOpenStart(T('2026-10-12T20:00:00Z')).toISOString()).toBe('2026-10-13T02:30:00.000Z');
     expect(nextOpenStart(T('2026-10-12T06:00:00Z')).toISOString()).toBe('2026-10-13T02:30:00.000Z');
+  });
+});
+
+describe('isDispatchable (rider pool gating, 60-min lead)', () => {
+  const now = T('2026-10-12T06:00:00Z'); // 11:30 AM IST
+  const iso = (utc: string) => T(utc).toISOString();
+  it('shows ASAP and near-term runs', () => {
+    expect(isDispatchable({ startAt: iso('2026-10-12T06:30:00Z') }, now)).toBe(true);
+    expect(isDispatchable({ startAt: iso('2026-10-12T07:00:00Z') }, now)).toBe(true); // exactly 60 min
+  });
+  it('hides far-future scheduled runs', () => {
+    expect(isDispatchable({ startAt: iso('2026-10-12T10:30:00Z') }, now)).toBe(false); // 4 PM slot
+    expect(isDispatchable({ startAt: iso('2026-10-13T10:30:00Z') }, now)).toBe(false);
+  });
+  it('hides runs whose window already ended', () => {
+    expect(
+      isDispatchable({ startAt: iso('2026-10-12T00:00:00Z'), endAt: iso('2026-10-12T05:00:00Z') }, now)
+    ).toBe(false);
+  });
+  it('keeps legacy orders without timestamps visible', () => {
+    expect(isDispatchable({}, now)).toBe(true);
+    expect(isDispatchable({ startAt: 'garbage' }, now)).toBe(true);
+    expect(isDispatchable(null, now)).toBe(false);
   });
 });

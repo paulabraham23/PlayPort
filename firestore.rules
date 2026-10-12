@@ -112,18 +112,11 @@ service cloud.firestore {
         || (signedIn() && resource.data.userId == request.auth.uid);
       allow create: if isOps();
       allow delete: if isOps();
+      // Claims go through the claimDeliveryOrder function only (server-time
+      // payment/status/window checks). Riders may update their own jobs
+      // (status, GPS, coords backfill) but never self-assign.
       allow update: if isOps()
-        || (isActiveRider() && (
-          // Claim an unassigned paid job
-          (
-            resource.data.riderId == null
-            && request.resource.data.riderId == request.auth.uid
-            && resource.data.status in ['confirmed', 'preparing']
-            && resource.data.paymentStatus == 'paid'
-          )
-          // Or update own assigned job
-          || resource.data.riderId == request.auth.uid
-        ));
+        || (isActiveRider() && resource.data.riderId == request.auth.uid);
     }
 
     match /riders/{riderId} {

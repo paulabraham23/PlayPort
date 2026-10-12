@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {
   resolveRiderProfile,
-  riderAcceptOrder,
+  riderClaimOwnOrder,
   riderUpdateOrderStatus,
   watchRiderOrders,
 } from '@/lib/riderFirestore';
@@ -61,7 +61,7 @@ export const useRiderStore = create<RiderState>((set, get) => ({
   accept: async (orderId) => {
     const rider = get().rider;
     if (!rider) throw new Error('Not signed in as rider');
-    await riderAcceptOrder(orderId, rider);
+    await riderClaimOwnOrder(orderId);
   },
 
   setStatus: async (orderId, status, otp) => {

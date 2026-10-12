@@ -11,6 +11,7 @@ import { useRiderStore } from '@/store/riderStore';
 import type { Order, OrderStatus } from '@/types';
 import { useNow } from '@/hooks/useNow';
 import { orderStatusLabel } from '@/utils/format';
+import { formatSlot } from '@/utils/serviceHours';
 import { isEnRoute, locationAgeLabel, remainingEtaMinutes } from '@/utils/liveEta';
 
 const RIDER_NEXT: Record<string, { status: OrderStatus; label: string }[]> = {
@@ -162,6 +163,9 @@ export default function RiderOrderDetailScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Drop-off</Text>
         <Text style={styles.meta}>{order.addressFull || order.addressLabel}</Text>
+        {order.startAt ? (
+          <Text style={styles.meta}>Starts {formatSlot(order.startAt)}</Text>
+        ) : null}
         <Text style={styles.meta}>ETA {order.etaLabel}</Text>
         {mapsUrl ? (
           <Button

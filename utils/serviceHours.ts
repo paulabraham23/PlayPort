@@ -132,4 +132,27 @@ export function nextOpenStart(now = new Date()): Date {
     : new Date(eightAm.getTime() + 24 * 60 * 60 * 1000);
 }
 
+/** How early (before startAt) a job enters the rider pool. */
+export const DISPATCH_LEAD_MINUTES = 60;
+
+/**
+ * Rider-pool gating: an unclaimed order is claimable when its window hasn't
+ * ended and its start is within the dispatch lead (or unscheduled legacy).
+ */
+export function isDispatchable(
+  order: { startAt?: string; endAt?: string } | null | undefined,
+  now = new Date()
+): boolean {
+  if (!order) return false;
+  const nowMs = now.getTime();
+  if (order.endAt) {
+    const end = new Date(order.endAt).getTime();
+    if (Number.isFinite(end) && end < nowMs) return false;
+  }
+  if (!order.startAt) return true;
+  const start = new Date(order.startAt).getTime();
+  if (!Number.isFinite(start)) return true;
+  return start <= nowMs + DISPATCH_LEAD_MINUTES * 60 * 1000;
+}
+
 export { dayTimeFmt };

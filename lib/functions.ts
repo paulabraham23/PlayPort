@@ -166,6 +166,17 @@ export async function callCheckAvailability(input: {
   return res.data;
 }
 
+export async function callClaimDeliveryOrder(
+  orderId: string
+): Promise<{ ok: boolean; orderId: string }> {
+  const fn = httpsCallable<{ orderId: string }, { ok: boolean; orderId: string }>(
+    functions,
+    'claimDeliveryOrder'
+  );
+  const res = await fn({ orderId });
+  return res.data;
+}
+
 export type PlacesSuggestion = {
   placeId: string;
   primaryText: string;

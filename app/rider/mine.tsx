@@ -5,6 +5,7 @@ import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useRiderStore } from '@/store/riderStore';
 import { orderStatusLabel } from '@/utils/format';
+import { formatSlot } from '@/utils/serviceHours';
 
 export default function RiderMineScreen() {
   const { horizontalPadding } = useResponsive();
@@ -38,6 +39,9 @@ export default function RiderMineScreen() {
               <StatusBadge status={order.status} label={orderStatusLabel(order.status)} />
             </View>
             <Text style={styles.meta}>{order.addressFull || order.addressLabel}</Text>
+            {order.startAt ? (
+              <Text style={styles.meta}>Starts {formatSlot(order.startAt)}</Text>
+            ) : null}
             <Text style={styles.meta}>
               ₹{order.total} · {order.items?.[0]?.name ?? 'Kit'}
               {order.items && order.items.length > 1 ? ` +${order.items.length - 1}` : ''}

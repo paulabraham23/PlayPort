@@ -1249,6 +1249,72 @@ export const checkAvailability = onCall({ region: REGION }, async (request) => {
   }
 });
 
+/** Rider self-claim — the ONLY path that assigns an order to the caller.
+ *  Enforces payment, status, and the 60-min dispatch window on server time,
+ *  so no client can claim early or grab assigned/expired runs. */
+export const claimDeliveryOrder = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const { orderId: id } = request.data as { orderId: string };
+  if (!id) throw new HttpsError('invalid-argument', 'orderId required');
+
+  const riderSnap = await db.collection('riders').doc(uid).get();
+  const rider = riderSnap.data();
+  if (!riderSnap.exists || rider?.active !== true) {
+    throw new HttpsError('permission-denied', 'Not signed in as an active rider');
+  }
+
+  const ref = db.collection('orders').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Order not found');
+  const order = snap.data()!;
+  if (order.riderId) throw new HttpsError('failed-precondition', 'Already claimed by another rider');
+  if (order.paymentStatus && order.paymentStatus !== 'paid') {
+    throw new HttpsError('failed-precondition', 'Order is not paid yet');
+  }
+  if (!['confirmed', 'preparing'].includes(order.status)) {
+    throw new HttpsError('failed-precondition', 'Order is not ready for dispatch');
+  }
+
+  // Dispatch window on server time: hide far-future slots, refuse ended ones.
+  const nowMs = Date.now();
+  if (order.endAt) {
+    const endMs = new Date(order.endAt).getTime();
+    if (Number.isFinite(endMs) && endMs < nowMs) {
+      throw new HttpsError('failed-precondition', 'This run is no longer dispatchable');
+    }
+  }
+  if (order.startAt) {
+    const startMs = new Date(order.startAt).getTime();
+    if (Number.isFinite(startMs) && startMs > nowMs + 60 * 60 * 1000) {
+      throw new HttpsError('failed-precondition', 'Too early — this run is not dispatchable yet');
+    }
+  }
+
+  const nowIso = new Date().toISOString();
+  await ref.update({
+    riderId: uid,
+    riderName: rider.name ?? 'Rider',
+    riderPhone: rider.phone ?? '',
+    riderAcceptedAt: nowIso,
+    status: 'preparing',
+    progressPercent: 35,
+    liveDispatch: false,
+    updatedAt: nowIso,
+    etaLabel: 'Being prepared',
+  });
+
+  if (order.userId) {
+    await pushNotification(order.userId, {
+      title: 'Rider assigned',
+      body: `${rider.name ?? 'Your rider'} accepted ${id} and is preparing your kit.`,
+      type: 'delivery',
+      orderId: id,
+    }).catch(() => undefined);
+  }
+
+  return { ok: true, orderId: id };
+});
+
 type PlacesSuggestion = {
   placeId: string;
   primaryText: string;

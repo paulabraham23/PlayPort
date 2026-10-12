@@ -14,9 +14,10 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import { callCompleteReturn } from '@/lib/functions';
+import { callClaimDeliveryOrder, callCompleteReturn } from '@/lib/functions';
 import { computeDeliveryEta, geocodeAddress } from '@/lib/deliveryEta';
 import { createUserNotification } from '@/lib/notify';
+import { formatSlot, isDispatchable } from '@/utils/serviceHours';
 import type { Order, OrderStatus, Rider } from '@/types';
 
 const PROGRESS: Record<string, number> = {
@@ -104,12 +105,15 @@ export function watchRiderOrders(
 ): Unsubscribe {
   return onSnapshot(collection(db, 'orders'), (snap) => {
     const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Order);
+    const now = new Date();
     const available = all
       .filter(
         (o) =>
           !o.riderId &&
           (!o.paymentStatus || o.paymentStatus === 'paid') &&
-          ['confirmed', 'preparing'].includes(o.status)
+          ['confirmed', 'preparing'].includes(o.status) &&
+          // Scheduled runs surface ~1h before startAt, never after endAt.
+          isDispatchable(o, now)
       )
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     const mine = all
@@ -130,6 +134,12 @@ export async function riderAcceptOrder(orderId: string, rider: Rider): Promise<v
   }
   if (!['confirmed', 'preparing'].includes(order.status)) {
     throw new Error('Order is not ready for dispatch');
+  }
+  if (!isDispatchable(order)) {
+    const when = order.startAt ? formatSlot(order.startAt) : null;
+    throw new Error(
+      when ? `Too early — this run starts ${when}` : 'This run is no longer dispatchable'
+    );
   }
   const now = new Date().toISOString();
   const address = order.addressFull || order.addressLabel || '';
@@ -156,6 +166,51 @@ export async function riderAcceptOrder(orderId: string, rider: Rider): Promise<v
       orderId,
     }).catch(() => undefined);
   }
+}
+
+/**
+ * Rider self-claim via the server function (airtight: payment, status, and
+ * dispatch window enforced on server time). No silent fallback — a failed
+ * claim must surface, never write directly.
+ */
+export async function riderClaimOwnOrder(orderId: string): Promise<void> {
+  const claimed = await callClaimDeliveryOrder(orderId).catch((e) => {
+    throw new Error(
+      e instanceof Error ? messageFromFunctionsError(e) : 'Claim failed — try again'
+    );
+  });
+  if (!claimed?.ok) throw new Error('Claim failed — try again');
+
+  // Backfill exact coords when the order predates saved pins (own job → allowed).
+  try {
+    const ref = doc(db, 'orders', orderId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const order = snap.data() as Order;
+    if (order.dropoffLat != null && order.dropoffLng != null) return;
+    const dropoff = await geocodeAddress(order.addressFull || order.addressLabel || '');
+    if (dropoff) {
+      await updateDoc(ref, {
+        dropoffLat: dropoff.lat,
+        dropoffLng: dropoff.lng,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  } catch {
+    // Coords are best-effort; the claim itself already succeeded.
+  }
+}
+
+function messageFromFunctionsError(e: Error): string {
+  const msg = e.message ?? '';
+  const match = msg.match(/(?:failed-precondition|permission-denied|not-found|invalid-argument):\s*(.+)$/);
+  if (match) return match[1].trim();
+  const colon = msg.indexOf(': ');
+  if (msg.startsWith('FirebaseError') && colon > 0) {
+    const tail = msg.slice(colon + 2).replace(/^\(.*?\)\s*/, '');
+    if (tail) return tail;
+  }
+  return msg || 'Claim failed — try again';
 }
 
 /** Ping rider GPS → distance + ETA on the order (no map shared with customer). */

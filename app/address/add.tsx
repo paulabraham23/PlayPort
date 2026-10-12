@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -69,6 +69,13 @@ export default function AddAddressScreen() {
     if (authReady && !isAuthenticated) ensureLoggedIn('/address/add');
   }, [authReady, isAuthenticated]);
 
+  // True once the user types a label by hand — auto-fill then leaves it alone.
+  const labelTouched = useRef(false);
+  const onLabelChange = (t: string) => {
+    setLabel(t);
+    labelTouched.current = true;
+  };
+
   // Pinned on the map screen (/address/locate) → prefill + lock here.
   useFocusEffect(
     useCallback(() => {
@@ -83,7 +90,7 @@ export default function AddAddressScreen() {
         if (a.area) setArea(a.area);
         if (a.city) setCity(a.city);
         if (a.pincode) setPincode(a.pincode);
-        setLabel((v) => v || a.area || a.city || 'Home');
+        if (!labelTouched.current) setLabel(a.area || a.city || 'Home');
         useFeelStore.getState().showToast('Spot locked — now add your flat & floor');
       } else {
         useFeelStore.getState().showToast('Pin locked — complete the address below');
@@ -131,7 +138,8 @@ export default function AddAddressScreen() {
     if (place.area) setArea(place.area);
     if (place.city) setCity(place.city);
     if (place.pincode) setPincode(place.pincode.replace(/\D/g, '').slice(0, 6));
-    if (!label.trim()) setLabel(place.area || place.city || 'Home');
+    // Label follows each new search — unless the user typed their own.
+    if (!labelTouched.current) setLabel(place.area || place.city || 'Home');
     // Lock the exact rooftop pin — this is what the rider navigates to.
     if (Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
       setPin({ lat: place.lat as number, lng: place.lng as number });
@@ -221,7 +229,7 @@ export default function AddAddressScreen() {
             onPickOnMap={() => router.push('/address/locate' as never)}
           />
 
-          <Field label="Label" value={label} onChangeText={setLabel} placeholder="Home, Studio…" />
+          <Field label="Label" value={label} onChangeText={onLabelChange} placeholder="Home, Studio…" />
 
           <Text style={styles.fieldLabel}>Type</Text>
           <View style={styles.typeRow}>

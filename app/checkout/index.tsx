@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AddressCard } from '@/components/address/AddressCard';
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
@@ -20,6 +21,7 @@ export default function CheckoutScreen() {
   const { horizontalPadding } = useResponsive();
   const stickyPad = useStickyBarPadding();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const cart = useAppStore((s) => s.cart);
   const addresses = useAppStore((s) => s.addresses);
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
@@ -30,10 +32,12 @@ export default function CheckoutScreen() {
   const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (authReady && !isAuthenticated) {
       ensureLoggedIn('/checkout');
     }
-  }, [isAuthenticated]);
+  }, [authReady, isAuthenticated]);
+
+  if (!authReady) return <AuthLoadingScreen />;
 
   if (!isAuthenticated) {
     return (

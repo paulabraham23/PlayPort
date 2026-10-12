@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { PlacesAutocomplete } from '@/components/address/PlacesAutocomplete';
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { LocationPinSection, type PinGuess } from '@/components/address/LocationPinSection';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -34,6 +35,7 @@ export default function EditAddressScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { horizontalPadding } = useResponsive();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const addresses = useAppStore((s) => s.addresses);
   const updateAddress = useAppStore((s) => s.updateAddress);
   const deleteAddress = useAppStore((s) => s.deleteAddress);
@@ -62,8 +64,8 @@ export default function EditAddressScreen() {
   const [placeId, setPlaceId] = useState<string | undefined>(existing?.placeId);
 
   useEffect(() => {
-    if (!isAuthenticated) ensureLoggedIn(`/address/edit/${id}`);
-  }, [isAuthenticated, id]);
+    if (authReady && !isAuthenticated) ensureLoggedIn(`/address/edit/${id}`);
+  }, [authReady, isAuthenticated, id]);
 
   useEffect(() => {
     if (!existing || hydrated) return;    setLabel(existing.label);
@@ -100,6 +102,8 @@ export default function EditAddressScreen() {
       }
     }, [])
   );
+
+  if (!authReady) return <AuthLoadingScreen />;
 
   if (!isAuthenticated) {
     return (

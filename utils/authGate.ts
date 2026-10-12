@@ -3,8 +3,11 @@ import { useAppStore, type PendingCartAdd } from '@/store/appStore';
 
 /** Returns true if the user can continue; otherwise opens login and returns false. */
 export function ensureLoggedIn(next?: string): boolean {
-  const { isAuthenticated } = useAppStore.getState();
+  const { authReady, isAuthenticated } = useAppStore.getState();
   if (isAuthenticated) return true;
+  // Auth unresolved — never bounce to login on a cold load. The caller either
+  // renders a loading state (screens) or the user retries the tap (buttons).
+  if (!authReady) return false;
   router.push({
     pathname: '/(auth)/login',
     params: next ? { next } : undefined,
@@ -14,7 +17,9 @@ export function ensureLoggedIn(next?: string): boolean {
 
 /** If signed out, remember the add and open login. Returns true when the caller should add now. */
 export function gateCartAdd(next: string | undefined, add: PendingCartAdd): boolean {
-  if (useAppStore.getState().isAuthenticated) return true;
+  const { authReady, isAuthenticated } = useAppStore.getState();
+  if (isAuthenticated) return true;
+  if (!authReady) return false;
   useAppStore.getState().queueCartAdd(add);
   ensureLoggedIn(next);
   return false;

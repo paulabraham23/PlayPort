@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { PlacesAutocomplete } from '@/components/address/PlacesAutocomplete';
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { LocationPinSection, type PinGuess } from '@/components/address/LocationPinSection';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -35,6 +36,7 @@ export default function AddAddressScreen() {
   const returnTo = resolveAuthNext(next);
   const { horizontalPadding } = useResponsive();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const user = useAppStore((s) => s.user);
   const addAddress = useAppStore((s) => s.addAddress);
   const selectAddress = useAppStore((s) => s.selectAddress);
@@ -64,8 +66,8 @@ export default function AddAddressScreen() {
   const [placeId, setPlaceId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (!isAuthenticated) ensureLoggedIn('/address/add');
-  }, [isAuthenticated]);
+    if (authReady && !isAuthenticated) ensureLoggedIn('/address/add');
+  }, [authReady, isAuthenticated]);
 
   // Pinned on the map screen (/address/locate) → prefill + lock here.
   useFocusEffect(
@@ -88,6 +90,8 @@ export default function AddAddressScreen() {
       }
     }, [])
   );
+
+  if (!authReady) return <AuthLoadingScreen />;
 
   if (!isAuthenticated) {
     return (

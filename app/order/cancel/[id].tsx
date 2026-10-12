@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +23,7 @@ export default function CancelOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { horizontalPadding } = useResponsive();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const orders = useAppStore((s) => s.orders);
   const cancelOrder = useAppStore((s) => s.cancelOrder);
   const order = useMemo(() => orders.find((o) => o.id === id), [orders, id]);
@@ -33,8 +35,10 @@ export default function CancelOrderScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) ensureLoggedIn(`/order/cancel/${id}`);
-  }, [isAuthenticated, id]);
+    if (authReady && !isAuthenticated) ensureLoggedIn(`/order/cancel/${id}`);
+  }, [authReady, isAuthenticated, id]);
+
+  if (!authReady) return <AuthLoadingScreen />;
 
   if (!isAuthenticated) {
     return (

@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { Screen } from '@/components/layout/Screen';
 import { OrderCard } from '@/components/orders/OrderCard';
@@ -33,6 +34,7 @@ type TabKey = 'active' | 'past';
 export default function OrdersScreen() {
   const { horizontalPadding, orderColumns, gap } = useResponsive();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const orders = useAppStore((s) => s.orders);
   const [tab, setTab] = useState<TabKey>('active');
   const columns = orderColumns;
@@ -46,6 +48,8 @@ export default function OrdersScreen() {
   const list = tab === 'active' ? active : past;
   const live = active.find((o) => o.status === 'out_for_delivery' || o.status === 'returning');
   const visibleList = list.filter((o) => !(tab === 'active' && live && o.id === live.id));
+
+  if (!authReady) return <AuthLoadingScreen />;
 
   if (!isAuthenticated) {
     return (

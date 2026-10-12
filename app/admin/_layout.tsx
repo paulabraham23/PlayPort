@@ -36,6 +36,7 @@ export default function AdminLayout() {
   const { width } = useWindowDimensions();
   const pathname = usePathname();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const hydrateAll = useAdminStore((s) => s.hydrateAll);
   const [checking, setChecking] = useState(true);
   const [allowed, setAllowed] = useState(false);
@@ -45,6 +46,8 @@ export default function AdminLayout() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Auth unresolved — stay on the spinner, never flash "sign in".
+      if (!authReady) return;
       if (!isAuthenticated) {
         if (!cancelled) {
           setAllowed(false);
@@ -63,7 +66,7 @@ export default function AdminLayout() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, hydrateAll, checkTick]);
+  }, [authReady, isAuthenticated, hydrateAll, checkTick]);
 
   if (checking) {
     return (

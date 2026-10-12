@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { Screen } from '@/components/layout/Screen';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -32,6 +33,7 @@ type MenuSection = {
 export default function ProfileScreen() {
   const { horizontalPadding, isDesktop, gap } = useResponsive();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const user = useAppStore((s) => s.user);
   const addresses = useAppStore((s) => s.addresses);
   const orders = useAppStore((s) => s.orders);
@@ -124,6 +126,8 @@ export default function ProfileScreen() {
     }
     return base;
   }, [isAdmin, isRider, user]);
+
+  if (!authReady) return <AuthLoadingScreen />;
 
   if (!isAuthenticated || !user) {
     return (

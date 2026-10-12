@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AddressCard } from '@/components/address/AddressCard';
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
@@ -16,12 +17,15 @@ import { ensureLoggedIn } from '@/utils/authGate';
 export default function ProfileAddressesScreen() {
   const { horizontalPadding } = useResponsive();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const addresses = useAppStore((s) => s.addresses);
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
 
   useEffect(() => {
-    if (!isAuthenticated) ensureLoggedIn('/profile/addresses');
-  }, [isAuthenticated]);
+    if (authReady && !isAuthenticated) ensureLoggedIn('/profile/addresses');
+  }, [authReady, isAuthenticated]);
+
+  if (!authReady) return <AuthLoadingScreen />;
 
   if (!isAuthenticated) {
     return (

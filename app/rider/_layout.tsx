@@ -27,6 +27,7 @@ export default function RiderLayout() {
   const { width } = useWindowDimensions();
   const pathname = usePathname();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const bootstrap = useRiderStore((s) => s.bootstrap);
   const rider = useRiderStore((s) => s.rider);
   const mine = useRiderStore((s) => s.mine);
@@ -43,6 +44,8 @@ export default function RiderLayout() {
     let cleanup: (() => void) | undefined;
     let cancelled = false;
     (async () => {
+      // Auth unresolved — stay on the spinner, never flash "sign in".
+      if (!authReady) return;
       if (!isAuthenticated) {
         if (!cancelled) {
           setAllowed(false);
@@ -69,7 +72,7 @@ export default function RiderLayout() {
       cancelled = true;
       cleanup?.();
     };
-  }, [isAuthenticated, bootstrap]);
+  }, [authReady, isAuthenticated, bootstrap]);
 
   if (checking) {
     return (

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
@@ -26,6 +27,7 @@ export default function PaymentScreen() {
   const { horizontalPadding } = useResponsive();
   const stickyPad = useStickyBarPadding();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const cart = useAppStore((s) => s.cart);
   const paymentMethods = useAppStore((s) => s.paymentMethods);
   const selectedPaymentMethodId = useAppStore((s) => s.selectedPaymentMethodId);
@@ -39,10 +41,10 @@ export default function PaymentScreen() {
   const [displayTotal, setDisplayTotal] = useState(totals.total);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (authReady && !isAuthenticated) {
       ensureLoggedIn('/checkout/payment');
     }
-  }, [isAuthenticated]);
+  }, [authReady, isAuthenticated]);
 
   const pay = async (fail = false) => {
     if (!ensureLoggedIn('/checkout/payment')) return;
@@ -59,6 +61,8 @@ export default function PaymentScreen() {
       setPaying(false);
     }
   };
+
+  if (!authReady) return <AuthLoadingScreen />;
 
   if (!isAuthenticated) {
     return (

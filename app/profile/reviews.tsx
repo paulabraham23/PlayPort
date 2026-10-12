@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -23,6 +24,7 @@ import { ensureLoggedIn } from '@/utils/authGate';
 export default function ReviewsScreen() {
   const { horizontalPadding } = useResponsive();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authReady = useAppStore((s) => s.authReady);
   const reviews = useAppStore((s) => s.reviews);
   const orders = useAppStore((s) => s.orders);
   const user = useAppStore((s) => s.user);
@@ -30,8 +32,8 @@ export default function ReviewsScreen() {
   const products = useCatalogStore((s) => s.products);
 
   useEffect(() => {
-    if (!isAuthenticated) ensureLoggedIn('/profile/reviews');
-  }, [isAuthenticated]);
+    if (authReady && !isAuthenticated) ensureLoggedIn('/profile/reviews');
+  }, [authReady, isAuthenticated]);
 
   const completed = useMemo(
     () => orders.filter((o) => o.status === 'completed'),
@@ -52,6 +54,8 @@ export default function ReviewsScreen() {
         r.userName === 'You'
     );
   }, [reviews, user?.id, user?.name]);
+
+  if (!authReady) return <AuthLoadingScreen />;
 
   if (!isAuthenticated) {
     return (

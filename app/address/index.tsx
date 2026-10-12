@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AddressCard } from '@/components/address/AddressCard';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -22,7 +22,21 @@ export default function AddressIndexScreen() {
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
   const selectAddress = useAppStore((s) => s.selectAddress);
   const setDefaultAddress = useAppStore((s) => s.setDefaultAddress);
+  const deleteAddress = useAppStore((s) => s.deleteAddress);
   const hub = useCatalogStore((s) => s.hub);
+
+  const confirmDelete = (id: string, label: string) => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`Delete "${label}"? It will be removed.`)) {
+        deleteAddress(id);
+      }
+      return;
+    }
+    Alert.alert('Delete address?', `"${label}" will be removed from your saved list.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteAddress(id) },
+    ]);
+  };
 
   return (
     <Screen showHeader={false}>
@@ -94,6 +108,7 @@ export default function AddressIndexScreen() {
                   selected={selected}
                   onPress={() => selectAddress(address.id)}
                   onEdit={() => router.push(`/address/edit/${address.id}`)}
+                  onDelete={() => confirmDelete(address.id, address.label)}
                   actionLabel={actionLabel}
                   onAction={() => {
                     if (address.inRapidZone) {

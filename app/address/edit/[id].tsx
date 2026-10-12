@@ -181,6 +181,14 @@ export default function EditAddressScreen() {
   };
 
   const onDelete = () => {
+    // Alert.alert is a no-op on web — use window.confirm there.
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Delete this address?')) {
+        if (id) deleteAddress(id);
+        router.back();
+      }
+      return;
+    }
     Alert.alert('Delete address?', 'This location will be removed from your saved list.', [
       { text: 'Cancel', style: 'cancel' },
       {

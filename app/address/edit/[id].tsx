@@ -23,6 +23,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import type { ResolvedPlaceAddress } from '@/lib/places';
 import { useAppStore } from '@/store/appStore';
+import { useFeelStore } from '@/store/feelStore';
 import { useLocationDraftStore } from '@/store/locationDraftStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import type { Address } from '@/types';
@@ -93,6 +94,9 @@ export default function EditAddressScreen() {
         if (a.area) setArea(a.area);
         if (a.city) setCity(a.city);
         if (a.pincode) setPincode(a.pincode);
+        useFeelStore.getState().showToast('Spot locked — review and save');
+      } else {
+        useFeelStore.getState().showToast('Pin locked — complete the address below');
       }
     }, [])
   );

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MapPinPicker } from '@/components/address/MapPinPicker';
 import { Screen } from '@/components/layout/Screen';
 import { Button } from '@/components/ui/Button';
@@ -27,7 +27,10 @@ export default function LocateAddressScreen() {
   const [initial, setInitial] = useState<{ lat: number; lng: number } | null>(null);
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [resolved, setResolved] = useState<ReverseGeocodedAddress | null>(null);
+  const [resolvedFor, setResolvedFor] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const requestId = useRef(0);
 
@@ -65,28 +68,74 @@ export default function LocateAddressScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const keyOf = (c: { lat: number; lng: number }) => `${c.lat.toFixed(5)},${c.lng.toFixed(5)}`;
+
+  /** Reverse-geocode with Google first, device geocoder as native fallback. */
+  const resolveSpot = async (next: { lat: number; lng: number }): Promise<ReverseGeocodedAddress | null> => {
+    const google = await reverseGeocodeLatLng(next.lat, next.lng).catch(() => null);
+    if (google) return google;
+    if (Platform.OS !== 'web') {
+      try {
+        const [rev] = await Location.reverseGeocodeAsync({
+          latitude: next.lat,
+          longitude: next.lng,
+        });
+        if (rev) {
+          const pin = String(rev.postalCode ?? '').replace(/\D/g, '').slice(0, 6);
+          const area = rev.district ?? rev.subregion ?? rev.street ?? rev.name ?? '';
+          const city = rev.city ?? rev.region ?? 'Bengaluru';
+          return {
+            formattedAddress: rev.formattedAddress ?? '',
+            line1: rev.name ?? rev.street ?? area,
+            area,
+            city,
+            pincode: pin,
+          };
+        }
+      } catch {
+        // fall through to null
+      }
+    }
+    return null;
+  };
+
   const onCenterChange = (next: { lat: number; lng: number }) => {
     setCenter(next);
+    setResolveError(null);
     const id = ++requestId.current;
     setResolving(true);
-    void reverseGeocodeLatLng(next.lat, next.lng)
+    void resolveSpot(next)
       .then((address) => {
         if (id !== requestId.current) return;
         setResolved(address);
+        setResolvedFor(address ? keyOf(next) : null);
+        if (!address) setResolveError('Couldn’t read this spot — nudge the pin and retry.');
       })
       .catch(() => {
         if (id !== requestId.current) return;
         setResolved(null);
+        setResolvedFor(null);
+        setResolveError('Couldn’t read this spot — nudge the pin and retry.');
       })
       .finally(() => {
         if (id === requestId.current) setResolving(false);
       });
   };
 
-  const onConfirm = () => {
-    if (!center) return;
-    setDraft({ lat: center.lat, lng: center.lng, address: resolved });
-    router.back();
+  const onConfirm = async () => {
+    if (!center || confirming) return;
+    setConfirming(true);
+    try {
+      // Never hand the form an empty address: resolve fresh for this exact spot.
+      let address = resolved && resolvedFor === keyOf(center) ? resolved : null;
+      if (!address) {
+        address = await resolveSpot(center);
+      }
+      setDraft({ lat: center.lat, lng: center.lng, address });
+      router.back();
+    } finally {
+      setConfirming(false);
+    }
   };
 
   return (
@@ -155,9 +204,14 @@ export default function LocateAddressScreen() {
                 ) : (
                   <Text style={styles.sheetSub}>Move the map to read the address here.</Text>
                 )}
+                {resolveError ? <Text style={styles.sheetError}>{resolveError}</Text> : null}
               </View>
             </View>
-            <Button title="Confirm this spot" disabled={!center} onPress={onConfirm} />
+            <Button
+              title={confirming ? 'Locking this spot…' : 'Confirm this spot'}
+              disabled={!center || confirming || (resolving && !resolved)}
+              onPress={() => void onConfirm()}
+            />
             <Text style={styles.hint}>
               Flat, floor & landmark come next — the pin is what guides your rider.
             </Text>

@@ -22,6 +22,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import type { ResolvedPlaceAddress } from '@/lib/places';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
+import { useFeelStore } from '@/store/feelStore';
 import { useLocationDraftStore } from '@/store/locationDraftStore';
 import { ensureLoggedIn, resolveAuthNext } from '@/utils/authGate';
 import type { Address } from '@/types';
@@ -39,6 +40,28 @@ export default function AddAddressScreen() {
   const selectAddress = useAppStore((s) => s.selectAddress);
   const updateUserProfile = useAppStore((s) => s.updateUserProfile);
   const hub = useCatalogStore((s) => s.hub);
+
+  // All state lives above every early return — hooks must run unconditionally.
+  const phoneDigits = useMemo(
+    () => (user?.phone ?? '').replace(/\D/g, '').slice(-10),
+    [user?.phone]
+  );
+
+  const [label, setLabel] = useState(isOnboarding ? 'Home' : '');
+  const [type, setType] = useState<Address['type']>('home');
+  const [line1, setLine1] = useState('');
+  const [line2, setLine2] = useState('');
+  const [area, setArea] = useState('');
+  const [city, setCity] = useState(hub?.city || 'Bengaluru');
+  const [pincode, setPincode] = useState('');
+  const [contactName, setContactName] = useState(user?.name ?? '');
+  const [phone, setPhone] = useState(phoneDigits);
+  const [instructions, setInstructions] = useState('');
+  const [isDefault, setIsDefault] = useState(isOnboarding || false);
+  const [saving, setSaving] = useState(false);
+  // Exact delivery pin — from Places search, GPS lock, or the map screen.
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [placeId, setPlaceId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!isAuthenticated) ensureLoggedIn('/address/add');
@@ -59,6 +82,9 @@ export default function AddAddressScreen() {
         if (a.city) setCity(a.city);
         if (a.pincode) setPincode(a.pincode);
         setLabel((v) => v || a.area || a.city || 'Home');
+        useFeelStore.getState().showToast('Spot locked — now add your flat & floor');
+      } else {
+        useFeelStore.getState().showToast('Pin locked — complete the address below');
       }
     }, [])
   );
@@ -76,27 +102,6 @@ export default function AddAddressScreen() {
       </Screen>
     );
   }
-
-  const phoneDigits = useMemo(
-    () => (user?.phone ?? '').replace(/\D/g, '').slice(-10),
-    [user?.phone]
-  );
-
-  const [label, setLabel] = useState(isOnboarding ? 'Home' : '');
-  const [type, setType] = useState<Address['type']>('home');
-  const [line1, setLine1] = useState('');
-  const [line2, setLine2] = useState('');
-  const [area, setArea] = useState('');
-  const [city, setCity] = useState(hub?.city || 'Bengaluru');
-  const [pincode, setPincode] = useState('');
-  const [contactName, setContactName] = useState(user?.name ?? '');
-  const [phone, setPhone] = useState(phoneDigits);
-  const [instructions, setInstructions] = useState('');
-  const [isDefault, setIsDefault] = useState(isOnboarding || false);
-  const [saving, setSaving] = useState(false);
-  // Exact delivery pin — from Places search or GPS lock (Zepto-style).
-  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
-  const [placeId, setPlaceId] = useState<string | undefined>(undefined);
 
   const canSave =
     label.trim() &&

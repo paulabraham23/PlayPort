@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck app
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build Cloud Functions
+        run: npm --prefix functions run build
+
+      - name: Web export (Vercel build gate)
+        run: npx expo export -p web
+        env:
+          EXPO_NO_TELEMETRY: 1

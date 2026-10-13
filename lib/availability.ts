@@ -22,9 +22,9 @@ export async function checkSlot(
   startIso: string,
   hours: number,
   quantity = 1
-): Promise<boolean> {
+): Promise<{ free: boolean; totalUnits: number }> {
   const start = new Date(startIso).getTime();
-  if (!Number.isFinite(start)) return false;
+  if (!Number.isFinite(start)) return { free: false, totalUnits: 0 };
   try {
     const res = await callCheckAvailability({
       productId,
@@ -33,9 +33,10 @@ export async function checkSlot(
       endAt: new Date(start + hours * 60 * 60 * 1000).toISOString(),
       quantity,
     });
-    return res.ok && (res.availableUnitIds?.length ?? 0) > 0;
+    const free = res.ok && (res.availableUnitIds?.length ?? 0) > 0;
+    return { free, totalUnits: res.totalUnits ?? 0 };
   } catch {
-    return false;
+    return { free: false, totalUnits: 0 };
   }
 }
 
@@ -71,7 +72,7 @@ export async function findNextFreeSlot(
       if (candidate > deadline) return null;
     }
     const iso = new Date(candidate).toISOString();
-    if (await checkSlot(productId, hubId, iso, hours, quantity)) return iso;
+    if ((await checkSlot(productId, hubId, iso, hours, quantity)).free) return iso;
     candidate += stepMs;
   }
   return null;

@@ -1241,11 +1241,18 @@ export const checkAvailability = onCall({ region: REGION }, async (request) => {
   const startMs = new Date(startAt).getTime();
   const endMs = new Date(endAt).getTime();
   const now = Date.now();
+  const stockSnap = await db
+    .collection('inventory_units')
+    .where('productId', '==', productId)
+    .where('hubId', '==', hubId)
+    .where('status', '==', 'available')
+    .get();
+  const totalUnits = stockSnap.size;
   try {
     const units = await pickUnitsForProduct(productId, hubId, quantity, startMs, endMs, now);
-    return { ok: true, hubId, availableUnitIds: units };
+    return { ok: true, hubId, availableUnitIds: units, totalUnits };
   } catch {
-    return { ok: false, hubId, availableUnitIds: [] as string[] };
+    return { ok: false, hubId, availableUnitIds: [] as string[], totalUnits };
   }
 });
 

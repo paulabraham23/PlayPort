@@ -158,7 +158,7 @@ export async function callCheckAvailability(input: {
   endAt: string;
   quantity?: number;
 }) {
-  const fn = httpsCallable<typeof input, { ok: boolean; hubId: string; availableUnitIds: string[] }>(
+  const fn = httpsCallable<typeof input, { ok: boolean; hubId: string; availableUnitIds: string[]; totalUnits: number }>(
     functions,
     'checkAvailability'
   );

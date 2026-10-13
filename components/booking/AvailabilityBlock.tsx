@@ -26,6 +26,7 @@ type State =
   | { kind: 'checking' }
   | { kind: 'available'; window: string }
   | { kind: 'soldout'; name: string; window: string; suggestionIso: string | null; suggestionWindow: string | null; hours: number }
+  | { kind: 'nostock'; name: string }
   | { kind: 'closed' };
 
 /**
@@ -54,8 +55,12 @@ export function AvailabilityBlock({ items, hubId, startIso, onApplySlot }: Props
     setState({ kind: 'checking' });
     const maxHours = Math.max(1, ...items.map((i) => i.hours));
     for (const item of items) {
-      const ok = await checkSlot(item.productId, hubId, start, item.hours, item.quantity ?? 1);
-      if (!ok) {
+      const { free, totalUnits } = await checkSlot(item.productId, hubId, start, item.hours, item.quantity ?? 1);
+      if (totalUnits === 0) {
+        setState({ kind: 'nostock', name: item.name });
+        return;
+      }
+      if (!free) {
         const suggestionIso = await findNextFreeSlot(
           item.productId,
           hubId,
@@ -124,6 +129,20 @@ export function AvailabilityBlock({ items, hubId, startIso, onApplySlot }: Props
             ) : (
               <Text style={styles.soldSub}>Try another day — everything nearby is booked.</Text>
             )}
+          </View>
+        </View>
+      ) : null}
+
+      {state.kind === 'nostock' ? (
+        <View style={[styles.card, styles.soldCard]}>
+          <Ionicons name="cube-outline" size={20} color={colors.secondaryText} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.soldTitle}>
+              No {state.name} kits in stock right now.
+            </Text>
+            <Text style={styles.soldSub}>
+              We’re restocking this kit — check back soon or try another kit.
+            </Text>
           </View>
         </View>
       ) : null}

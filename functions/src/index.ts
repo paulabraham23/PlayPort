@@ -705,6 +705,12 @@ export const updateOrderStatus = onCall({ region: REGION }, async (request) => {
     updatedAt: new Date().toISOString(),
   });
 
+  // Closing an order must always free its kits — otherwise confirmed
+  // reservations block the units forever (the orphan leak).
+  if (status === 'completed') {
+    await releaseReservations(order.reservationIds ?? [], 'completed');
+  }
+
   return { ok: true, status };
 });
 

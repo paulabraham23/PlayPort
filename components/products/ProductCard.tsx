@@ -360,6 +360,7 @@ export function ProductCard({
 const styles = StyleSheet.create({
   card: {
     width: '100%',
+    flex: 1,
     backgroundColor: colors.surfaceRaised,
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth,
@@ -461,7 +462,7 @@ const styles = StyleSheet.create({
     bottom: 10,
     zIndex: 2,
   },
-  body: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, gap: 2 },
+  body: { flex: 1, paddingHorizontal: spacing.md, paddingTop: spacing.sm, gap: 2 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ratingChip: {
     flexDirection: 'row',

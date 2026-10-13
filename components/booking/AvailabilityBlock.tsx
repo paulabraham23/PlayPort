@@ -86,8 +86,9 @@ export function AvailabilityBlock({ items, hubId, startIso, onApplySlot }: Props
   return (
     <View style={styles.wrap}>
       <Button
-        title={state.kind === 'checking' ? 'Checking…' : 'Check Availability'}
-        disabled={state.kind === 'checking' || !items.length}
+        title="Check Availability"
+        loading={state.kind === 'checking'}
+        disabled={!items.length}
         icon={<Ionicons name="calendar-outline" size={18} color={colors.white} />}
         onPress={() => void check()}
       />

@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   StyleSheet,
   Text,
@@ -30,6 +31,8 @@ interface Props extends Omit<PressableProps, 'style'> {
   icon?: ReactNode;
   iconRight?: ReactNode;
   fullWidth?: boolean;
+  /** Spinner + locked press. Title stays put so layout never jumps. */
+  loading?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -40,6 +43,7 @@ export function Button({
   icon,
   iconRight,
   fullWidth,
+  loading = false,
   style,
   disabled,
   accessibilityLabel,
@@ -48,6 +52,9 @@ export function Button({
   ...rest
 }: Props) {
   const scale = useSharedValue(1);
+  const inactive = disabled || loading;
+  const spinnerColor =
+    variant === 'primary' ? colors.ctaPrimaryText : colors.playportOrange;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -57,9 +64,9 @@ export function Button({
     <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
-      disabled={disabled}
+      disabled={inactive}
       onPressIn={(e) => {
-        if (!disabled) scale.value = withSpring(0.96, { damping: 16, stiffness: 420 });
+        if (!inactive) scale.value = withSpring(0.96, { damping: 16, stiffness: 420 });
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
@@ -67,7 +74,7 @@ export function Button({
         onPressOut?.(e);
       }}
       onHoverIn={
-        Platform.OS === 'web' && !disabled
+        Platform.OS === 'web' && !inactive
           ? () => {
               scale.value = withTiming(1.02, { duration: 120 });
             }
@@ -86,13 +93,13 @@ export function Button({
         styles[`size_${size}`],
         fullWidth && styles.fullWidth,
         Platform.OS === 'web' && styles.webCursor,
-        disabled && styles.disabled,
+        inactive && styles.disabled,
         style,
         animatedStyle,
       ]}
       {...rest}
     >
-      {variant === 'primary' && !disabled ? (
+      {variant === 'primary' && !inactive ? (
         <LinearGradient
           colors={[...gradients.cta]}
           start={{ x: 0, y: 0.5 }}
@@ -100,7 +107,11 @@ export function Button({
           style={StyleSheet.absoluteFill}
         />
       ) : null}
-      {icon ? <View style={styles.icon}>{icon}</View> : null}
+      {loading ? (
+        <ActivityIndicator size="small" color={spinnerColor} />
+      ) : (
+        icon ? <View style={styles.icon}>{icon}</View> : null
+      )}
       <Text
         style={[
           styles.text,

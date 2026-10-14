@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { AvailabilityBlock } from '@/components/booking/AvailabilityBlock';
+import { SchedulePicker } from '@/components/booking/SchedulePicker';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
@@ -22,6 +23,7 @@ import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { gateCartAdd } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
+import { isValidScheduledStart } from '@/utils/serviceHours';
 import { firstDisplayableImage } from '@/utils/images';
 import {
   addonsTotal,
@@ -63,6 +65,8 @@ export default function ProductDetailScreen() {
   const units = useCatalogStore((s) => s.units);
   const hub = useCatalogStore((s) => s.hub);
   const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
+  const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
   const showToast = useFeelStore((s) => s.showToast);
 
   const product = products.find((p) => p.id === id);
@@ -237,10 +241,11 @@ export default function ProductDetailScreen() {
             onPlanChange={setPlanId}
             onHourlyHoursChange={setHourlyHours}
           />
+          <SchedulePicker maxHours={hours} />
           <AvailabilityBlock
             items={[{ productId: product.id, hours, name: product.shortName }]}
             hubId={hub?.id}
-            startIso={null}
+            startIso={scheduledValid ? (scheduledStartAt as string) : null}
             onApplySlot={(iso) => {
               setScheduledStartAt(iso);
               showToast('Slot set — add to cart to book it');

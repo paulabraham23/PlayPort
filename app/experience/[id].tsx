@@ -4,6 +4,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
+import { AvailabilityBlock } from '@/components/booking/AvailabilityBlock';
+import { SchedulePicker } from '@/components/booking/SchedulePicker';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
@@ -19,6 +21,8 @@ import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { gateCartAdd } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
+import { isValidScheduledStart } from '@/utils/serviceHours';
+import { expandCheckItems } from '@/lib/availability';
 import {
   addonsTotal,
   defaultExperiencePlan,
@@ -34,8 +38,12 @@ export default function ExperienceDetailScreen() {
   const stickyPad = useStickyBarPadding();
   const addExperienceToCart = useAppStore((s) => s.addExperienceToCart);
   const addProductToCart = useAppStore((s) => s.addProductToCart);
+  const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
+  const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
   const experiences = useCatalogStore((s) => s.experiences);
   const products = useCatalogStore((s) => s.products);
+  const hub = useCatalogStore((s) => s.hub);
 
   const experience = experiences.find((e) => e.id === id);
   const plans = experience ? experiencePlans(experience) : [];
@@ -45,6 +53,20 @@ export default function ExperienceDetailScreen() {
   const plan = plans.find((item) => item.id === planId) ?? (experience ? defaultExperiencePlan(experience) : null);
   const includedProducts = experience
     ? products.filter((p) => experience.productIds.includes(p.id))
+    : [];
+  const comboCheckItems = experience
+    ? expandCheckItems(
+        [
+          {
+            experienceId: experience.id,
+            hours: plan?.hours ?? 12,
+            quantity: 1,
+            name: experience.name,
+          },
+        ],
+        products,
+        experiences
+      )
     : [];
   const controllerAddons = (experience?.addons ?? []).filter((a) => isControllerAddon(a));
   const selectedAddons = Object.entries(addonQty)
@@ -145,6 +167,20 @@ export default function ExperienceDetailScreen() {
             })}
           </View>
         </View>
+
+        <SchedulePicker maxHours={plan?.hours ?? 12} />
+
+        {comboCheckItems.length ? (
+          <AvailabilityBlock
+            items={comboCheckItems}
+            hubId={hub?.id}
+            startIso={scheduledValid ? (scheduledStartAt as string) : null}
+            onApplySlot={(iso) => {
+              setScheduledStartAt(iso);
+              showToast('Slot set — book the combo to lock it in');
+            }}
+          />
+        ) : null}
 
         {controllerAddons.length > 0 ? (
           <View style={styles.section}>
@@ -287,8 +323,9 @@ const styles = StyleSheet.create({
   hero: {
     borderRadius: radii.xl,
     overflow: 'hidden',
-    height: 220,
     width: '100%',
+    aspectRatio: 16 / 9,
+    maxHeight: 380,
     backgroundColor: colors.surfaceAlt,
   },
   heroSplit: {

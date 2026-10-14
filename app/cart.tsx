@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
 import { QuantitySelector } from '@/components/cart/QuantitySelector';
 import { AvailabilityBlock } from '@/components/booking/AvailabilityBlock';
+import { expandCheckItems } from '@/lib/availability';
 import { ControllerAddonRow } from '@/components/products/ControllerAddonRow';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -87,6 +88,17 @@ export default function CartScreen() {
   }
 
   const maxHours = Math.max(1, ...cart.map((c) => c.hours ?? 3));
+  const checkItems = expandCheckItems(
+    cart.map((c) => ({
+      productId: c.productId,
+      experienceId: c.experienceId,
+      hours: c.hours,
+      quantity: c.quantity,
+      name: c.name,
+    })),
+    products,
+    experiences
+  );
 
   const scheduleSection = (
     <View style={styles.scheduleCard}>
@@ -184,22 +196,17 @@ export default function CartScreen() {
           {open ? 'Rider heads out ~45 min after payment.' : 'ASAP resumes at 8 AM.'}
         </Text>
       )}
-      <AvailabilityBlock
-        items={cart
-          .filter((c) => c.productId)
-          .map((c) => ({
-            productId: c.productId as string,
-            hours: c.hours,
-            quantity: c.quantity,
-            name: c.name,
-          }))}
-        hubId={hub?.id}
-        startIso={schedMode === 'scheduled' && scheduledValid ? (scheduledStartAt as string) : null}
-        onApplySlot={(iso) => {
-          setScheduledStartAt(iso);
-          setSchedMode('scheduled');
-        }}
-      />
+      {checkItems.length ? (
+        <AvailabilityBlock
+          items={checkItems}
+          hubId={hub?.id}
+          startIso={schedMode === 'scheduled' && scheduledValid ? (scheduledStartAt as string) : null}
+          onApplySlot={(iso) => {
+            setScheduledStartAt(iso);
+            setSchedMode('scheduled');
+          }}
+        />
+      ) : null}
     </View>
   );
 

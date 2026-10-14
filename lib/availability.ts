@@ -7,12 +7,52 @@ import {
   SERVICE_CLOSE_HOUR,
   SERVICE_OPEN_HOUR,
 } from '@/utils/serviceHours';
+import type { Experience, Product } from '@/types';
 
 export interface SlotCheckItem {
   productId: string;
   hours: number;
   quantity?: number;
   name: string;
+}
+
+/**
+ * Expand cart/PDP lines into per-product check items. Combos fan out to
+ * their linked products (mirroring server-side booking expansion); lines
+ * with no resolvable product are skipped.
+ */
+export function expandCheckItems(
+  lines: Array<{ productId?: string; experienceId?: string; hours: number; quantity?: number; name: string }>,
+  products: Product[],
+  experiences: Experience[]
+): SlotCheckItem[] {
+  const items: SlotCheckItem[] = [];
+  for (const line of lines) {
+    if (line.productId) {
+      const product = products.find((p) => p.id === line.productId);
+      items.push({
+        productId: line.productId,
+        hours: line.hours,
+        quantity: line.quantity ?? 1,
+        name: product?.shortName ?? line.name,
+      });
+      continue;
+    }
+    if (line.experienceId) {
+      const experience = experiences.find((e) => e.id === line.experienceId);
+      const linked = experience?.productIds ?? [];
+      for (const pid of linked) {
+        const product = products.find((p) => p.id === pid);
+        items.push({
+          productId: pid,
+          hours: line.hours,
+          quantity: line.quantity ?? 1,
+          name: product?.shortName ?? line.name,
+        });
+      }
+    }
+  }
+  return items;
 }
 
 /** Is there a free unit for this product in [start, start+hours)? */

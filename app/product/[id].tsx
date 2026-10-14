@@ -115,6 +115,9 @@ export default function ProductDetailScreen() {
   }
 
   const productUnits = units.filter((u) => u.productId === product?.id && u.status === 'available');
+  // Unit choice only matters when units actually differ (installed games).
+  // Otherwise the system auto-assigns a free kit — no picker noise.
+  const unitsHaveGames = productUnits.some((u) => (u.games ?? []).length > 0);
   const controllerAddons = (normalized?.addons ?? []).filter((a) => isControllerAddon(a));
   const otherAddons = (normalized?.addons ?? []).filter((a) => !isControllerAddon(a));
   const hours = resolveHours(normalized, mode, planId, hourlyHours);
@@ -245,7 +248,7 @@ export default function ProductDetailScreen() {
           />
         </View>
 
-        {productUnits.length > 0 ? (
+        {unitsHaveGames ? (
           <View style={styles.section}>
             <SectionHeader eyebrow="Your console" title="Choose which one" />
             <Text style={styles.addonDesc}>
@@ -494,7 +497,7 @@ export default function ProductDetailScreen() {
           title="Add to cart"
           icon={<Ionicons name="bag-add-outline" size={16} color={colors.white} />}
           onPress={() => {
-            if (productUnits.length > 0 && !unitId) {
+            if (unitsHaveGames && !unitId) {
               showToast('Choose which unit you want');
               return;
             }

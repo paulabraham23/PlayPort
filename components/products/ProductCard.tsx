@@ -208,9 +208,12 @@ export function ProductCard({
   const price = plan?.price ?? 0;
   const planLabel = plan?.label ?? 'plan';
   const shownUnits = showUnitOptions ? units : [];
+  // The unit row only earns its space when units actually differ by games —
+  // otherwise every kit is interchangeable and the system auto-assigns.
+  const choosableUnits = shownUnits.some((u) => (u.games ?? []).length > 0) ? shownUnits : [];
   const selection: CardSelection = {
     planId: plan?.id ?? activePlanId,
-    inventoryUnitId: showUnitOptions && units.length ? activeUnitId : undefined,
+    inventoryUnitId: choosableUnits.length ? activeUnitId : undefined,
   };
   const quantity = quantityFor?.(selection) ?? quantityInCart;
   const savings =
@@ -229,7 +232,7 @@ export function ProductCard({
     <ChoiceChips
       plans={plans}
       planId={activePlanId}
-      units={shownUnits}
+      units={choosableUnits}
       unitId={selection.inventoryUnitId}
       onPlan={setPlanId}
       onUnit={setUnitId}

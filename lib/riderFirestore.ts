@@ -226,7 +226,8 @@ function friendlyClaimError(e: unknown): string {
   }
   if (code === 'functions/not-found') return 'That order no longer exists.';
   if (code === 'functions/unavailable' || code === 'functions/deadline-exceeded' || code === 'functions/internal') {
-    return 'Server hiccup — try accepting again in a moment.';
+    // Temporary: include the code so a screenshot tells us exactly which one.
+    return `Server hiccup (${code.replace('functions/', '')}) — try accepting again in a moment.`;
   }
   const cleaned = raw
     .replace(/^FirebaseError:\s*/, '')

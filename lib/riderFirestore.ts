@@ -174,11 +174,19 @@ export async function riderAcceptOrder(orderId: string, rider: Rider): Promise<v
  * claim must surface, never write directly.
  */
 export async function riderClaimOwnOrder(orderId: string): Promise<void> {
-  const claimed = await callClaimDeliveryOrder(orderId).catch((e) => {
-    throw new Error(
-      e instanceof Error ? messageFromFunctionsError(e) : 'Claim failed — try again'
-    );
-  });
+  // Stale ID tokens 401 at the edge even while Firestore reads keep working
+  // off cache — force one fresh token before the claim.
+  try {
+    if (auth.currentUser) await auth.currentUser.getIdToken(true);
+  } catch {
+    // Refresh failed (offline/revoked) — the call below will say so clearly.
+  }
+  let claimed: { ok: boolean } | null = null;
+  try {
+    claimed = await callClaimDeliveryOrder(orderId);
+  } catch (e) {
+    throw new Error(friendlyClaimError(e));
+  }
   if (!claimed?.ok) throw new Error('Claim failed — try again');
 
   // Backfill exact coords when the order predates saved pins (own job → allowed).
@@ -201,16 +209,30 @@ export async function riderClaimOwnOrder(orderId: string): Promise<void> {
   }
 }
 
-function messageFromFunctionsError(e: Error): string {
-  const msg = e.message ?? '';
-  const match = msg.match(/(?:failed-precondition|permission-denied|not-found|invalid-argument):\s*(.+)$/);
-  if (match) return match[1].trim();
-  const colon = msg.indexOf(': ');
-  if (msg.startsWith('FirebaseError') && colon > 0) {
-    const tail = msg.slice(colon + 2).replace(/^\(.*?\)\s*/, '');
-    if (tail) return tail;
+function friendlyClaimError(e: unknown): string {
+  const code = (e as { code?: string })?.code ?? '';
+  const raw = e instanceof Error ? e.message : String(e ?? '');
+  console.warn('[claim] failed', code || '(no code)', raw);
+  if (code === 'functions/unauthenticated' || /unauthenticated|not signed in/i.test(raw)) {
+    return 'Session expired — reopen the app, sign in again, then accept.';
   }
-  return msg || 'Claim failed — try again';
+  if (code === 'functions/permission-denied') {
+    const detail = raw.replace(/^.*?:\s*/, '').replace(/\s*\(functions\/[^)]*\)\s*$/, '');
+    return detail || 'This account is not an active rider.';
+  }
+  if (code === 'functions/failed-precondition') {
+    const detail = raw.replace(/^.*?:\s*/, '').replace(/\s*\(functions\/[^)]*\)\s*$/, '');
+    return detail || 'This run can’t be accepted right now.';
+  }
+  if (code === 'functions/not-found') return 'That order no longer exists.';
+  if (code === 'functions/unavailable' || code === 'functions/deadline-exceeded' || code === 'functions/internal') {
+    return 'Server hiccup — try accepting again in a moment.';
+  }
+  const cleaned = raw
+    .replace(/^FirebaseError:\s*/, '')
+    .replace(/\s*\(functions\/[^)]*\)\s*$/, '')
+    .trim();
+  return cleaned || 'Couldn’t accept — check your connection and retry.';
 }
 
 /** Ping rider GPS → distance + ETA on the order (no map shared with customer). */

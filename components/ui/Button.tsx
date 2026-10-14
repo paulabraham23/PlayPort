@@ -53,6 +53,9 @@ export function Button({
 }: Props) {
   const scale = useSharedValue(1);
   const inactive = disabled || loading;
+  // Loading keeps full-strength colors so the white spinner stays visible;
+  // only truly-disabled buttons dim.
+  const dimmed = disabled && !loading;
   const spinnerColor =
     variant === 'primary' ? colors.ctaPrimaryText : colors.playportOrange;
 
@@ -93,13 +96,13 @@ export function Button({
         styles[`size_${size}`],
         fullWidth && styles.fullWidth,
         Platform.OS === 'web' && styles.webCursor,
-        inactive && styles.disabled,
+        dimmed && styles.disabled,
         style,
         animatedStyle,
       ]}
       {...rest}
     >
-      {variant === 'primary' && !inactive ? (
+      {variant === 'primary' && (!disabled || loading) ? (
         <LinearGradient
           colors={[...gradients.cta]}
           start={{ x: 0, y: 0.5 }}

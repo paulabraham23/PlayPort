@@ -35,6 +35,8 @@ interface Props {
   onToggleWishlist?: () => void;
   /** Stretch the photo so the card fills a fixed frame (home peek layout). */
   fill?: boolean;
+  /** Show the physical-unit picker row. Home cards hide it (defaults apply, PDP offers choice). */
+  showUnitOptions?: boolean;
 }
 
 function CartAction({
@@ -192,6 +194,7 @@ export function ProductCard({
   wished,
   onToggleWishlist,
   fill,
+  showUnitOptions = true,
 }: Props) {
   const normalized = normalizeProduct(product);
   const plans = normalized.plans.filter((plan) => plan.hours > 0);
@@ -204,9 +207,10 @@ export function ProductCard({
   const plan = plans.find((item) => item.id === activePlanId) ?? defaultPlan(normalized);
   const price = plan?.price ?? 0;
   const planLabel = plan?.label ?? 'plan';
+  const shownUnits = showUnitOptions ? units : [];
   const selection: CardSelection = {
     planId: plan?.id ?? activePlanId,
-    inventoryUnitId: units.length ? activeUnitId : undefined,
+    inventoryUnitId: showUnitOptions && units.length ? activeUnitId : undefined,
   };
   const quantity = quantityFor?.(selection) ?? quantityInCart;
   const savings =
@@ -225,7 +229,7 @@ export function ProductCard({
     <ChoiceChips
       plans={plans}
       planId={activePlanId}
-      units={units}
+      units={shownUnits}
       unitId={selection.inventoryUnitId}
       onPlan={setPlanId}
       onUnit={setUnitId}
@@ -254,7 +258,7 @@ export function ProductCard({
             </View>
           </View>
         </PressableScale>
-        {choices}
+        <View style={styles.choicesSlot}>{choices}</View>
         <View style={[styles.compactFooter, { paddingHorizontal: spacing.md, paddingBottom: spacing.md }]}>
           <View>
             <Text style={styles.price}>{formatINR(price)}</Text>
@@ -330,7 +334,7 @@ export function ProductCard({
           <Text style={styles.unitChip}>Setup included · {planLabel}</Text>
         </View>
       </PressableScale>
-      {choices}
+      <View style={styles.choicesSlot}>{choices}</View>
       <View style={styles.footer}>
         <View style={styles.priceCol}>
           <View style={styles.priceRow}>
@@ -533,6 +537,8 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   choices: { gap: 6, paddingHorizontal: spacing.md, paddingBottom: 4 },
+  // Fixed one-row slot so cards stay equal height with or without plan chips.
+  choicesSlot: { minHeight: 38, justifyContent: 'flex-start' },
   choiceRow: { gap: 6, paddingRight: spacing.md },
   choiceChip: {
     borderRadius: radii.full,

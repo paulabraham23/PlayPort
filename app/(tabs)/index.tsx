@@ -69,6 +69,7 @@ export default function HomeScreen() {
   const renderCard = (product: (typeof products)[0]) => (
     <ProductCard
       fill={!gridMode}
+      showUnitOptions={false}
       product={product}
       wished={wishlist.includes(product.id)}
       onToggleWishlist={() => toggleWishlist(product.id)}

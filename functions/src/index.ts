@@ -1264,8 +1264,11 @@ export const checkAvailability = onCall({ region: REGION }, async (request) => {
 
 /** Rider self-claim — the ONLY path that assigns an order to the caller.
  *  Enforces payment, status, and the 60-min dispatch window on server time,
- *  so no client can claim early or grab assigned/expired runs. */
-export const claimDeliveryOrder = onCall({ region: REGION }, async (request) => {
+ *  so no client can claim early or grab assigned/expired runs.
+ *  NOTE: named claimRun (not claimDeliveryOrder) — that resource name got
+ *  wedged on Google's control plane (eternal update 409s + missing public
+ *  invoker) and had to be abandoned. */
+export const claimRun = onCall({ region: REGION }, async (request) => {
   const uid = requireAuth(request.auth?.uid);
   const { orderId: id } = request.data as { orderId: string };
   if (!id) throw new HttpsError('invalid-argument', 'orderId required');

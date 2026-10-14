@@ -171,7 +171,7 @@ export async function callClaimDeliveryOrder(
 ): Promise<{ ok: boolean; orderId: string }> {
   const fn = httpsCallable<{ orderId: string }, { ok: boolean; orderId: string }>(
     functions,
-    'claimDeliveryOrder'
+    'claimRun'
   );
   const res = await fn({ orderId });
   return res.data;

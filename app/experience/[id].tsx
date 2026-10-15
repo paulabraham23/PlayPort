@@ -133,7 +133,7 @@ export default function ExperienceDetailScreen() {
   );
 
   return (
-    <Screen showHeader={false} edges={['top']}>
+    <Screen showHeader={false} edges={['top']} showFloatingCart>
       <ScreenHeader title="Combo" onBack={() => router.replace('/(tabs)/combos' as never)} />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -273,8 +273,8 @@ export default function ExperienceDetailScreen() {
           <Text style={styles.stickyPrice}>{formatINR(bundleTotal)}</Text>
         </View>
         <Button
-          title="Book combo"
-          icon={<Ionicons name="flash" size={16} color={colors.white} />}
+          title="Add to cart"
+          icon={<Ionicons name="bag-add-outline" size={16} color={colors.white} />}
           onPress={() => {
             const chosen = plan?.id;
             if (
@@ -288,7 +288,6 @@ export default function ExperienceDetailScreen() {
               return;
             addExperienceToCart(experience.id, chosen, selectedAddons);
             showToast(selectedAddons.length ? 'Combo + extras added' : 'Combo added');
-            router.push('/cart');
           }}
           style={styles.bookBtn}
         />

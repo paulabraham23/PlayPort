@@ -110,7 +110,7 @@ export function watchRiderOrders(
       .filter(
         (o) =>
           !o.riderId &&
-          (!o.paymentStatus || o.paymentStatus === 'paid') &&
+          (!o.paymentStatus || o.paymentStatus === 'paid' || o.paymentStatus === 'cod') &&
           ['confirmed', 'preparing'].includes(o.status) &&
           // Scheduled runs surface ~1h before startAt, never after endAt.
           isDispatchable(o, now)
@@ -129,7 +129,7 @@ export async function riderAcceptOrder(orderId: string, rider: Rider): Promise<v
   if (!snap.exists()) throw new Error('Order not found');
   const order = snap.data() as Order;
   if (order.riderId) throw new Error('Already claimed by another rider');
-  if (order.paymentStatus && order.paymentStatus !== 'paid') {
+  if (order.paymentStatus && order.paymentStatus !== 'paid' && order.paymentStatus !== 'cod') {
     throw new Error('Order is not paid yet');
   }
   if (!['confirmed', 'preparing'].includes(order.status)) {

@@ -24,12 +24,14 @@ export type CreateBookingInput = {
   taxes: number;
   total: number;
   startAt?: string;
+  /** Confirm immediately and collect cash at handover (skips Razorpay). */
+  payOnDelivery?: boolean;
 };
 
 export type CreateBookingResult = {
   orderId: string;
   order: Order;
-  holdExpiresAt: string;
+  holdExpiresAt: string | null;
 };
 
 export type CreateRazorpayOrderResult = {

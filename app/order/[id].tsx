@@ -249,13 +249,15 @@ export default function OrderDetailScreen() {
         <Card>
           <PriceBreakdown itemsTotal={order.subtotal} taxes={order.taxes} total={order.total} />
           <Text style={styles.payMethod}>
-            {order.paymentStatus === 'paid'
-              ? order.paymentProvider === 'demo' ||
-                !order.paymentMethodLabel ||
-                order.paymentMethodLabel === 'Demo checkout'
-                ? 'Paid'
-                : `Paid via ${order.paymentMethodLabel}`
-              : 'Payment not finished yet'}
+            {order.paymentStatus === 'cod'
+              ? `Pay ${formatINR(order.total)} on delivery`
+              : order.paymentStatus === 'paid'
+                ? order.paymentProvider === 'demo' ||
+                  !order.paymentMethodLabel ||
+                  order.paymentMethodLabel === 'Demo checkout'
+                  ? 'Paid'
+                  : `Paid via ${order.paymentMethodLabel}`
+                : 'Payment not finished yet'}
           </Text>
         </Card>
 

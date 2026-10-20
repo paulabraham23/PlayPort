@@ -266,6 +266,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     taxes,
     total,
     startAt: startAtInput,
+    payOnDelivery,
   } = request.data as {
     hubId?: string;
     cart: CartItem[];
@@ -278,7 +279,10 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     taxes: number;
     total: number;
     startAt?: string;
+    payOnDelivery?: boolean;
   };
+
+  const isCod = payOnDelivery === true;
 
   if (!Array.isArray(cart) || !cart.length) {
     throw new HttpsError('invalid-argument', 'Cart is empty');
@@ -461,8 +465,9 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
       userId: uid,
       startAt: startIso,
       endAt: endIso,
-      status: 'hold',
-      holdExpiresAt,
+      // COD is confirmed up front, so its units are never on a 15-min hold.
+      status: isCod ? 'confirmed' : 'hold',
+      holdExpiresAt: isCod ? null : holdExpiresAt,
       createdAt: nowIso,
       updatedAt: nowIso,
     });
@@ -472,16 +477,21 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     id,
     userId: uid,
     hubId,
-    status: 'pending_payment' as const,
-    paymentStatus: 'pending' as const,
+    status: isCod ? ('confirmed' as const) : ('pending_payment' as const),
+    paymentStatus: isCod ? ('cod' as const) : ('pending' as const),
     createdAt: nowIso,
     updatedAt: nowIso,
-    holdExpiresAt,
+    holdExpiresAt: isCod ? null : holdExpiresAt,
     startAt: startIso,
     endAt: endIso,
     reservationIds,
-    etaLabel:
-      startAt.getTime() - now > 3 * 60 * 60 * 1000 ? 'Scheduled dropoff' : 'Complete payment to confirm',
+    etaLabel: isCod
+      ? startAt.getTime() - now > 3 * 60 * 60 * 1000
+        ? 'Scheduled dropoff'
+        : 'Arriving soon — pay on delivery'
+      : startAt.getTime() - now > 3 * 60 * 60 * 1000
+        ? 'Scheduled dropoff'
+        : 'Complete payment to confirm',
     addressLabel,
     addressFull,
     items: cart.map((c) => ({
@@ -501,10 +511,11 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     taxes,
     total,
     paymentMethodLabel,
-    progressPercent: 10,
+    progressPercent: isCod ? 20 : 10,
     setupIncluded: true,
     liveDispatch: false,
     riderId: null,
+    ...(isCod ? { paymentProvider: 'cod' as const } : {}),
     // Exact delivery pin from the saved address (Zepto-style) — rider
     // navigates to these coords instead of a fuzzy text search.
     ...(Number.isFinite(dropoffLatInput) &&
@@ -521,13 +532,15 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   await batch.commit();
 
   await pushNotification(uid, {
-    title: 'Booking held',
-    body: `${id} is reserved for 15 minutes — complete payment to confirm.`,
+    title: isCod ? 'Order confirmed' : 'Booking held',
+    body: isCod
+      ? `${id} is confirmed — pay ₹${Math.round(Number(total) || 0)} when your kit is handed over.`
+      : `${id} is reserved for 15 minutes — complete payment to confirm.`,
     type: 'order',
     orderId: id,
   });
 
-  return { orderId: id, order, holdExpiresAt };
+  return { orderId: id, order, holdExpiresAt: isCod ? null : holdExpiresAt };
 });
 
 // ——— confirmPayment ———
@@ -696,7 +709,8 @@ export const updateOrderStatus = onCall({ region: REGION }, async (request) => {
   if (!next.includes(status)) {
     throw new HttpsError('failed-precondition', `Cannot transition ${from} → ${status}`);
   }
-  if (order.paymentStatus !== 'paid' && !['cancelled', 'refunded'].includes(status)) {
+  const settled = order.paymentStatus === 'paid' || order.paymentStatus === 'cod';
+  if (!settled && !['cancelled', 'refunded'].includes(status)) {
     throw new HttpsError('failed-precondition', 'Order is not paid');
   }
 
@@ -1294,7 +1308,7 @@ export const claimRun = onCall({ region: REGION }, async (request) => {
   if (!snap.exists) throw new HttpsError('not-found', 'Order not found');
   const order = snap.data()!;
   if (order.riderId) throw new HttpsError('failed-precondition', 'Already claimed by another rider');
-  if (order.paymentStatus && order.paymentStatus !== 'paid') {
+  if (order.paymentStatus && order.paymentStatus !== 'paid' && order.paymentStatus !== 'cod') {
     throw new HttpsError('failed-precondition', 'Order is not paid yet');
   }
   if (!['confirmed', 'preparing'].includes(order.status)) {

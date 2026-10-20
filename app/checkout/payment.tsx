@@ -17,10 +17,11 @@ import { formatINR } from '@/utils/format';
 import type { PaymentMethodType } from '@/types';
 
 const PAY_ICONS: Record<PaymentMethodType, keyof typeof Ionicons.glyphMap> = {
+  online: 'card-outline',
   upi: 'phone-portrait-outline',
   card: 'card-outline',
   netbanking: 'business-outline',
-  cod: 'qr-code-outline',
+  cod: 'cash-outline',
 };
 
 export default function PaymentScreen() {
@@ -93,6 +94,8 @@ export default function PaymentScreen() {
   }
 
   const amount = displayTotal || totals.total || 0;
+  const selectedMethod = paymentMethods.find((m) => m.id === selectedPaymentMethodId);
+  const isCod = selectedMethod?.type === 'cod';
 
   return (
     <Screen showHeader={false} edges={['top']} narrow>
@@ -156,7 +159,11 @@ export default function PaymentScreen() {
         <View style={styles.summary}>
           <Text style={styles.summaryTitle}>Order total</Text>
           <Text style={styles.summaryTotal}>{formatINR(amount)}</Text>
-          <Text style={styles.summaryNote}>Taxes included · pay only what you see</Text>
+          <Text style={styles.summaryNote}>
+            {isCod
+              ? 'Taxes included · pay the rider in cash or UPI at handover'
+              : 'Taxes included · pay only what you see'}
+          </Text>
         </View>
 
         {paymentError ? (
@@ -172,12 +179,18 @@ export default function PaymentScreen() {
       <StickyBottomBar style={styles.stickyBar}>
         <View style={styles.stickyCol}>
           <Button
-            title={paying ? 'Processing…' : `Pay ${formatINR(amount)}`}
+            title={
+              paying
+                ? 'Processing…'
+                : isCod
+                  ? `Place order · ${formatINR(amount)}`
+                  : `Pay ${formatINR(amount)}`
+            }
             icon={
               paying ? (
                 <ActivityIndicator color={colors.white} />
               ) : (
-                <Ionicons name="flash" size={16} color={colors.white} />
+                <Ionicons name={isCod ? 'cash-outline' : 'flash'} size={16} color={colors.white} />
               )
             }
             fullWidth

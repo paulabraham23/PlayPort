@@ -13,10 +13,11 @@ import { useAppStore } from '@/store/appStore';
 import type { PaymentMethodType } from '@/types';
 
 const ICONS: Record<PaymentMethodType, keyof typeof Ionicons.glyphMap> = {
+  online: 'card-outline',
   upi: 'phone-portrait-outline',
   card: 'card-outline',
   netbanking: 'business-outline',
-  cod: 'qr-code-outline',
+  cod: 'cash-outline',
 };
 
 export default function PaymentMethodsScreen() {

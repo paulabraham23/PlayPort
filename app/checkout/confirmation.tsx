@@ -102,14 +102,20 @@ export default function ConfirmationScreen() {
           </View>
           <Text style={styles.heroTitle}>Order confirmed</Text>
           <Text style={styles.heroSub}>
-            {order.paymentStatus === 'paid'
-              ? 'A rider from your hub will bring the kit to your address.'
-              : 'Payment is not finished yet. The booking is held until it clears.'}
+            {order.paymentStatus === 'cod'
+              ? 'A rider from your hub will bring the kit to your address. Pay in cash or UPI at handover.'
+              : order.paymentStatus === 'paid'
+                ? 'A rider from your hub will bring the kit to your address.'
+                : 'Payment is not finished yet. The booking is held until it clears.'}
           </Text>
           <View style={styles.orderPill}>
             <Text style={styles.orderPillText}>
               <Text style={styles.orderId}>#{order.id}</Text>
-              {order.paymentStatus === 'paid' ? ' · Paid ' : ' · Total '}
+              {order.paymentStatus === 'paid'
+                ? ' · Paid '
+                : order.paymentStatus === 'cod'
+                  ? ' · Pay on delivery '
+                  : ' · Total '}
               {formatINR(order.total)}
               {paidVia ? ` via ${paidVia}` : ''}
             </Text>

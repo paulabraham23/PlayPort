@@ -729,6 +729,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
 
     const payment = paymentMethods.find((p) => p.id === selectedPaymentMethodId);
+    const isCod = payment?.type === 'cod';
     const totals = calcCartTotals(cart);
     const hub = useCatalogStore.getState().hub;
     const hubId = user.homeHubId || hub?.id;
@@ -739,6 +740,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       let orderId = pendingOrderId ?? undefined;
       let bookingOrder: Order | undefined;
+
+      // A pending online hold cannot become a COD booking — release it first.
+      if (isCod && orderId) {
+        await callCancelBooking(orderId, 'Switched to cash on delivery').catch(() => undefined);
+        orderId = undefined;
+        set({ pendingOrderId: null });
+      }
 
       // Resume unpaid hold if we already created a booking this session.
       if (!orderId) {
@@ -760,11 +768,12 @@ export const useAppStore = create<AppState>((set, get) => ({
           ...(Number.isFinite(address.lat) && Number.isFinite(address.lng)
             ? { dropoffLat: address.lat as number, dropoffLng: address.lng as number }
             : {}),
-          paymentMethodLabel: payment?.label ?? 'UPI',
+          paymentMethodLabel: isCod ? 'Cash on Delivery' : 'Razorpay',
           subtotal: totals.itemsTotal,
           taxes: totals.taxes,
           total: totals.total,
           startAt,
+          payOnDelivery: isCod,
         });
         orderId = booking.orderId;
         bookingOrder = booking.order as Order;
@@ -772,6 +781,30 @@ export const useAppStore = create<AppState>((set, get) => ({
           pendingOrderId: orderId,
           orders: [bookingOrder, ...get().orders.filter((o) => o.id !== orderId)],
         });
+      }
+
+      // Cash on delivery: order is confirmed now, money moves at handover.
+      if (isCod) {
+        set({
+          cart: [],
+          lastOrderId: orderId!,
+          paymentError: null,
+          pendingOrderId: null,
+          scheduledStartAt: null,
+          orders: get().orders.map((o) =>
+            o.id === orderId
+              ? {
+                  ...o,
+                  status: 'confirmed',
+                  paymentStatus: 'cod',
+                  paymentProvider: 'cod',
+                  paymentMethodLabel: 'Cash on Delivery',
+                  progressPercent: 20,
+                }
+              : o
+          ),
+        });
+        return { ok: true, orderId };
       }
 
       const rzp = await callCreateRazorpayOrder(orderId!);
@@ -802,7 +835,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         await callConfirmPayment(orderId!, fail, useDemo ? 'demo' : 'razorpay');
       }
 
-      const paidLabel = useDemo ? '' : payment?.label;
+      const paidLabel = useDemo ? '' : 'Razorpay';
       set({
         cart: [],
         lastOrderId: orderId!,

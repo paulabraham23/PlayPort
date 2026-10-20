@@ -20,9 +20,9 @@ export type OrderStatus =
   | 'cancelled'
   | 'refunded';
 
-export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded' | 'cod';
 
-export type PaymentMethodType = 'upi' | 'card' | 'netbanking' | 'cod';
+export type PaymentMethodType = 'upi' | 'card' | 'netbanking' | 'cod' | 'online';
 
 export type InventoryUnitStatus = 'available' | 'maintenance' | 'retired';
 
@@ -259,8 +259,8 @@ export interface Order {
   taxes: number;
   total: number;
   paymentMethodLabel: string;
-  /** demo = no payment gateway was used */
-  paymentProvider?: 'razorpay' | 'demo';
+  /** demo = no payment gateway was used; cod = collected at handover */
+  paymentProvider?: 'razorpay' | 'demo' | 'cod';
   progressPercent: number;
   riderName?: string;
   riderDistanceKm?: number;

@@ -78,8 +78,9 @@ export default function CancelOrderScreen() {
           </View>
           <Text style={styles.successTitle}>Order cancelled</Text>
           <Text style={styles.successBody}>
-            #{order.id} is cancelled. Refund of {formatINR(order.total)} will credit to{' '}
-            {order.paymentMethodLabel} within 3–5 business days.
+            {order.paymentStatus === 'cod'
+              ? `#${order.id} is cancelled. Nothing was charged — there's nothing to refund.`
+              : `#${order.id} is cancelled. Refund of ${formatINR(order.total)} will credit to ${order.paymentMethodLabel} within 3–5 business days.`}
           </Text>
           <Button title="Go to orders" fullWidth onPress={() => router.replace('/(tabs)/orders')} />
         </View>
@@ -178,8 +179,9 @@ export default function CancelOrderScreen() {
             <Text style={styles.refundTitle}>Refund info</Text>
           </View>
           <Text style={styles.refundBody}>
-            Free cancellation until a delivery partner is assigned. Full amount of {formatINR(order.total)}{' '}
-            returns to {order.paymentMethodLabel} in 3–5 business days.
+            {order.paymentStatus === 'cod'
+              ? 'Free cancellation until a delivery partner is assigned. Nothing was charged, so there is nothing to refund.'
+              : `Free cancellation until a delivery partner is assigned. Full amount of ${formatINR(order.total)} returns to ${order.paymentMethodLabel} in 3–5 business days.`}
           </Text>
         </Card>
 

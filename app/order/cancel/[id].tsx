@@ -87,6 +87,21 @@ export default function CancelOrderScreen() {
     );
   }
 
+  if (order.riderId) {
+    return (
+      <Screen showHeader={false} narrow>
+        <ScreenHeader title="Cancel Order" subtitle={`#${order.id}`} onBack={() => router.back()} />
+        <EmptyState
+          icon="bicycle-outline"
+          title="Delivery partner assigned"
+          subtitle={`${order.riderName ?? 'Your rider'} has already accepted this run, so #${order.id} can no longer be cancelled. Reach out to support if you need help.`}
+          actionLabel="Contact support"
+          onAction={() => router.push('/profile/help')}
+        />
+      </Screen>
+    );
+  }
+
   const canConfirm =
     reason != null && (reason !== 'Other' || otherText.trim().length > 0);
 
@@ -163,8 +178,8 @@ export default function CancelOrderScreen() {
             <Text style={styles.refundTitle}>Refund info</Text>
           </View>
           <Text style={styles.refundBody}>
-            Free cancellation before hub dispatch. Full amount of {formatINR(order.total)} returns to{' '}
-            {order.paymentMethodLabel} in 3–5 business days.
+            Free cancellation until a delivery partner is assigned. Full amount of {formatINR(order.total)}{' '}
+            returns to {order.paymentMethodLabel} in 3–5 business days.
           </Text>
         </Card>
 

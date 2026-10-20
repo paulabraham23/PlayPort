@@ -76,7 +76,8 @@ export default function OrderDetailScreen() {
 
   const step = timelineIndex(order.status);
   const cancellable =
-    order.status === 'pending_payment' || order.status === 'confirmed' || order.status === 'preparing';
+    !order.riderId &&
+    (order.status === 'pending_payment' || order.status === 'confirmed' || order.status === 'preparing');
   const canReturn = order.status === 'active' || order.status === 'delivered' || order.status === 'returning';
   const canExtend =
     (order.status === 'delivered' || order.status === 'active') && order.paymentStatus === 'paid';

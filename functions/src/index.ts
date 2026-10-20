@@ -636,6 +636,16 @@ export const cancelBooking = onCall({ region: REGION }, async (request) => {
   if (['cancelled', 'completed', 'refunded'].includes(order.status)) {
     throw new HttpsError('failed-precondition', 'Order already closed');
   }
+  // Self-service cancellation closes the moment a rider accepts the run.
+  if (order.riderId) {
+    throw new HttpsError(
+      'failed-precondition',
+      'A delivery partner is already assigned — this order can no longer be cancelled'
+    );
+  }
+  if (!['pending_payment', 'confirmed', 'preparing'].includes(order.status)) {
+    throw new HttpsError('failed-precondition', 'This order can no longer be cancelled');
+  }
 
   await releaseReservations(order.reservationIds ?? [], 'released');
   await ref.update({

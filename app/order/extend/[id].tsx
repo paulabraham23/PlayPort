@@ -10,7 +10,13 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
-import { callExtendBooking, callGetExtensionQuote, type ExtensionQuote } from '@/lib/functions';
+import {
+  callCreateExtensionPaymentOrder,
+  callExtendBooking,
+  callGetExtensionQuote,
+  type ExtensionQuote,
+} from '@/lib/functions';
+import { openRazorpayCheckout } from '@/lib/razorpay';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
@@ -45,6 +51,7 @@ export default function ExtendOrderScreen() {
   const stickyPad = useStickyBarPadding();
   const order = useAppStore((s) => s.orders.find((o) => o.id === id));
   const applyOrderExtension = useAppStore((s) => s.applyOrderExtension);
+  const user = useAppStore((s) => s.user);
   const products = useCatalogStore((s) => s.products);
   const showToast = useFeelStore((s) => s.showToast);
 
@@ -129,7 +136,30 @@ export default function ExtendOrderScreen() {
     setPaying(true);
     setPayError(null);
     try {
-      const res = await callExtendBooking(order.id, hours, 'demo');
+      const paymentOrder = await callCreateExtensionPaymentOrder(order.id, hours);
+      let res: { newEndAt: string; extensionTotal: number };
+      if (paymentOrder.demo) {
+        res = await callExtendBooking(order.id, hours, 'demo');
+      } else {
+        if (typeof window === 'undefined') {
+          throw new Error('Online payment needs a browser — open PlayPort on the web.');
+        }
+        const paid = await openRazorpayCheckout({
+          keyId: paymentOrder.keyId,
+          amount: paymentOrder.amount,
+          currency: paymentOrder.currency,
+          razorpayOrderId: paymentOrder.razorpayOrderId,
+          orderId: order.id,
+          name: user?.name ?? '',
+          phone: user?.phone ?? '',
+          description: `Session extension · +${hours}h`,
+        });
+        res = await callExtendBooking(order.id, hours, 'razorpay', {
+          razorpayOrderId: paid.razorpayOrderId,
+          paymentId: paid.paymentId,
+          signature: paid.signature,
+        });
+      }
       applyOrderExtension(order.id, {
         endAt: res.newEndAt,
         subtotal: order.subtotal + (quote?.subtotal ?? 0),

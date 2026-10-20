@@ -681,6 +681,68 @@ export const cancelBooking = onCall({ region: REGION }, async (request) => {
   return { ok: true };
 });
 
+// ——— collectCodPayment ———
+
+/** Assigned rider records cash/UPI taken at handover so COD orders settle. */
+export const collectCodPayment = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const { orderId: id } = request.data as { orderId: string };
+  if (!id) throw new HttpsError('invalid-argument', 'orderId required');
+
+  const ref = db.collection('orders').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Order not found');
+  const order = snap.data()!;
+
+  const isAdmin = request.auth?.token?.admin === true;
+  if (!isAdmin && order.riderId !== uid) {
+    throw new HttpsError('permission-denied', 'Only the assigned rider can record this payment');
+  }
+  if (order.paymentStatus === 'paid') return { ok: true, already: true };
+  if (order.paymentStatus !== 'cod') {
+    throw new HttpsError('failed-precondition', 'This order is not cash on delivery');
+  }
+  if (!['delivered', 'active', 'returning', 'completed'].includes(order.status)) {
+    throw new HttpsError('failed-precondition', 'Collect cash after the kit is handed over');
+  }
+
+  const nowIso = new Date().toISOString();
+  const paymentId = `cod_${randomBytes(6).toString('hex')}`;
+  await db.collection('payments').doc(paymentId).set({
+    id: paymentId,
+    orderId: id,
+    userId: order.userId ?? null,
+    amount: order.total ?? 0,
+    currency: 'INR',
+    provider: 'cod',
+    providerRef: paymentId,
+    status: 'paid',
+    kind: 'cod',
+    collectedBy: uid,
+    createdAt: nowIso,
+  });
+
+  await ref.update({
+    paymentStatus: 'paid',
+    paymentProvider: 'cod',
+    paymentMethodLabel: 'Cash on Delivery',
+    codCollectedAt: nowIso,
+    codCollectedBy: uid,
+    updatedAt: nowIso,
+  });
+
+  if (order.userId) {
+    await pushNotification(order.userId, {
+      title: 'Payment received',
+      body: `${id}: ₹${Math.round(Number(order.total) || 0)} cash collected by your rider.`,
+      type: 'payment',
+      orderId: id,
+    });
+  }
+
+  return { ok: true };
+});
+
 // ——— updateOrderStatus ———
 
 export const updateOrderStatus = onCall({ region: REGION }, async (request) => {
@@ -981,12 +1043,82 @@ export const getExtensionQuote = onCall({ region: REGION }, async (request) => {
   };
 });
 
+export const createExtensionPaymentOrder = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const { orderId: id, additionalHours } = request.data as {
+    orderId: string;
+    additionalHours: number;
+  };
+  if (!id) throw new HttpsError('invalid-argument', 'orderId required');
+
+  const snap = await db.collection('orders').doc(id).get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Order not found');
+  if (snap.data()?.userId !== uid) throw new HttpsError('permission-denied', 'Not your order');
+
+  const q = await computeExtensionQuote(id, additionalHours);
+  const keyId = razorpayKeyId.value();
+  const keySecret = razorpayKeySecret.value();
+  const nowIso = new Date().toISOString();
+
+  if (!keyId || !keySecret) {
+    return {
+      demo: true,
+      razorpayOrderId: `demo_ext_${randomBytes(6).toString('hex')}`,
+      amount: Math.round(q.total * 100),
+      currency: 'INR',
+      keyId: '',
+      newEndAt: q.newEndIso,
+      total: q.total,
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const Razorpay = require('razorpay');
+  const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
+  const rzpOrder = await rzp.orders.create({
+    amount: Math.round(q.total * 100),
+    currency: 'INR',
+    receipt: `ext_${id}`.slice(0, 40),
+    notes: {
+      orderId: id,
+      userId: uid,
+      kind: 'extension',
+      additionalHours: String(additionalHours),
+    },
+  });
+
+  await db.collection('payments').doc(rzpOrder.id).set({
+    id: rzpOrder.id,
+    orderId: id,
+    userId: uid,
+    amount: q.total,
+    currency: 'INR',
+    provider: 'razorpay',
+    providerRef: rzpOrder.id,
+    status: 'pending',
+    kind: 'extension',
+    additionalHours,
+    createdAt: nowIso,
+  });
+
+  return {
+    demo: false,
+    razorpayOrderId: rzpOrder.id,
+    amount: Math.round(q.total * 100),
+    currency: 'INR',
+    keyId,
+    newEndAt: q.newEndIso,
+    total: q.total,
+  };
+});
+
 export const extendBooking = onCall({ region: REGION }, async (request) => {
   const uid = requireAuth(request.auth?.uid);
-  const { orderId: id, additionalHours, provider = 'demo' } = request.data as {
+  const { orderId: id, additionalHours, provider = 'demo', payment } = request.data as {
     orderId: string;
     additionalHours: number;
     provider?: 'demo' | 'razorpay';
+    payment?: { razorpayOrderId: string; paymentId: string; signature: string };
   };
   if (!id) throw new HttpsError('invalid-argument', 'orderId required');
 
@@ -998,21 +1130,50 @@ export const extendBooking = onCall({ region: REGION }, async (request) => {
   const q = await computeExtensionQuote(id, additionalHours);
   const nowIso = new Date().toISOString();
 
-  // Charge for the extension (demo inline; Razorpay keys → still recorded inline for now).
-  const paymentId = `${provider}_${randomBytes(6).toString('hex')}`;
-  await db.collection('payments').doc(paymentId).set({
-    id: paymentId,
-    orderId: id,
-    userId: uid,
-    amount: q.total,
-    currency: 'INR',
-    provider,
-    providerRef: paymentId,
-    status: 'paid',
-    kind: 'extension',
-    additionalHours,
-    createdAt: nowIso,
-  });
+  let paymentId: string;
+  if (provider === 'razorpay') {
+    const secret = razorpayKeySecret.value();
+    if (!secret) throw new HttpsError('failed-precondition', 'Payments are not configured');
+    if (!payment?.razorpayOrderId || !payment.paymentId || !payment.signature) {
+      throw new HttpsError('invalid-argument', 'Payment proof required');
+    }
+    // Razorpay checkout signature = HMAC(order_id|payment_id, key_secret).
+    const expected = createHmac('sha256', secret)
+      .update(`${payment.razorpayOrderId}|${payment.paymentId}`)
+      .digest('hex');
+    if (expected !== payment.signature) {
+      throw new HttpsError('permission-denied', 'Payment could not be verified');
+    }
+    const payRef = db.collection('payments').doc(payment.razorpayOrderId);
+    const paySnap = await payRef.get();
+    const pay = paySnap.data();
+    if (!paySnap.exists || pay?.kind !== 'extension' || pay?.orderId !== id) {
+      throw new HttpsError('not-found', 'Extension payment not found');
+    }
+    if (Number(pay?.additionalHours) !== additionalHours) {
+      throw new HttpsError('failed-precondition', 'Payment does not match this extension');
+    }
+    if (Math.round(Number(pay?.amount) || 0) !== Math.round(q.total)) {
+      throw new HttpsError('failed-precondition', 'Extension price changed — refresh and try again');
+    }
+    paymentId = payment.paymentId;
+    await payRef.update({ status: 'paid', providerRef: paymentId, updatedAt: nowIso });
+  } else {
+    paymentId = `demo_${randomBytes(6).toString('hex')}`;
+    await db.collection('payments').doc(paymentId).set({
+      id: paymentId,
+      orderId: id,
+      userId: uid,
+      amount: q.total,
+      currency: 'INR',
+      provider: 'demo',
+      providerRef: paymentId,
+      status: 'paid',
+      kind: 'extension',
+      additionalHours,
+      createdAt: nowIso,
+    });
+  }
 
   await Promise.all(
     q.reservationIds.map((rid) =>
@@ -1185,16 +1346,18 @@ export const razorpayWebhook = onRequest(
       const razorpayOrderId = paymentEntity?.order_id ?? orderEntity?.id;
       if (razorpayOrderId) {
         const paySnap = await db.collection('payments').doc(razorpayOrderId).get();
-        const orderIdFromPay = paySnap.data()?.orderId as string | undefined;
+        const payData = paySnap.data();
+        const orderIdFromPay = payData?.orderId as string | undefined;
         const notesOrderId = orderEntity?.notes?.orderId as string | undefined;
         const id = orderIdFromPay ?? notesOrderId;
-        if (id) {
-          if (paySnap.exists) {
-            await paySnap.ref.update({
-              status: 'paid',
-              providerRef: paymentEntity?.id ?? razorpayOrderId,
-            });
-          }
+        if (paySnap.exists) {
+          await paySnap.ref.update({
+            status: 'paid',
+            providerRef: paymentEntity?.id ?? razorpayOrderId,
+          });
+        }
+        // Extension payments top up an already-confirmed order — never re-confirm it.
+        if (id && payData?.kind !== 'extension') {
           await confirmPaidOrderAdmin(id, paymentEntity?.id ?? razorpayOrderId);
         }
       }
@@ -1204,8 +1367,11 @@ export const razorpayWebhook = onRequest(
       const razorpayOrderId = paymentEntity?.order_id;
       if (razorpayOrderId) {
         const paySnap = await db.collection('payments').doc(razorpayOrderId).get();
-        const id = paySnap.data()?.orderId as string | undefined;
-        if (id) {
+        const payData = paySnap.data();
+        const id = payData?.orderId as string | undefined;
+        if (paySnap.exists) await paySnap.ref.update({ status: 'failed' });
+        // A failed extension must not cancel the live order.
+        if (id && payData?.kind !== 'extension') {
           const orderRef = db.collection('orders').doc(id);
           const orderSnap = await orderRef.get();
           if (orderSnap.exists) {
@@ -1215,7 +1381,6 @@ export const razorpayWebhook = onRequest(
               'Razorpay payment failed'
             );
           }
-          if (paySnap.exists) await paySnap.ref.update({ status: 'failed' });
         }
       }
     }

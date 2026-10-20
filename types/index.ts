@@ -323,9 +323,12 @@ export interface PaymentRecord {
   userId: string;
   amount: number;
   currency: 'INR';
-  provider: 'razorpay' | 'demo';
+  provider: 'razorpay' | 'demo' | 'cod';
   providerRef: string;
   status: PaymentStatus;
+  /** base = booking payment; extension = session top-up; cod = cash at handover */
+  kind?: 'base' | 'extension' | 'cod';
+  additionalHours?: number;
   createdAt: string;
 }
 

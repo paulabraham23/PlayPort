@@ -116,16 +116,61 @@ export async function callGetExtensionQuote(
   return res.data;
 }
 
+export type ExtensionPaymentProof = {
+  razorpayOrderId: string;
+  paymentId: string;
+  signature: string;
+};
+
+export type ExtensionPaymentOrder = {
+  demo: boolean;
+  razorpayOrderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  newEndAt: string;
+  total: number;
+};
+
+export async function callCreateExtensionPaymentOrder(
+  orderId: string,
+  additionalHours: number
+): Promise<ExtensionPaymentOrder> {
+  const fn = httpsCallable<
+    { orderId: string; additionalHours: number },
+    ExtensionPaymentOrder
+  >(functions, 'createExtensionPaymentOrder');
+  const res = await fn({ orderId, additionalHours });
+  return res.data;
+}
+
 export async function callExtendBooking(
   orderId: string,
   additionalHours: number,
-  provider: 'demo' | 'razorpay' = 'demo'
+  provider: 'demo' | 'razorpay' = 'demo',
+  payment?: ExtensionPaymentProof
 ): Promise<{ ok: boolean; orderId: string; newEndAt: string; extensionTotal: number }> {
   const fn = httpsCallable<
-    { orderId: string; additionalHours: number; provider?: 'demo' | 'razorpay' },
+    {
+      orderId: string;
+      additionalHours: number;
+      provider?: 'demo' | 'razorpay';
+      payment?: ExtensionPaymentProof;
+    },
     { ok: boolean; orderId: string; newEndAt: string; extensionTotal: number }
   >(functions, 'extendBooking');
-  const res = await fn({ orderId, additionalHours, provider });
+  const res = await fn({ orderId, additionalHours, provider, payment });
+  return res.data;
+}
+
+export async function callCollectCodPayment(
+  orderId: string
+): Promise<{ ok: boolean; already?: boolean }> {
+  const fn = httpsCallable<{ orderId: string }, { ok: boolean; already?: boolean }>(
+    functions,
+    'collectCodPayment'
+  );
+  const res = await fn({ orderId });
   return res.data;
 }
 

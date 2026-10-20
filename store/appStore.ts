@@ -34,6 +34,7 @@ import {
   callCreateBooking,
   callCreateRazorpayOrder,
 } from '@/lib/functions';
+import { openRazorpayCheckout } from '@/lib/razorpay';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { calcCartTotals } from '@/utils/format';
@@ -947,51 +948,6 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   clearPaymentError: () => set({ paymentError: null }),
 }));
-
-async function openRazorpayCheckout(opts: {
-  keyId: string;
-  amount: number;
-  currency: string;
-  razorpayOrderId: string;
-  orderId: string;
-  name: string;
-  phone: string;
-}) {
-  await loadRazorpayScript();
-  const RazorpayCtor = (window as unknown as { Razorpay: new (o: object) => { open: () => void } }).Razorpay;
-  await new Promise<void>((resolve, reject) => {
-    const rzp = new RazorpayCtor({
-      key: opts.keyId,
-      amount: opts.amount,
-      currency: opts.currency,
-      name: 'PlayPort',
-      description: `Order ${opts.orderId}`,
-      order_id: opts.razorpayOrderId,
-      prefill: { name: opts.name, contact: opts.phone.replace(/\D/g, '').slice(-10) },
-      handler: () => resolve(),
-      modal: { ondismiss: () => reject(new Error('Payment dismissed')) },
-    });
-    rzp.open();
-  });
-}
-
-function loadRazorpayScript() {
-  return new Promise<void>((resolve, reject) => {
-    if (typeof document === 'undefined') {
-      reject(new Error('Razorpay requires web'));
-      return;
-    }
-    if ((window as unknown as { Razorpay?: unknown }).Razorpay) {
-      resolve();
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Razorpay'));
-    document.body.appendChild(script);
-  });
-}
 
 export function useCartCount() {
   return useAppStore((s) => s.cart.reduce((n, i) => n + i.quantity, 0));

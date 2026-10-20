@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
+import { callCollectCodPayment } from '@/lib/functions';
 import { riderGetOrder, watchOrder } from '@/lib/riderFirestore';
 import { geocodeAddress } from '@/lib/deliveryEta';
 import { useRiderStore } from '@/store/riderStore';
@@ -210,6 +211,27 @@ export default function RiderOrderDetailScreen() {
             Keep this screen open (or the app in foreground) so GPS updates their countdown. No map
             is shared with the customer.
           </Text>
+        </View>
+      ) : null}
+
+      {isMine &&
+      order.paymentStatus === 'cod' &&
+      ['delivered', 'active', 'returning', 'completed'].includes(order.status) ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Cash to collect</Text>
+          <Text style={styles.meta}>
+            Collect ₹{order.total} from the customer for this booking before you leave.
+          </Text>
+          <Button
+            title={busy ? 'Recording…' : `Mark ₹${order.total} collected`}
+            size="sm"
+            disabled={busy}
+            onPress={() =>
+              void run(async () => {
+                await callCollectCodPayment(order.id);
+              })
+            }
+          />
         </View>
       ) : null}
 

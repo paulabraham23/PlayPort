@@ -302,8 +302,8 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   if (startAt.getTime() < now - 5 * 60 * 1000) {
     throw new HttpsError('invalid-argument', 'That slot already passed — pick a new time');
   }
-  if (startAt.getTime() > now + 8 * 24 * 60 * 60 * 1000) {
-    throw new HttpsError('invalid-argument', 'Bookings open up to 7 days ahead');
+  if (startAt.getTime() > now + 31 * 24 * 60 * 60 * 1000) {
+    throw new HttpsError('invalid-argument', 'Bookings open up to 30 days ahead');
   }
   const startIstHour = new Date(startAt.getTime() + 5.5 * 60 * 60 * 1000).getUTCHours();
   if (startIstHour < 8 || startIstHour >= 24) {

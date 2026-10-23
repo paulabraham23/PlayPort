@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   availableDays,
+  calendarMonths,
   daySlots,
   formatSlot,
+  formatSlotTime,
   formatWindow,
   isDispatchable,
   isServiceOpen,
@@ -62,7 +64,10 @@ describe('isValidScheduledStart', () => {
   });
   it('rejects night starts and far-future starts', () => {
     expect(isValidScheduledStart(T('2026-10-12T20:00:00Z').toISOString(), now)).toBe(false); // 1:30 AM
-    expect(isValidScheduledStart(T('2026-10-20T10:30:00Z').toISOString(), now)).toBe(false); // +8d
+    expect(isValidScheduledStart(T('2026-11-12T10:30:00Z').toISOString(), now)).toBe(false); // +31d
+  });
+  it('accepts a slot three weeks out (next month)', () => {
+    expect(isValidScheduledStart(T('2026-11-02T10:30:00Z').toISOString(), now)).toBe(true); // +21d
   });
   it('rejects garbage', () => {
     expect(isValidScheduledStart(null, now)).toBe(false);
@@ -76,6 +81,11 @@ describe('formatting + next opening', () => {
     expect(formatSlot(T('2026-10-12T10:30:00Z').toISOString(), now)).toMatch(/^Today, /);
     expect(formatSlot(T('2026-10-13T10:30:00Z').toISOString(), now)).toMatch(/^Tomorrow, /);
   });
+  it('slot chips show the time for days after tomorrow, not the date', () => {
+    const label = formatSlotTime(T('2026-10-15T10:30:00Z').toISOString()); // Thu 4 PM IST
+    expect(label).toMatch(/4:00/);
+    expect(label).not.toMatch(/Oct/);
+  });
   it('renders overnight windows like 4 PM – 4 AM', () => {
     const label = formatWindow(T('2026-10-12T10:30:00Z').toISOString(), 12);
     expect(label).toContain('4');
@@ -84,6 +94,29 @@ describe('formatting + next opening', () => {
   it('nextOpenStart points at 8 AM (same day before, next day after)', () => {
     expect(nextOpenStart(T('2026-10-12T20:00:00Z')).toISOString()).toBe('2026-10-13T02:30:00.000Z');
     expect(nextOpenStart(T('2026-10-12T06:00:00Z')).toISOString()).toBe('2026-10-13T02:30:00.000Z');
+  });
+});
+
+describe('calendarMonths', () => {
+  it('spans this month and next with 30 bookable days', () => {
+    const now = T('2026-10-23T06:00:00Z'); // Fri 23 Oct, 11:30 AM IST
+    const months = calendarMonths(now);
+    expect(months.map((m) => m.label)).toEqual(['October 2026', 'November 2026']);
+    const open = months.flatMap((m) => m.cells).filter((c) => c?.available);
+    expect(open).toHaveLength(30);
+    expect(open[0]?.day).toBe(23);
+    expect(open[open.length - 1]?.day).toBe(21); // 21 Nov
+  });
+  it('pads the grid so the 1st lands on its weekday (Sunday first)', () => {
+    const [oct] = calendarMonths(T('2026-10-23T06:00:00Z'));
+    const lead = oct.cells.findIndex((c) => c !== null);
+    expect(lead).toBe(4); // 1 Oct 2026 is a Thursday
+  });
+  it('day keys line up with availableDays and their slots', () => {
+    const now = T('2026-10-23T06:00:00Z');
+    const nov2 = calendarMonths(now)[1].cells.find((c) => c?.day === 2)!;
+    expect(availableDays(now).some((d) => d.key === nov2.key)).toBe(true);
+    expect(daySlots(nov2.date, now)).toHaveLength(16);
   });
 });
 

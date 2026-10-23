@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
 import { QuantitySelector } from '@/components/cart/QuantitySelector';
 import { AvailabilityBlock } from '@/components/booking/AvailabilityBlock';
+import { ScheduleCalendar } from '@/components/booking/ScheduleCalendar';
 import { expandCheckItems } from '@/lib/availability';
 import { ControllerAddonRow } from '@/components/products/ControllerAddonRow';
 import { Screen } from '@/components/layout/Screen';
@@ -20,14 +21,7 @@ import { useAppStore, useCartTotals } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
-import {
-  availableDays,
-  daySlots,
-  formatSlot,
-  formatWindow,
-  isServiceOpen,
-  isValidScheduledStart,
-} from '@/utils/serviceHours';
+import { formatSlot, formatWindow, isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
 import { addonsTotal, experiencePlans, isControllerAddon, normalizeProduct } from '@/utils/rentalPricing';
 import type { CartItem, Experience, Product, RentalPlan } from '@/types';
 
@@ -57,16 +51,8 @@ export default function CartScreen() {
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
   const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
   const [schedMode, setSchedMode] = useState<'asap' | 'scheduled'>('asap');
-  const [dayKey, setDayKey] = useState<string | null>(null);
   const now = useMemo(() => new Date(), []);
   const open = isServiceOpen(now);
-  const days = useMemo(() => availableDays(now), [now]);
-  const activeDay = days.find((d) => d.key === dayKey) ?? days[0];
-  const slots = useMemo(
-    () => (activeDay ? daySlots(activeDay.date, now) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeDay?.key]
-  );
   const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
 
   const locationLabel =
@@ -144,43 +130,7 @@ export default function CartScreen() {
 
       {schedMode === 'scheduled' ? (
         <>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.dayRow}
-          >
-            {days.map((d) => (
-              <Pressable
-                key={d.key}
-                accessibilityRole="button"
-                onPress={() => setDayKey(d.key)}
-                style={[styles.dayChip, d.key === activeDay?.key && styles.chipOn]}
-              >
-                <Text style={[styles.chipText, d.key === activeDay?.key && styles.chipTextOn]}>
-                  {d.label}
-                </Text>
-                <Text style={styles.daySub}>{d.sub}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <View style={styles.slotGrid}>
-            {slots.map((slot) => {
-              const iso = slot.toISOString();
-              const on = scheduledStartAt === iso;
-              return (
-                <Pressable
-                  key={iso}
-                  accessibilityRole="button"
-                  onPress={() => setScheduledStartAt(iso)}
-                  style={[styles.slotChip, on && styles.chipOn]}
-                >
-                  <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                    {formatSlot(iso, now).split(', ')[1]}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <ScheduleCalendar now={now} selectedIso={scheduledStartAt} onSelect={setScheduledStartAt} />
           {scheduledValid && scheduledStartAt ? (
             <Text style={styles.scheduleTime}>
               {formatSlot(scheduledStartAt, now)} · {formatWindow(scheduledStartAt, maxHours)} ({maxHours}h)
@@ -556,27 +506,6 @@ const styles = StyleSheet.create({
   chipOff: { opacity: 0.5 },
   chipText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
   chipTextOn: { color: colors.primaryText },
-  dayRow: { gap: 8, paddingRight: 4 },
-  dayChip: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minWidth: 84,
-    alignItems: 'center',
-  },
-  daySub: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 10, marginTop: 2 },
-  slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  slotChip: {
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
   pill: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radii.full,

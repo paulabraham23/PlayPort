@@ -1,16 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ScheduleCalendar } from '@/components/booking/ScheduleCalendar';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useAppStore } from '@/store/appStore';
-import {
-  availableDays,
-  daySlots,
-  formatSlot,
-  formatWindow,
-  isServiceOpen,
-  isValidScheduledStart,
-} from '@/utils/serviceHours';
+import { formatSlot, formatWindow, isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
 
 interface Props {
   /** Longest rental window in the booking — drives the "ends at" preview. */
@@ -25,17 +19,8 @@ export function SchedulePicker({ maxHours }: Props) {
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
   const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
   const [schedMode, setSchedMode] = useState<'asap' | 'scheduled'>('asap');
-  const [dayKey, setDayKey] = useState<string | null>(null);
-
   const now = useMemo(() => new Date(), []);
   const open = isServiceOpen(now);
-  const days = useMemo(() => availableDays(now), [now]);
-  const activeDay = days.find((d) => d.key === dayKey) ?? days[0];
-  const slots = useMemo(
-    () => (activeDay ? daySlots(activeDay.date, now) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeDay?.key]
-  );
   const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
 
   return (
@@ -82,43 +67,7 @@ export function SchedulePicker({ maxHours }: Props) {
 
       {schedMode === 'scheduled' ? (
         <>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.dayRow}
-          >
-            {days.map((d) => (
-              <Pressable
-                key={d.key}
-                accessibilityRole="button"
-                onPress={() => setDayKey(d.key)}
-                style={[styles.dayChip, d.key === activeDay?.key && styles.chipOn]}
-              >
-                <Text style={[styles.chipText, d.key === activeDay?.key && styles.chipTextOn]}>
-                  {d.label}
-                </Text>
-                <Text style={styles.daySub}>{d.sub}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <View style={styles.slotGrid}>
-            {slots.map((slot) => {
-              const iso = slot.toISOString();
-              const on = scheduledStartAt === iso;
-              return (
-                <Pressable
-                  key={iso}
-                  accessibilityRole="button"
-                  onPress={() => setScheduledStartAt(iso)}
-                  style={[styles.slotChip, on && styles.chipOn]}
-                >
-                  <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                    {formatSlot(iso, now).split(', ')[1]}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <ScheduleCalendar now={now} selectedIso={scheduledStartAt} onSelect={setScheduledStartAt} />
           {scheduledValid && scheduledStartAt ? (
             <Text style={styles.scheduleTime}>
               {formatSlot(scheduledStartAt, now)} · {formatWindow(scheduledStartAt, maxHours)} ({maxHours}h)
@@ -168,25 +117,4 @@ const styles = StyleSheet.create({
   chipOff: { opacity: 0.5 },
   chipText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
   chipTextOn: { color: colors.primaryText },
-  dayRow: { gap: 8, paddingRight: 4 },
-  dayChip: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minWidth: 84,
-    alignItems: 'center',
-  },
-  daySub: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 10, marginTop: 2 },
-  slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  slotChip: {
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
 });

@@ -3,8 +3,9 @@
 export const SERVICE_OPEN_HOUR = 8;
 export const SERVICE_CLOSE_HOUR = 24; // midnight
 export const SCHEDULE_LEAD_MINUTES = 45;
-export const MAX_ADVANCE_DAYS = 7;
+export const MAX_ADVANCE_DAYS = 30;
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function istDate(date: Date): Date {
   return new Date(date.getTime() + IST_OFFSET_MS);
@@ -45,11 +46,11 @@ const dayFmt = new Intl.DateTimeFormat('en-IN', {
   month: 'short',
 });
 
-/** Today (+ remaining slots) through +6 days. */
+/** Today (+ remaining slots) through the last bookable day. */
 export function availableDays(now = new Date()): ScheduleDay[] {
   const days: ScheduleDay[] = [];
   for (let i = 0; i < MAX_ADVANCE_DAYS; i++) {
-    const base = new Date(istDayStart(now).getTime() + i * 24 * 60 * 60 * 1000);
+    const base = new Date(istDayStart(now).getTime() + i * DAY_MS);
     const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayFmt.format(base).split(',')[0];
     days.push({
       key: base.toISOString(),
@@ -59,6 +60,66 @@ export function availableDays(now = new Date()): ScheduleDay[] {
     });
   }
   return days.filter((d, i) => (i === 0 ? daySlots(d.date, now).length > 0 : true));
+}
+
+/** Key of the IST calendar day containing `date` (matches `ScheduleDay.key`). */
+export function scheduleDayKey(date: Date): string {
+  return istDayStart(date).toISOString();
+}
+
+export interface CalendarCell {
+  key: string;
+  day: number;
+  date: Date;
+  available: boolean;
+  isToday: boolean;
+}
+
+export interface CalendarMonth {
+  key: string;
+  label: string;
+  /** Sunday-first grid; `null` pads the days before the 1st. */
+  cells: (CalendarCell | null)[];
+}
+
+const monthFmt = new Intl.DateTimeFormat('en-IN', {
+  timeZone: 'UTC',
+  month: 'long',
+  year: 'numeric',
+});
+
+/** IST month grids covering today through the last bookable day. */
+export function calendarMonths(now = new Date()): CalendarMonth[] {
+  const bookable = new Set(availableDays(now).map((d) => d.key));
+  const todayStart = istDayStart(now);
+  const todayKey = todayStart.toISOString();
+  const first = istDate(todayStart);
+  const last = istDate(new Date(todayStart.getTime() + (MAX_ADVANCE_DAYS - 1) * DAY_MS));
+  const months: CalendarMonth[] = [];
+  let y = first.getUTCFullYear();
+  let m = first.getUTCMonth();
+  while (y < last.getUTCFullYear() || (y === last.getUTCFullYear() && m <= last.getUTCMonth())) {
+    const lead = new Date(Date.UTC(y, m, 1)).getUTCDay();
+    const count = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    const cells: (CalendarCell | null)[] = Array.from({ length: lead }, () => null);
+    for (let d = 1; d <= count; d++) {
+      const date = new Date(Date.UTC(y, m, d) - IST_OFFSET_MS);
+      const key = date.toISOString();
+      cells.push({ key, day: d, date, available: bookable.has(key), isToday: key === todayKey });
+    }
+    months.push({ key: `${y}-${m}`, label: monthFmt.format(new Date(Date.UTC(y, m, 15))), cells });
+    m += 1;
+    if (m > 11) {
+      m = 0;
+      y += 1;
+    }
+  }
+  return months;
+}
+
+/** "Mon, 26 Oct" */
+export function formatScheduleDay(date: Date): string {
+  return dayFmt.format(date);
 }
 
 const timeFmt = new Intl.DateTimeFormat('en-IN', {
@@ -80,7 +141,7 @@ export function daySlots(dayStart: Date, now = new Date()): Date[] {
   return slots;
 }
 
-/** A scheduled start is valid when: in the future (+lead), inside 8 AM–12 AM IST, within 7 days. */
+/** A scheduled start is valid when: in the future (+lead), inside 8 AM–12 AM IST, within MAX_ADVANCE_DAYS. */
 export function isValidScheduledStart(iso: string | null | undefined, now = new Date()): boolean {
   if (!iso) return false;
   const t = new Date(iso).getTime();
@@ -88,7 +149,7 @@ export function isValidScheduledStart(iso: string | null | undefined, now = new 
   if (t < now.getTime() + SCHEDULE_LEAD_MINUTES * 60 * 1000) return false;
   const h = istHour(new Date(t));
   if (h < SERVICE_OPEN_HOUR || h >= SERVICE_CLOSE_HOUR) return false;
-  if (t > now.getTime() + MAX_ADVANCE_DAYS * 24 * 60 * 60 * 1000) return false;
+  if (t > now.getTime() + MAX_ADVANCE_DAYS * DAY_MS) return false;
   return true;
 }
 
@@ -114,6 +175,11 @@ export function formatSlot(iso: string, now = new Date()): string {
     istDayStart(d).getTime() === istDayStart(now).getTime() + 24 * 60 * 60 * 1000;
   const prefix = sameDay ? 'Today' : tomorrow ? 'Tomorrow' : dayFmt.format(d);
   return `${prefix}, ${timeFmt.format(d)}`;
+}
+
+/** "4:00 pm" — time only, for slot chips under a chosen day. */
+export function formatSlotTime(iso: string): string {
+  return timeFmt.format(new Date(iso));
 }
 
 /** "4 PM – 4 AM" window for a start + duration. */

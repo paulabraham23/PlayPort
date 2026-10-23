@@ -4,7 +4,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
-import { KenBurns } from '@/components/motion/KenBurns';
 import { PressableScale } from '@/components/motion/PressableScale';
 import { SoftPulse } from '@/components/motion/Pulse';
 import { ValuePop } from '@/components/motion/ValuePop';
@@ -110,12 +109,10 @@ function RatingRow({ rating, count }: { rating: number; count: number }) {
   );
 }
 
-function ZoomImage({ uri, style }: { uri: string; style: object }) {
-  return (
-    <KenBurns scaleTo={1.06} duration={12000}>
-      <Image source={{ uri }} style={style} contentFit="cover" />
-    </KenBurns>
-  );
+function ProductPhoto({ uri, style }: { uri: string; style: object }) {
+  // Packshots are authored at the card aspect (0.92) with product padding, so
+  // cover fills the frame without clipping the kit.
+  return <Image source={{ uri }} style={style} contentFit="cover" />;
 }
 
 function ChoiceChips({
@@ -293,7 +290,7 @@ export function ProductCard({
         style={fill ? styles.fillPress : undefined}
       >
         <View style={[styles.imageWrap, fill ? styles.imageFill : styles.imageRatio]}>
-          {imageUri ? <ZoomImage uri={imageUri} style={styles.image} /> : null}
+          {imageUri ? <ProductPhoto uri={imageUri} style={styles.image} /> : null}
           <LinearGradient
             colors={[...gradients.cardSheen]}
             style={StyleSheet.absoluteFill}
@@ -388,7 +385,7 @@ const styles = StyleSheet.create({
   cardFill: { flex: 1, height: '100%' },
   fillPress: { flex: 1 },
   imageWrap: {
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.white,
     position: 'relative',
     overflow: 'hidden',
   },

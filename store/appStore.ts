@@ -38,6 +38,7 @@ import { openRazorpayCheckout } from '@/lib/razorpay';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { calcCartTotals } from '@/utils/format';
+import { experienceImage } from '@/utils/images';
 import { isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
 import { formatFunctionsError } from '@/utils/functionsError';
 import { isPlaceholderName } from '@/utils/onboarding';
@@ -522,7 +523,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         id: `cart-exp-${experienceId}-${plan.id}-${Date.now()}`,
         experienceId,
         name: exp.name,
-        image: exp.image,
+        image: experienceImage(exp, useCatalogStore.getState().products) ?? '',
         categoryLabel: exp.tag,
         planId: plan.id,
         durationId: plan.id,

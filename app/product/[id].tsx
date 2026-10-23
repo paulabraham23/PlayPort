@@ -15,6 +15,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ExpandableText } from '@/components/ui/ExpandableText';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -201,7 +202,7 @@ export default function ProductDetailScreen() {
         ))}
       </View>
       <Text style={[styles.title, useSplitPane && styles.titleLg]}>{product.name}</Text>
-      <Text style={styles.desc}>{product.description}</Text>
+      {product.description ? <ExpandableText text={product.description} style={styles.desc} /> : null}
       <View style={styles.pricePreview}>
         <Text style={styles.pricePreviewLabel}>Selected</Text>
         <Text style={styles.pricePreviewValue}>

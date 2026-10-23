@@ -19,3 +19,16 @@ export function isDisplayableImage(uri?: string | null) {
 export function firstDisplayableImage(uris?: string[] | null) {
   return uris?.find((uri) => isDisplayableImage(uri));
 }
+
+/** Combo photo, or the first linked kit's photo when ops left it blank. */
+export function experienceImage(
+  experience: { image?: string; productIds?: string[] },
+  products: { id: string; images: string[] }[]
+) {
+  if (isDisplayableImage(experience.image)) return experience.image;
+  for (const id of experience.productIds ?? []) {
+    const uri = firstDisplayableImage(products.find((p) => p.id === id)?.images);
+    if (uri) return uri;
+  }
+  return undefined;
+}

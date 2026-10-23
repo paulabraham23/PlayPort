@@ -14,6 +14,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ExpandableText } from '@/components/ui/ExpandableText';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
@@ -21,6 +22,7 @@ import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { gateCartAdd } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
+import { experienceImage } from '@/utils/images';
 import { isValidScheduledStart } from '@/utils/serviceHours';
 import { expandCheckItems } from '@/lib/availability';
 import {
@@ -96,9 +98,10 @@ export default function ExperienceDetailScreen() {
     );
   }
 
+  const heroUri = experienceImage(experience, products);
   const heroBlock = (
     <View style={[styles.hero, useSplitPane && styles.heroSplit]}>
-      <Image source={{ uri: experience.image }} style={styles.heroImage} contentFit="cover" />
+      {heroUri ? <Image source={{ uri: heroUri }} style={styles.heroImage} contentFit="contain" /> : null}
       <View style={styles.heroBadges}>
         <Badge label={experience.tag} />
         <Badge
@@ -113,7 +116,7 @@ export default function ExperienceDetailScreen() {
   const summaryBlock = (
     <View style={[styles.summary, useSplitPane && styles.summarySplit]}>
       <Text style={[styles.title, useSplitPane && styles.titleLg]}>{experience.name}</Text>
-      <Text style={styles.desc}>{experience.description}</Text>
+      {experience.description ? <ExpandableText text={experience.description} style={styles.desc} /> : null}
       <View style={styles.chips}>
         {experience.chips.map((chip) => (
           <Badge key={chip} label={chip} />
@@ -325,7 +328,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 16 / 9,
     maxHeight: 380,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.white,
   },
   heroSplit: {
     flex: 1,

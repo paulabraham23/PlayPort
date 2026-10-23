@@ -110,9 +110,9 @@ function RatingRow({ rating, count }: { rating: number; count: number }) {
 }
 
 function ProductPhoto({ uri, style }: { uri: string; style: object }) {
-  // Packshots are authored at the card aspect (0.92) with product padding, so
-  // cover fills the frame without clipping the kit.
-  return <Image source={{ uri }} style={style} contentFit="cover" />;
+  // Packshots are on white; contain keeps the whole kit visible in any frame
+  // shape (the phone frame is wider than the grid one).
+  return <Image source={{ uri }} style={style} contentFit="contain" />;
 }
 
 function ChoiceChips({
@@ -326,7 +326,7 @@ export function ProductCard({
             </PressableScale>
           ) : null}
         </View>
-        <View style={styles.body}>
+        <View style={[styles.body, !fill && styles.bodyGrow]}>
           <RatingRow rating={product.rating} count={product.reviewCount} />
           <Text style={styles.title} numberOfLines={2}>
             {product.shortName}
@@ -466,7 +466,8 @@ const styles = StyleSheet.create({
     bottom: 10,
     zIndex: 2,
   },
-  body: { flex: 1, paddingHorizontal: spacing.md, paddingTop: spacing.sm, gap: 2 },
+  body: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.sm, gap: 2 },
+  bodyGrow: { flex: 1 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ratingChip: {
     flexDirection: 'row',

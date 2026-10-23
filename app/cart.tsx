@@ -16,6 +16,7 @@ import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/Sticky
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
+import { deliveryNoteFor, useDeliveryQuote } from '@/hooks/useDeliveryQuote';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
@@ -48,6 +49,7 @@ export default function CartScreen() {
   const experiences = useCatalogStore((s) => s.experiences);
   const hub = useCatalogStore((s) => s.hub);
   const totals = useCartTotals();
+  const delivery = useDeliveryQuote();
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
   const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
   const [schedMode, setSchedMode] = useState<'asap' | 'scheduled'>('asap');
@@ -318,6 +320,8 @@ export default function CartScreen() {
             itemsTotal={totals.itemsTotal}
             taxes={totals.taxes}
             total={totals.total}
+            delivery={delivery.status === 'ready' && delivery.quote ? delivery.quote : null}
+            deliveryNote={deliveryNoteFor(delivery.status)}
             deposit={0}
           />
         </View>

@@ -92,7 +92,7 @@ export function Button({
       }
       style={[
         styles.base,
-        variant !== 'primary' && styles[variant],
+        styles[variant],
         styles[`size_${size}`],
         fullWidth && styles.fullWidth,
         Platform.OS === 'web' && styles.webCursor,

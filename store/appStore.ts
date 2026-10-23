@@ -33,12 +33,15 @@ import {
   callConfirmPayment,
   callCreateBooking,
   callCreateRazorpayOrder,
+  callQuoteDelivery,
+  type DeliveryQuote,
 } from '@/lib/functions';
 import { openRazorpayCheckout } from '@/lib/razorpay';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { calcCartTotals } from '@/utils/format';
 import { experienceImage } from '@/utils/images';
+import { isInServiceArea, OUT_OF_AREA_MESSAGE } from '@/utils/serviceArea';
 import { isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
 import { formatFunctionsError } from '@/utils/functionsError';
 import { isPlaceholderName } from '@/utils/onboarding';
@@ -100,6 +103,10 @@ interface AppState {
   pendingCartAdd: PendingCartAdd | null;
   /** ISO start for a scheduled order; null = ASAP. */
   scheduledStartAt: string | null;
+  /** Delivery + pickup charge for the selected address's pin (free ≤ 5 km, then ₹7/km × 4 trips). */
+  deliveryQuote: (DeliveryQuote & { key: string }) | null;
+  deliveryQuoteStatus: 'idle' | 'loading' | 'ready' | 'needsPin' | 'error';
+  deliveryQuoteError: string | null;
 
   bootstrapAuth: () => () => void;
   setPhoneDraft: (phone: string) => void;
@@ -134,6 +141,7 @@ interface AppState {
 
   selectAddress: (id: string) => void;
   setScheduledStartAt: (iso: string | null) => void;
+  refreshDeliveryQuote: () => Promise<DeliveryQuote | null>;
   addAddress: (address: Omit<Address, 'id'>) => Promise<string>;
   updateAddress: (id: string, patch: Partial<Address>) => void;
   deleteAddress: (id: string) => void;
@@ -193,6 +201,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   pendingOrderId: null,
   pendingCartAdd: null,
   scheduledStartAt: null,
+  deliveryQuote: null,
+  deliveryQuoteStatus: 'idle',
+  deliveryQuoteError: null,
 
   bootstrapAuth: () => {
     const unsub = watchAuth(async (firebaseUser) => {
@@ -402,6 +413,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       selectedAddressId: null,
       pendingOrderId: null,
       pendingCartAdd: null,
+      deliveryQuote: null,
+      deliveryQuoteStatus: 'idle',
+      deliveryQuoteError: null,
     });
   },
 
@@ -654,6 +668,43 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setScheduledStartAt: (iso) => set({ scheduledStartAt: iso }),
 
+  refreshDeliveryQuote: async () => {
+    const { addresses, selectedAddressId, user, deliveryQuote } = get();
+    const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
+    const key = deliveryQuoteKey(address);
+    if (!address || !key) {
+      set({ deliveryQuote: null, deliveryQuoteStatus: address ? 'needsPin' : 'idle', deliveryQuoteError: null });
+      return null;
+    }
+    if (!isInServiceArea(address)) {
+      set({ deliveryQuote: null, deliveryQuoteStatus: 'idle', deliveryQuoteError: null });
+      return null;
+    }
+    if (deliveryQuote?.key === key) return deliveryQuote;
+    set({ deliveryQuoteStatus: 'loading', deliveryQuoteError: null });
+    try {
+      const hubId = user?.homeHubId || useCatalogStore.getState().hub?.id;
+      const quote = await callQuoteDelivery({
+        hubId,
+        lat: address.lat as number,
+        lng: address.lng as number,
+      });
+      // The selected address may have changed while this was in flight.
+      if (deliveryQuoteKey(get().addresses.find((a) => a.id === get().selectedAddressId) ?? get().addresses[0]) !== key) {
+        return null;
+      }
+      set({ deliveryQuote: { ...quote, key }, deliveryQuoteStatus: 'ready' });
+      return quote;
+    } catch (err) {
+      set({
+        deliveryQuote: null,
+        deliveryQuoteStatus: 'error',
+        deliveryQuoteError: formatFunctionsError(err),
+      });
+      return null;
+    }
+  },
+
   addAddress: async (address) => {
     const id = `addr-${Date.now()}`;
     const next = address.isDefault
@@ -729,10 +780,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!address?.line1 && !address?.area) {
       return { ok: false, error: 'Add a delivery address before paying' };
     }
+    if (!isInServiceArea(address)) {
+      return { ok: false, error: `${OUT_OF_AREA_MESSAGE} Choose a Hyderabad address.` };
+    }
+
+    if (!deliveryQuoteKey(address)) {
+      return { ok: false, error: 'Pin this address on the map so we can work out the delivery charge.' };
+    }
+    const quote = pendingOrderId ? null : await get().refreshDeliveryQuote();
+    if (!pendingOrderId && !quote) {
+      return { ok: false, error: get().deliveryQuoteError ?? 'Couldn’t work out the delivery charge — try again.' };
+    }
 
     const payment = paymentMethods.find((p) => p.id === selectedPaymentMethodId);
     const isCod = payment?.type === 'cod';
-    const totals = calcCartTotals(cart);
+    const totals = calcCartTotals(cart, quote?.fee ?? currentDeliveryFee(get()));
     const hub = useCatalogStore.getState().hub;
     const hubId = user.homeHubId || hub?.id;
 
@@ -823,7 +885,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           return { ok: false, error: paid.error ?? 'Payment failed', orderId };
         }
       } else if (typeof window !== 'undefined') {
-        await openRazorpayCheckout({
+        const proof = await openRazorpayCheckout({
           keyId: rzp.keyId,
           amount: rzp.amount,
           currency: rzp.currency,
@@ -832,9 +894,9 @@ export const useAppStore = create<AppState>((set, get) => ({
           name: user.name,
           phone: user.phone,
         });
-        await callConfirmPayment(orderId!, false, 'razorpay');
+        await callConfirmPayment(orderId!, false, 'razorpay', proof);
       } else {
-        await callConfirmPayment(orderId!, fail, useDemo ? 'demo' : 'razorpay');
+        throw new Error('Online payment needs a browser — open PlayPort on the web.');
       }
 
       const paidLabel = useDemo ? '' : 'Razorpay';
@@ -954,7 +1016,20 @@ export function useCartCount() {
   return useAppStore((s) => s.cart.reduce((n, i) => n + i.quantity, 0));
 }
 
+/** Cache key for a delivery quote — the address and its exact pin. */
+function deliveryQuoteKey(address?: Address | null): string | null {
+  if (!address || !Number.isFinite(address.lat) || !Number.isFinite(address.lng)) return null;
+  return `${address.id}:${(address.lat as number).toFixed(5)},${(address.lng as number).toFixed(5)}`;
+}
+
+function currentDeliveryFee(state: Pick<AppState, 'addresses' | 'selectedAddressId' | 'deliveryQuote'>): number {
+  const address = state.addresses.find((a) => a.id === state.selectedAddressId) ?? state.addresses[0];
+  const key = deliveryQuoteKey(address);
+  return key && state.deliveryQuote?.key === key ? state.deliveryQuote.fee : 0;
+}
+
 export function useCartTotals() {
   const cart = useAppStore((s) => s.cart);
-  return calcCartTotals(cart);
+  const fee = useAppStore((s) => currentDeliveryFee(s));
+  return calcCartTotals(cart, fee);
 }

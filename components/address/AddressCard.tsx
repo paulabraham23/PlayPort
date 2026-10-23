@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { formatAddressLine } from '@/utils/format';
+import { isInServiceArea, SERVICE_CITY } from '@/utils/serviceArea';
 import type { Address } from '@/types';
 
 interface Props {
@@ -24,8 +25,15 @@ export function AddressCard({
   actionLabel,
   onAction,
 }: Props) {
+  const serviceable = isInServiceArea(address);
   return (
-    <View style={[styles.card, selected && styles.selected, !address.inRapidZone && styles.outOfZone]}>
+    <View
+      style={[
+        styles.card,
+        selected && styles.selected,
+        (!address.inRapidZone || !serviceable) && styles.outOfZone,
+      ]}
+    >
       <Pressable accessibilityRole="button" onPress={onPress}>
         <View style={styles.header}>
           <View style={styles.icon}>
@@ -41,7 +49,15 @@ export function AddressCard({
               {address.isDefault ? (
                 <Badge label="DEFAULT" />
               ) : null}
-              {!address.inRapidZone ? <Badge label="OUT OF RAPID ZONE" /> : null}
+              {!serviceable ? (
+                <Badge
+                  label={`OUTSIDE ${SERVICE_CITY.toUpperCase()}`}
+                  color={colors.danger}
+                  backgroundColor={colors.dangerBg}
+                />
+              ) : !address.inRapidZone ? (
+                <Badge label="OUT OF RAPID ZONE" />
+              ) : null}
             </View>
             <Text style={styles.sub}>
               {address.isDefault
@@ -61,10 +77,12 @@ export function AddressCard({
       </Pressable>
 
       <View style={styles.footer}>
-        <Text style={styles.eta}>
-          {address.inRapidZone
-            ? `🛵 ${address.etaMinutes} MIN EXPRESS HUB ROUTE`
-            : '📅 SAME-DAY EVENING SLOT'}
+        <Text style={[styles.eta, !serviceable && styles.etaOff]}>
+          {!serviceable
+            ? 'Not deliverable yet'
+            : address.inRapidZone
+              ? `🛵 ${address.etaMinutes} MIN EXPRESS HUB ROUTE`
+              : '📅 SAME-DAY EVENING SLOT'}
         </Text>
         <View style={styles.actions}>
           {onEdit ? (
@@ -77,7 +95,7 @@ export function AddressCard({
               <Ionicons name="trash-outline" size={16} color={colors.secondaryText} />
             </Pressable>
           ) : null}
-          {actionLabel && onAction ? (
+          {actionLabel && onAction && serviceable ? (
             <Pressable onPress={onAction}>
               <Text style={styles.action}>{actionLabel}</Text>
             </Pressable>
@@ -131,6 +149,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
   },
+  etaOff: { color: colors.danger },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   action: { color: colors.playportOrange, fontFamily: fonts.bodyMedium, fontSize: 13 },
 });

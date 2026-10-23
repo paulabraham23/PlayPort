@@ -43,22 +43,46 @@ export type CreateRazorpayOrderResult = {
   demo?: boolean;
 };
 
+export type DeliveryQuote = {
+  km: number;
+  fee: number;
+  method: 'road' | 'straight';
+  hubId: string;
+  freeKm: number;
+  ratePerKm: number;
+  /** Drop-off out and back + pickup out and back. */
+  trips: number;
+};
+
+export async function callQuoteDelivery(input: {
+  hubId?: string;
+  lat: number;
+  lng: number;
+}): Promise<DeliveryQuote> {
+  const fn = httpsCallable<typeof input, DeliveryQuote>(functions, 'quoteDelivery');
+  const res = await fn(input);
+  return res.data;
+}
+
 export async function callCreateBooking(input: CreateBookingInput): Promise<CreateBookingResult> {
   const fn = httpsCallable<CreateBookingInput, CreateBookingResult>(functions, 'createBooking');
   const res = await fn(input);
   return res.data;
 }
 
+export type RazorpayPaymentProof = { razorpayOrderId: string; paymentId: string; signature: string };
+
 export async function callConfirmPayment(
   orderId: string,
   fail = false,
-  provider: 'demo' | 'razorpay' = 'demo'
+  provider: 'demo' | 'razorpay' = 'demo',
+  payment?: RazorpayPaymentProof
 ) {
   const fn = httpsCallable<
-    { orderId: string; fail?: boolean; provider?: 'demo' | 'razorpay' },
+    { orderId: string; fail?: boolean; provider?: 'demo' | 'razorpay'; payment?: RazorpayPaymentProof },
     { ok: boolean; paymentStatus: PaymentStatus; error?: string }
   >(functions, 'confirmPayment');
-  const res = await fn({ orderId, fail, provider });
+  const res = await fn({ orderId, fail, provider, payment });
   return res.data;
 }
 
@@ -263,4 +287,19 @@ export async function callPlaceDetails(input: { placeId: string; sessionToken?: 
   const fn = httpsCallable<typeof input, { place: ResolvedPlaceAddress }>(functions, 'placeDetails');
   const res = await fn(input);
   return res.data;
+}
+
+export type ReverseGeocodeResult = {
+  formattedAddress: string;
+  line1: string;
+  area: string;
+  city: string;
+  pincode: string;
+  state?: string;
+};
+
+export async function callReverseGeocode(input: { lat: number; lng: number }) {
+  const fn = httpsCallable<typeof input, { address: ReverseGeocodeResult | null }>(functions, 'reverseGeocode');
+  const res = await fn(input);
+  return res.data.address;
 }

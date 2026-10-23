@@ -3,6 +3,9 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AddressCard } from '@/components/address/AddressCard';
+import { OutOfAreaNotice } from '@/components/address/OutOfAreaNotice';
+import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
+import { deliveryNoteFor, useDeliveryQuote } from '@/hooks/useDeliveryQuote';
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -15,6 +18,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
+import { isInServiceArea } from '@/utils/serviceArea';
 import { formatSlot, formatWindow, isValidScheduledStart } from '@/utils/serviceHours';
 
 export default function CheckoutScreen() {
@@ -30,6 +34,9 @@ export default function CheckoutScreen() {
   const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
   const maxHours = Math.max(1, ...cart.map((c) => c.hours ?? 3));
   const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
+  const deliverable = Boolean(address) && isInServiceArea(address);
+  const delivery = useDeliveryQuote();
+  const deliveryReady = delivery.status === 'ready' && Boolean(delivery.quote);
 
   useEffect(() => {
     if (authReady && !isAuthenticated) {
@@ -97,7 +104,37 @@ export default function CheckoutScreen() {
             onAction={() => router.push({ pathname: '/address', params: { select: '1' } })}
             onPress={() => router.push({ pathname: '/address', params: { select: '1' } })}
           />
-        ) : (
+        ) : null}
+        {address && deliverable && delivery.status === 'needsPin' ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Pin this address on the map</Text>
+            <Text style={styles.timingValue}>
+              Delivery and pickup are free within 5 km of our hub; further away is charged by distance. We
+              need the exact spot to work it out.
+            </Text>
+            <Button
+              title="Pin location"
+              variant="secondary"
+              onPress={() => router.push(`/address/edit/${address.id}`)}
+              fullWidth
+            />
+          </View>
+        ) : null}
+        {address && deliverable && delivery.status === 'error' ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Couldn’t work out the delivery charge</Text>
+            <Text style={styles.timingValue}>{delivery.error ?? 'Check your connection and try again.'}</Text>
+            <Button title="Try again" variant="secondary" onPress={() => void delivery.refresh()} fullWidth />
+          </View>
+        ) : null}
+        {address && !deliverable ? (
+          <OutOfAreaNotice
+            place={[address.area, address.city].filter(Boolean).join(', ')}
+            actionLabel="Change address"
+            onAction={() => router.push({ pathname: '/address', params: { select: '1' } })}
+          />
+        ) : null}
+        {!address ? (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Delivery address required</Text>
             <Text style={styles.timingValue}>
@@ -109,7 +146,7 @@ export default function CheckoutScreen() {
               fullWidth
             />
           </View>
-        )}
+        ) : null}
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Delivery & Return Timing</Text>
@@ -168,8 +205,13 @@ export default function CheckoutScreen() {
           <Text style={styles.itemNames} numberOfLines={2}>
             {itemNames}
           </Text>
-          <Text style={styles.summaryTotal}>{formatINR(totals.total)}</Text>
-          <Text style={styles.taxNote}>TAXES INCLUDED</Text>
+          <PriceBreakdown
+            itemsTotal={totals.itemsTotal}
+            taxes={totals.taxes}
+            total={totals.total}
+            delivery={deliveryReady ? delivery.quote : null}
+            deliveryNote={deliveryNoteFor(delivery.status)}
+          />
           <View style={styles.encryptRow}>
             <Ionicons name="lock-closed" size={14} color={colors.secondaryText} />
             <Text style={styles.encryptText}>
@@ -187,9 +229,9 @@ export default function CheckoutScreen() {
         <Button
           title="Continue to Payment"
           iconRight={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
-          disabled={!address}
+          disabled={!deliverable || !deliveryReady}
           onPress={() => {
-            if (!address) return;
+            if (!deliverable || !deliveryReady) return;
             router.push('/checkout/payment');
           }}
           style={styles.cta}
@@ -242,13 +284,6 @@ const styles = StyleSheet.create({
   summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   itemCount: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.small },
   itemNames: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.body, lineHeight: 18 },
-  summaryTotal: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: typeScale.display, marginTop: 4 },
-  taxNote: {
-    color: colors.mutedText,
-    fontFamily: fonts.bodyMedium,
-    fontSize: typeScale.caption,
-    letterSpacing: 0.6,
-  },
   encryptRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 4 },
   encryptText: {
     color: colors.secondaryText,

@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from 'crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore, type DocumentData, type DocumentReference } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
@@ -17,6 +17,8 @@ import {
   type FnCartItem,
   type FnProduct,
 } from './rentalPricing';
+import { isDropoffInServiceArea, SERVICE_CENTER } from './serviceArea';
+import { DELIVERY_RATE_PER_KM, FREE_DELIVERY_KM, quoteDeliveryFee, TRIPS_PER_ORDER } from './delivery';
 
 initializeApp();
 const db = getFirestore();
@@ -51,6 +53,16 @@ type CartItem = FnCartItem & {
   durationLabel: string;
   includesNote?: string;
 };
+
+/** Razorpay checkout signature = HMAC_SHA256(order_id|payment_id, key_secret). */
+function validRazorpaySignature(razorpayOrderId: string, paymentId: string, signature: string): boolean {
+  const secret = razorpayKeySecret.value();
+  if (!secret) return false;
+  const expected = createHmac('sha256', secret).update(`${razorpayOrderId}|${paymentId}`).digest('hex');
+  const a = Buffer.from(expected);
+  const b = Buffer.from(String(signature));
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 function requireAuth(uid: string | undefined): string {
   if (!uid) throw new HttpsError('unauthenticated', 'Sign in required');
@@ -151,6 +163,37 @@ async function resolveHubId(requested?: string, userId?: string): Promise<string
   return active.docs[0].id;
 }
 
+function validLatLng(lat: unknown, lng: unknown): { lat: number; lng: number } | null {
+  if (typeof lat !== 'number' || typeof lng !== 'number') return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat, lng };
+}
+
+async function deliveryQuoteFor(hubId: string, dropoff: { lat: number; lng: number }) {
+  const hub = (await db.collection('hubs').doc(hubId).get()).data();
+  const origin = validLatLng(hub?.lat, hub?.lng);
+  if (!origin) throw new HttpsError('failed-precondition', 'Hub location is not set — ops must pin the hub');
+  return quoteDeliveryFee(origin, dropoff, googleMapsApiKey.value());
+}
+
+/** Delivery + pickup charge for a pinned address: free within 5 km, then ₹7/km on all 4 trips. */
+export const quoteDelivery = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const { hubId: requestedHubId, lat, lng } = (request.data || {}) as {
+    hubId?: string;
+    lat?: number;
+    lng?: number;
+  };
+  const dropoff = validLatLng(lat, lng);
+  if (!dropoff) throw new HttpsError('invalid-argument', 'Pin the address on the map first');
+  if (!isDropoffInServiceArea(dropoff)) {
+    throw new HttpsError('failed-precondition', 'We only deliver in Hyderabad right now.');
+  }
+  const hubId = await resolveHubId(requestedHubId, uid);
+  const quote = await deliveryQuoteFor(hubId, dropoff);
+  return { ...quote, hubId, freeKm: FREE_DELIVERY_KM, ratePerKm: DELIVERY_RATE_PER_KM, trips: TRIPS_PER_ORDER };
+});
+
 async function unitHasOverlap(
   unitId: string,
   startMs: number,
@@ -237,6 +280,8 @@ async function markOrderPaymentFailedOrCancelled(
   order: DocumentData,
   reason: string
 ) {
+  // Payment-failure paths must never cancel an order that has been paid.
+  if (order.paymentStatus === 'paid') return;
   const reservationIds: string[] = order.reservationIds ?? [];
   await releaseReservations(reservationIds, 'released');
   await orderRef.update({
@@ -263,7 +308,6 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     dropoffLng: dropoffLngInput,
     paymentMethodLabel,
     subtotal,
-    taxes,
     total,
     startAt: startAtInput,
     payOnDelivery,
@@ -289,6 +333,18 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   }
   if (!addressFull || String(addressFull).trim().length < 8) {
     throw new HttpsError('invalid-argument', 'Delivery address required');
+  }
+  if (
+    !isDropoffInServiceArea({
+      lat: typeof dropoffLatInput === 'number' ? dropoffLatInput : undefined,
+      lng: typeof dropoffLngInput === 'number' ? dropoffLngInput : undefined,
+      addressFull,
+    })
+  ) {
+    throw new HttpsError(
+      'failed-precondition',
+      'We only deliver in Hyderabad right now. Choose a Hyderabad address.'
+    );
   }
 
   const hubId = await resolveHubId(requestedHubId, uid);
@@ -389,6 +445,23 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     throw new HttpsError(
       'failed-precondition',
       `Cart subtotal mismatch: expected ₹${expectedSubtotal}, got ₹${subtotal}`
+    );
+  }
+
+  const dropoff = validLatLng(dropoffLatInput, dropoffLngInput);
+  if (!dropoff) {
+    throw new HttpsError(
+      'failed-precondition',
+      'Pin this address on the map so we can work out the delivery charge.'
+    );
+  }
+  const delivery = await deliveryQuoteFor(hubId, dropoff);
+  const expectedTaxes = Math.round(expectedSubtotal * 0.05);
+  const expectedTotal = expectedSubtotal + expectedTaxes + delivery.fee;
+  if (typeof total === 'number' && Math.abs(expectedTotal - total) > 1) {
+    throw new HttpsError(
+      'failed-precondition',
+      `Delivery charge is now ₹${delivery.fee} (${delivery.km} km) — review your total of ₹${expectedTotal}.`
     );
   }
 
@@ -507,9 +580,12 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
         .filter((a) => a.quantity > 0)
         .map((a) => `${a.quantity}× ${a.name} · ₹${a.unitPrice} each`),
     })),
-    subtotal,
-    taxes,
-    total,
+    subtotal: expectedSubtotal,
+    taxes: expectedTaxes,
+    deliveryFee: delivery.fee,
+    deliveryKm: delivery.km,
+    deliveryDistanceMethod: delivery.method,
+    total: expectedTotal,
     paymentMethodLabel,
     progressPercent: isCod ? 20 : 10,
     setupIncluded: true,
@@ -518,12 +594,8 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     ...(isCod ? { paymentProvider: 'cod' as const } : {}),
     // Exact delivery pin from the saved address (Zepto-style) — rider
     // navigates to these coords instead of a fuzzy text search.
-    ...(Number.isFinite(dropoffLatInput) &&
-    Number.isFinite(dropoffLngInput) &&
-    Math.abs(dropoffLatInput as number) <= 90 &&
-    Math.abs(dropoffLngInput as number) <= 180
-      ? { dropoffLat: dropoffLatInput, dropoffLng: dropoffLngInput }
-      : {}),
+    dropoffLat: dropoff.lat,
+    dropoffLng: dropoff.lng,
     // 4-digit handover code — customer reads it to the rider before mark-delivered.
     deliveryOtp: String(Math.floor(1000 + Math.random() * 9000)),
   };
@@ -534,7 +606,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   await pushNotification(uid, {
     title: isCod ? 'Order confirmed' : 'Booking held',
     body: isCod
-      ? `${id} is confirmed — pay ₹${Math.round(Number(total) || 0)} when your kit is handed over.`
+      ? `${id} is confirmed — pay ₹${expectedTotal} when your kit is handed over.`
       : `${id} is reserved for 15 minutes — complete payment to confirm.`,
     type: 'order',
     orderId: id,
@@ -547,13 +619,14 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
 
 export const confirmPayment = onCall({ region: REGION }, async (request) => {
   const uid = requireAuth(request.auth?.uid);
-  const { orderId: id, fail, provider = 'demo', providerRef } = request.data as {
+  const { orderId: id, fail, provider = 'demo', payment } = request.data as {
     orderId: string;
     fail?: boolean;
     provider?: 'demo' | 'razorpay';
-    providerRef?: string;
+    payment?: { razorpayOrderId?: string; paymentId?: string; signature?: string };
   };
   if (!id) throw new HttpsError('invalid-argument', 'orderId required');
+  const gatewayLive = Boolean(razorpayKeySecret.value());
 
   const ref = db.collection('orders').doc(id);
   const snap = await ref.get();
@@ -562,6 +635,7 @@ export const confirmPayment = onCall({ region: REGION }, async (request) => {
   if (order.userId !== uid) throw new HttpsError('permission-denied', 'Not your order');
 
   if (fail) {
+    if (order.paymentStatus === 'paid') return { ok: true, paymentStatus: 'paid' as const };
     await markOrderPaymentFailedOrCancelled(ref, order, 'Payment failed');
     await pushNotification(uid, {
       title: 'Payment failed',
@@ -582,20 +656,41 @@ export const confirmPayment = onCall({ region: REGION }, async (request) => {
     throw new HttpsError('deadline-exceeded', 'Payment hold expired — start checkout again');
   }
 
-  const paymentId = providerRef || `${provider}_${randomBytes(6).toString('hex')}`;
   const nowIso = new Date().toISOString();
-
-  await db.collection('payments').doc(paymentId).set({
-    id: paymentId,
-    orderId: id,
-    userId: uid,
-    amount: order.total,
-    currency: 'INR',
-    provider,
-    providerRef: paymentId,
-    status: 'paid',
-    createdAt: nowIso,
-  });
+  let paymentId: string;
+  if (gatewayLive) {
+    // With Razorpay configured, only Razorpay's signed proof can mark an order paid.
+    if (provider !== 'razorpay' || !payment?.razorpayOrderId || !payment.paymentId || !payment.signature) {
+      throw new HttpsError('invalid-argument', 'Payment proof required');
+    }
+    if (!order.razorpayOrderId || payment.razorpayOrderId !== order.razorpayOrderId) {
+      throw new HttpsError('permission-denied', 'Payment does not belong to this order');
+    }
+    if (!validRazorpaySignature(payment.razorpayOrderId, payment.paymentId, payment.signature)) {
+      throw new HttpsError('permission-denied', 'Payment could not be verified');
+    }
+    const payRef = db.collection('payments').doc(payment.razorpayOrderId);
+    const pay = (await payRef.get()).data();
+    if (!pay || pay.orderId !== id || Math.round(Number(pay.amount) || 0) !== Math.round(Number(order.total) || 0)) {
+      throw new HttpsError('failed-precondition', 'Payment amount does not match this order');
+    }
+    paymentId = payment.paymentId;
+    await payRef.update({ status: 'paid', providerRef: paymentId, updatedAt: nowIso });
+  } else {
+    // No gateway keys (local/dev builds only): demo checkout.
+    paymentId = `demo_${randomBytes(6).toString('hex')}`;
+    await db.collection('payments').doc(paymentId).set({
+      id: paymentId,
+      orderId: id,
+      userId: uid,
+      amount: order.total,
+      currency: 'INR',
+      provider: 'demo',
+      providerRef: paymentId,
+      status: 'paid',
+      createdAt: nowIso,
+    });
+  }
 
   const reservationIds: string[] = order.reservationIds ?? [];
   await Promise.all(
@@ -614,9 +709,9 @@ export const confirmPayment = onCall({ region: REGION }, async (request) => {
     holdExpiresAt: null,
     progressPercent: 20,
     updatedAt: nowIso,
-    ...(provider === 'demo'
-      ? { paymentMethodLabel: '', paymentProvider: 'demo' }
-      : { paymentProvider: 'razorpay' }),
+    ...(gatewayLive
+      ? { paymentProvider: 'razorpay', paymentMethodLabel: 'Razorpay', razorpayPaymentId: paymentId }
+      : { paymentMethodLabel: '', paymentProvider: 'demo' }),
   });
 
   await clearUserCart(uid);
@@ -814,8 +909,23 @@ export const completeReturn = onCall({ region: REGION }, async (request) => {
   const riderSnap = await db.collection('riders').doc(uid).get();
   const isAssignedRider =
     riderSnap.exists && riderSnap.data()?.active === true && order.riderId === uid;
-  if (order.userId !== uid && request.auth?.token?.admin !== true && !isAssignedRider) {
+  const isAdmin = request.auth?.token?.admin === true;
+  if (order.userId !== uid && !isAdmin && !isAssignedRider) {
     throw new HttpsError('permission-denied', 'Not your order');
+  }
+  if (order.status === 'completed') return { ok: true };
+  if (!isAdmin && !isAssignedRider) {
+    // Customers can't close an order early: that would free the kit for re-booking
+    // while it's still at their place.
+    const endMs = order.endAt ? new Date(order.endAt).getTime() : 0;
+    const nearEnd = endMs > 0 && Date.now() >= endMs - 30 * 60 * 1000;
+    const delivered = ['delivered', 'active', 'returning'].includes(String(order.status));
+    if (!delivered || (order.status !== 'returning' && !nearEnd)) {
+      throw new HttpsError(
+        'failed-precondition',
+        'You can complete the return once your rental is ending and the rider is collecting the kit.'
+      );
+    }
   }
 
   await releaseReservations(order.reservationIds ?? [], 'completed');
@@ -1131,17 +1241,16 @@ export const extendBooking = onCall({ region: REGION }, async (request) => {
   const nowIso = new Date().toISOString();
 
   let paymentId: string;
+  const gatewayLive = Boolean(razorpayKeySecret.value());
+  if (gatewayLive && provider !== 'razorpay') {
+    throw new HttpsError('invalid-argument', 'Payment proof required');
+  }
   if (provider === 'razorpay') {
-    const secret = razorpayKeySecret.value();
-    if (!secret) throw new HttpsError('failed-precondition', 'Payments are not configured');
+    if (!gatewayLive) throw new HttpsError('failed-precondition', 'Payments are not configured');
     if (!payment?.razorpayOrderId || !payment.paymentId || !payment.signature) {
       throw new HttpsError('invalid-argument', 'Payment proof required');
     }
-    // Razorpay checkout signature = HMAC(order_id|payment_id, key_secret).
-    const expected = createHmac('sha256', secret)
-      .update(`${payment.razorpayOrderId}|${payment.paymentId}`)
-      .digest('hex');
-    if (expected !== payment.signature) {
+    if (!validRazorpaySignature(payment.razorpayOrderId, payment.paymentId, payment.signature)) {
       throw new HttpsError('permission-denied', 'Payment could not be verified');
     }
     const payRef = db.collection('payments').doc(payment.razorpayOrderId);
@@ -1157,7 +1266,15 @@ export const extendBooking = onCall({ region: REGION }, async (request) => {
       throw new HttpsError('failed-precondition', 'Extension price changed — refresh and try again');
     }
     paymentId = payment.paymentId;
-    await payRef.update({ status: 'paid', providerRef: paymentId, updatedAt: nowIso });
+    // One Razorpay payment extends a session exactly once (the webhook may already
+    // have set status=paid, so "applied" is tracked separately).
+    await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(payRef);
+      if (fresh.data()?.appliedAt) {
+        throw new HttpsError('already-exists', 'This payment has already been used for an extension');
+      }
+      tx.update(payRef, { status: 'paid', providerRef: paymentId, appliedAt: nowIso, updatedAt: nowIso });
+    });
   } else {
     paymentId = `demo_${randomBytes(6).toString('hex')}`;
     await db.collection('payments').doc(paymentId).set({
@@ -1328,12 +1445,18 @@ export const razorpayWebhook = onRequest(
       return;
     }
 
-    const secret = razorpayWebhookSecret.value() || razorpayKeySecret.value();
-    const signature = req.get('x-razorpay-signature') ?? '';
-    const body = typeof req.rawBody === 'string' ? req.rawBody : JSON.stringify(req.body);
-    const expected = createHmac('sha256', secret).update(body).digest('hex');
-
-    if (secret && signature && expected !== signature) {
+    // Webhooks are signed with the webhook secret set in the Razorpay dashboard.
+    // Unsigned or wrongly signed calls are rejected — they could otherwise mark orders paid.
+    const secret = razorpayWebhookSecret.value();
+    if (!secret) {
+      res.status(503).send('Webhook not configured');
+      return;
+    }
+    const signature = String(req.get('x-razorpay-signature') ?? '');
+    const raw: Buffer = Buffer.isBuffer(req.rawBody) ? req.rawBody : Buffer.from(JSON.stringify(req.body ?? {}));
+    const expected = Buffer.from(createHmac('sha256', secret).update(raw).digest('hex'));
+    const given = Buffer.from(signature);
+    if (!signature || expected.length !== given.length || !timingSafeEqual(expected, given)) {
       res.status(400).send('Invalid signature');
       return;
     }
@@ -1347,18 +1470,22 @@ export const razorpayWebhook = onRequest(
       if (razorpayOrderId) {
         const paySnap = await db.collection('payments').doc(razorpayOrderId).get();
         const payData = paySnap.data();
-        const orderIdFromPay = payData?.orderId as string | undefined;
-        const notesOrderId = orderEntity?.notes?.orderId as string | undefined;
-        const id = orderIdFromPay ?? notesOrderId;
-        if (paySnap.exists) {
+        // Only confirm orders we created a Razorpay order for, and only for the full amount.
+        const paidPaise = Number(paymentEntity?.amount ?? orderEntity?.amount_paid ?? 0);
+        const expectedPaise = Math.round((Number(payData?.amount) || 0) * 100);
+        if (!paySnap.exists || !payData?.orderId) {
+          logger.warn('Webhook for unknown Razorpay order', { razorpayOrderId, event });
+        } else if (paidPaise !== expectedPaise) {
+          logger.error('Webhook amount mismatch — not confirming', { razorpayOrderId, paidPaise, expectedPaise });
+        } else {
           await paySnap.ref.update({
             status: 'paid',
             providerRef: paymentEntity?.id ?? razorpayOrderId,
           });
-        }
-        // Extension payments top up an already-confirmed order — never re-confirm it.
-        if (id && payData?.kind !== 'extension') {
-          await confirmPaidOrderAdmin(id, paymentEntity?.id ?? razorpayOrderId);
+          // Extension payments top up an already-confirmed order — never re-confirm it.
+          if (payData.kind !== 'extension') {
+            await confirmPaidOrderAdmin(payData.orderId as string, paymentEntity?.id ?? razorpayOrderId);
+          }
         }
       }
     }
@@ -1369,9 +1496,17 @@ export const razorpayWebhook = onRequest(
         const paySnap = await db.collection('payments').doc(razorpayOrderId).get();
         const payData = paySnap.data();
         const id = payData?.orderId as string | undefined;
+        // A failed attempt can arrive after a later attempt on the same order succeeded
+        // (customer retried in the checkout). Never undo a paid order.
+        if (payData?.status === 'paid') {
+          res.status(200).json({ ok: true, ignored: 'already paid' });
+          return;
+        }
         if (paySnap.exists) await paySnap.ref.update({ status: 'failed' });
+        const orderPaid =
+          id && (await db.collection('orders').doc(id).get()).data()?.paymentStatus === 'paid';
         // A failed extension must not cancel the live order.
-        if (id && payData?.kind !== 'extension') {
+        if (id && !orderPaid && payData?.kind !== 'extension') {
           const orderRef = db.collection('orders').doc(id);
           const orderSnap = await orderRef.get();
           if (orderSnap.exists) {
@@ -1580,7 +1715,7 @@ function parsePlaceDetails(place: Record<string, unknown>): ParsedPlaceAddress {
     line1,
     line2: undefined,
     area: neighborhood || city,
-    city: city || 'Bengaluru',
+    city,
     pincode,
     state: state || undefined,
     lat: location?.latitude,
@@ -1619,10 +1754,9 @@ export const placesAutocomplete = onCall({ region: REGION }, async (request) => 
         },
       };
     } else {
-      // Bengaluru default bias
       body.locationBias = {
         circle: {
-          center: { latitude: 12.9716, longitude: 77.5946 },
+          center: { latitude: SERVICE_CENTER.lat, longitude: SERVICE_CENTER.lng },
           radius: 50000,
         },
       };
@@ -1703,3 +1837,51 @@ export const placeDetails = onCall({ region: REGION }, async (request) => {
     const place = (await res.json()) as Record<string, unknown>;
     return { place: parsePlaceDetails(place) };
   });
+
+/**
+ * Pin → address (incl. pincode). Runs server-side because Google refuses
+ * reverse geocoding with the app's website-restricted browser key.
+ */
+export const reverseGeocode = onCall({ region: REGION }, async (request) => {
+  requireAuth(request.auth?.uid);
+  const { lat, lng } = (request.data || {}) as { lat?: number; lng?: number };
+  const point = validLatLng(lat, lng);
+  if (!point) throw new HttpsError('invalid-argument', 'lat and lng required');
+  const key = googleMapsApiKey.value();
+  if (!key) throw new HttpsError('failed-precondition', 'Maps API key not configured');
+
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${point.lat},${point.lng}&region=in&language=en&key=${key}`;
+  const res = await fetch(url);
+  const data = (await res.json()) as {
+    status?: string;
+    error_message?: string;
+    results?: Array<{
+      formatted_address?: string;
+      address_components?: Array<{ long_name?: string; types?: string[] }>;
+    }>;
+  };
+  if (data.status !== 'OK' || !data.results?.length) {
+    logger.warn('reverseGeocode failed', { status: data.status, error: data.error_message });
+    return { address: null };
+  }
+  const best = data.results[0];
+  const comp = (type: string) =>
+    data.results
+      ?.flatMap((r) => r.address_components ?? [])
+      .find((c) => c.types?.includes(type))?.long_name ?? '';
+  const own = (type: string) => best.address_components?.find((c) => c.types?.includes(type))?.long_name ?? '';
+  const neighborhood = own('sublocality_level_1') || own('sublocality') || own('neighborhood');
+  const city = own('locality') || own('administrative_area_level_2') || own('postal_town');
+  const lineParts = [own('premise'), own('street_number'), own('route')].filter(Boolean);
+  return {
+    address: {
+      formattedAddress: best.formatted_address ?? '',
+      line1: lineParts.join(', ') || best.formatted_address?.split(',')[0]?.trim() || '',
+      area: neighborhood || city,
+      city,
+      // Rooftop results sometimes omit the postcode; the next result over usually has it.
+      pincode: (own('postal_code') || comp('postal_code')).replace(/\D/g, '').slice(0, 6),
+      state: own('administrative_area_level_1') || undefined,
+    },
+  };
+});

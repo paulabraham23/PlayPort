@@ -257,6 +257,9 @@ export interface Order {
   items: OrderItem[];
   subtotal: number;
   taxes: number;
+  /** Delivery + pickup charge set by the server: free ≤ 5 km, then ₹7/km on all 4 trips. */
+  deliveryFee?: number;
+  deliveryKm?: number;
   total: number;
   paymentMethodLabel: string;
   /** demo = no payment gateway was used; cod = collected at handover */

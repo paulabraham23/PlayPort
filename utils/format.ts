@@ -75,7 +75,8 @@ export function searchProducts<
 }
 
 export function calcCartTotals(
-  items: { unitPrice: number; quantity: number; addonsTotal?: number; addons?: { unitPrice: number; quantity: number }[] }[]
+  items: { unitPrice: number; quantity: number; addonsTotal?: number; addons?: { unitPrice: number; quantity: number }[] }[],
+  deliveryFee = 0
 ) {
   const itemsTotal = items.reduce((sum, item) => {
     const extras =
@@ -85,7 +86,7 @@ export function calcCartTotals(
   }, 0);
   const taxes = items.length ? Math.round(itemsTotal * 0.05) : 0;
   const sanitization = 0;
-  const delivery = 0;
+  const delivery = items.length ? Math.max(0, Math.round(deliveryFee)) : 0;
   const deposit = 0;
   const total = itemsTotal + taxes + sanitization + delivery + deposit;
   return { itemsTotal, taxes, sanitization, delivery, deposit, total, count: items.reduce((s, i) => s + i.quantity, 0) };

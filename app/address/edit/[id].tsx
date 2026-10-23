@@ -13,6 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { OutOfAreaNotice } from '@/components/address/OutOfAreaNotice';
 import { PlacesAutocomplete } from '@/components/address/PlacesAutocomplete';
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { LocationPinSection, type PinGuess } from '@/components/address/LocationPinSection';
@@ -22,11 +23,13 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
-import type { ResolvedPlaceAddress } from '@/lib/places';
+import { reverseGeocodeLatLng, type ResolvedPlaceAddress } from '@/lib/places';
 import { useAppStore } from '@/store/appStore';
 import { useFeelStore } from '@/store/feelStore';
 import { useLocationDraftStore } from '@/store/locationDraftStore';
 import { ensureLoggedIn } from '@/utils/authGate';
+import { listMissing, missingAddressFields } from '@/utils/addressForm';
+import { isInServiceArea, SERVICE_CITY } from '@/utils/serviceArea';
 import type { Address } from '@/types';
 
 const TYPES: Address['type'][] = ['home', 'work', 'other'];
@@ -48,7 +51,7 @@ export default function EditAddressScreen() {
   const [line1, setLine1] = useState(existing?.line1 ?? '');
   const [line2, setLine2] = useState(existing?.line2 ?? '');
   const [area, setArea] = useState(existing?.area ?? '');
-  const [city, setCity] = useState(existing?.city ?? 'Bengaluru');
+  const [city, setCity] = useState(existing?.city ?? SERVICE_CITY);
   const [pincode, setPincode] = useState(existing?.pincode ?? '');
   const [contactName, setContactName] = useState(existing?.contactName ?? '');
   const [phone, setPhone] = useState(existing?.phone ?? '');
@@ -134,6 +137,9 @@ export default function EditAddressScreen() {
     );
   }
 
+  const missing = missingAddressFields({ label, line1, area, city, pincode, contactName, phone });
+  const located = Boolean(pin) || pincode.trim().length >= 6;
+  const inArea = isInServiceArea({ lat: pin?.lat, lng: pin?.lng, pincode, city });
   const canSave =
     label.trim() &&
     line1.trim() &&
@@ -141,7 +147,8 @@ export default function EditAddressScreen() {
     city.trim() &&
     pincode.trim().length >= 6 &&
     contactName.trim() &&
-    phone.trim().length >= 10;
+    phone.trim().length >= 10 &&
+    inArea;
 
   const applyGuess = (guess?: PinGuess) => {
     if (!guess) return;
@@ -160,6 +167,13 @@ export default function EditAddressScreen() {
     if (Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
       setPin({ lat: place.lat as number, lng: place.lng as number });
       setPlaceId(place.placeId || undefined);
+      if (!place.pincode) {
+        void reverseGeocodeLatLng(place.lat as number, place.lng as number).then((rev) => {
+          if (!rev) return;
+          if (rev.pincode) setPincode(rev.pincode);
+          if (rev.city) setCity((v) => v || rev.city);
+        });
+      }
     }
   };
 
@@ -260,12 +274,12 @@ export default function EditAddressScreen() {
           <Field label="Address line 1" value={line1} onChangeText={setLine1} placeholder="Flat / Building" />
           <Field label="Address line 2" value={line2} onChangeText={setLine2} placeholder="Street (optional)" />
           <Field label="Area" value={area} onChangeText={setArea} placeholder="Banjara Hills" />
-          <Field label="City" value={city} onChangeText={setCity} placeholder="Bengaluru" />
+          <Field label="City" value={city} onChangeText={setCity} placeholder={SERVICE_CITY} />
           <Field
             label="Pincode"
             value={pincode}
             onChangeText={setPincode}
-            placeholder="560038"
+            placeholder="500034"
             keyboardType="number-pad"
             maxLength={6}
           />
@@ -298,6 +312,11 @@ export default function EditAddressScreen() {
               <View style={[styles.knob, isDefault && styles.knobOn]} />
             </View>
           </Pressable>
+
+          {located && !inArea ? <OutOfAreaNotice /> : null}
+          {missing.length && (!located || inArea) ? (
+            <Text style={styles.missing}>Add {listMissing(missing)} to continue.</Text>
+          ) : null}
 
           <Button
             title="Save Changes"
@@ -377,6 +396,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   inputMulti: { minHeight: 88, textAlignVertical: 'top' },
+  missing: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, textAlign: 'center' },
   typeRow: { flexDirection: 'row', gap: 8 },
   typeChip: {
     flex: 1,

@@ -12,6 +12,8 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
+import { useFeelStore } from '@/store/feelStore';
+import { isInServiceArea, OUT_OF_AREA_MESSAGE } from '@/utils/serviceArea';
 
 export default function AddressIndexScreen() {
   const { horizontalPadding } = useResponsive();
@@ -106,7 +108,13 @@ export default function AddressIndexScreen() {
                   key={address.id}
                   address={address}
                   selected={selected}
-                  onPress={() => selectAddress(address.id)}
+                  onPress={() => {
+                    if (!isInServiceArea(address)) {
+                      useFeelStore.getState().showToast(OUT_OF_AREA_MESSAGE);
+                      return;
+                    }
+                    selectAddress(address.id);
+                  }}
                   onEdit={() => router.push(`/address/edit/${address.id}`)}
                   onDelete={() => confirmDelete(address.id, address.label)}
                   actionLabel={actionLabel}

@@ -11,8 +11,9 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { reverseGeocodeLatLng, type ReverseGeocodedAddress } from '@/lib/places';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useLocationDraftStore } from '@/store/locationDraftStore';
+import { isInServiceArea, OUT_OF_AREA_MESSAGE, SERVICE_CENTER } from '@/utils/serviceArea';
 
-const FALLBACK = { lat: 12.9716, lng: 77.5946 }; // Bengaluru
+const FALLBACK = SERVICE_CENTER;
 
 /**
  * Zepto-style location capture: drag the map under a fixed pin, confirm the
@@ -83,7 +84,7 @@ export default function LocateAddressScreen() {
         if (rev) {
           const pin = String(rev.postalCode ?? '').replace(/\D/g, '').slice(0, 6);
           const area = rev.district ?? rev.subregion ?? rev.street ?? rev.name ?? '';
-          const city = rev.city ?? rev.region ?? 'Bengaluru';
+          const city = rev.city ?? rev.region ?? '';
           return {
             formattedAddress: rev.formattedAddress ?? '',
             line1: rev.name ?? rev.street ?? area,
@@ -122,8 +123,10 @@ export default function LocateAddressScreen() {
       });
   };
 
+  const outOfArea = center ? !isInServiceArea(center) : false;
+
   const onConfirm = async () => {
-    if (!center || confirming) return;
+    if (!center || confirming || outOfArea) return;
     setConfirming(true);
     try {
       // Never hand the form an empty address: resolve fresh for this exact spot.
@@ -205,11 +208,12 @@ export default function LocateAddressScreen() {
                   <Text style={styles.sheetSub}>Move the map to read the address here.</Text>
                 )}
                 {resolveError ? <Text style={styles.sheetError}>{resolveError}</Text> : null}
+                {outOfArea ? <Text style={styles.sheetError}>{OUT_OF_AREA_MESSAGE}</Text> : null}
               </View>
             </View>
             <Button
               title={confirming ? 'Locking this spot…' : 'Confirm this spot'}
-              disabled={!center || confirming || (resolving && !resolved)}
+              disabled={!center || confirming || outOfArea || (resolving && !resolved)}
               onPress={() => void onConfirm()}
             />
             <Text style={styles.hint}>

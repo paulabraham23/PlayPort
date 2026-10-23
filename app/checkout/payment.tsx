@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
+import { deliveryNoteFor, useDeliveryQuote } from '@/hooks/useDeliveryQuote';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
 import { ensureLoggedIn } from '@/utils/authGate';
@@ -38,6 +39,7 @@ export default function PaymentScreen() {
   const clearPaymentError = useAppStore((s) => s.clearPaymentError);
   const pendingOrderId = useAppStore((s) => s.pendingOrderId);
   const totals = useCartTotals();
+  const delivery = useDeliveryQuote();
   const [paying, setPaying] = useState(false);
   const [displayTotal, setDisplayTotal] = useState(totals.total);
 
@@ -93,7 +95,14 @@ export default function PaymentScreen() {
     );
   }
 
-  const amount = displayTotal || totals.total || 0;
+  const amount = (paying ? displayTotal : totals.total) || 0;
+  const deliveryReady = Boolean(pendingOrderId) || (delivery.status === 'ready' && Boolean(delivery.quote));
+  const deliveryLine =
+    delivery.status === 'ready' && delivery.quote
+      ? delivery.quote.fee > 0
+        ? `Includes ${formatINR(delivery.quote.fee)} delivery (${delivery.quote.km} km)`
+        : `Free delivery (${delivery.quote.km} km from hub)`
+      : deliveryNoteFor(delivery.status);
   const selectedMethod = paymentMethods.find((m) => m.id === selectedPaymentMethodId);
   const isCod = selectedMethod?.type === 'cod';
 
@@ -159,6 +168,7 @@ export default function PaymentScreen() {
         <View style={styles.summary}>
           <Text style={styles.summaryTitle}>Order total</Text>
           <Text style={styles.summaryTotal}>{formatINR(amount)}</Text>
+          <Text style={styles.summaryNote}>{deliveryLine}</Text>
           <Text style={styles.summaryNote}>
             {isCod
               ? 'Taxes included · pay the rider in cash or UPI at handover'
@@ -194,7 +204,7 @@ export default function PaymentScreen() {
               )
             }
             fullWidth
-            disabled={paying || !cart.length}
+            disabled={paying || !cart.length || !deliveryReady}
             onPress={() => pay(false)}
           />
           {__DEV__ ? (

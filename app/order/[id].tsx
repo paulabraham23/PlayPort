@@ -247,7 +247,12 @@ export default function OrderDetailScreen() {
 
         <Text style={styles.sectionTitle}>Payment</Text>
         <Card>
-          <PriceBreakdown itemsTotal={order.subtotal} taxes={order.taxes} total={order.total} />
+          <PriceBreakdown
+            itemsTotal={order.subtotal}
+            taxes={order.taxes}
+            total={order.total}
+            delivery={{ fee: order.deliveryFee ?? 0, km: order.deliveryKm }}
+          />
           <Text style={styles.payMethod}>
             {order.paymentStatus === 'cod'
               ? `Pay ${formatINR(order.total)} on delivery`

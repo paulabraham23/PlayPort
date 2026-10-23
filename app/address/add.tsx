@@ -17,15 +17,18 @@ import { LocationPinSection, type PinGuess } from '@/components/address/Location
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
+import { OutOfAreaNotice } from '@/components/address/OutOfAreaNotice';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
-import type { ResolvedPlaceAddress } from '@/lib/places';
+import { reverseGeocodeLatLng, type ResolvedPlaceAddress } from '@/lib/places';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { useLocationDraftStore } from '@/store/locationDraftStore';
 import { ensureLoggedIn, resolveAuthNext } from '@/utils/authGate';
+import { listMissing, missingAddressFields } from '@/utils/addressForm';
+import { isInServiceArea, SERVICE_CITY } from '@/utils/serviceArea';
 import type { Address } from '@/types';
 
 const TYPES: Address['type'][] = ['home', 'work', 'other'];
@@ -54,7 +57,7 @@ export default function AddAddressScreen() {
   const [line1, setLine1] = useState('');
   const [line2, setLine2] = useState('');
   const [area, setArea] = useState('');
-  const [city, setCity] = useState(hub?.city || 'Bengaluru');
+  const [city, setCity] = useState(hub?.city || SERVICE_CITY);
   const [pincode, setPincode] = useState('');
   const [contactName, setContactName] = useState(user?.name ?? '');
   const [phone, setPhone] = useState(phoneDigits);
@@ -114,6 +117,9 @@ export default function AddAddressScreen() {
     );
   }
 
+  const missing = missingAddressFields({ label, line1, area, city, pincode, contactName, phone });
+  const located = Boolean(pin) || pincode.trim().length >= 6;
+  const inArea = isInServiceArea({ lat: pin?.lat, lng: pin?.lng, pincode, city });
   const canSave =
     label.trim() &&
     line1.trim() &&
@@ -122,13 +128,14 @@ export default function AddAddressScreen() {
     pincode.trim().length >= 6 &&
     contactName.trim() &&
     phone.trim().length >= 10 &&
+    inArea &&
     !saving;
 
   const applyGuess = (guess?: PinGuess) => {
     if (!guess) return;
     if (guess.line1) setLine1((v) => v || guess.line1!);
     if (guess.area) setArea((v) => v || guess.area!);
-    if (guess.city) setCity((v) => (v === 'Bengaluru' || !v ? guess.city! : v));
+    if (guess.city) setCity((v) => (v === SERVICE_CITY || !v ? guess.city! : v));
     if (guess.pincode) setPincode((v) => v || guess.pincode!);
   };
 
@@ -144,6 +151,14 @@ export default function AddAddressScreen() {
     if (Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
       setPin({ lat: place.lat as number, lng: place.lng as number });
       setPlaceId(place.placeId || undefined);
+      // Area-level results ("Kachiguda") carry no postcode — read it off the pin.
+      if (!place.pincode) {
+        void reverseGeocodeLatLng(place.lat as number, place.lng as number).then((rev) => {
+          if (!rev) return;
+          if (rev.pincode) setPincode((v) => v || rev.pincode);
+          if (rev.city) setCity((v) => v || rev.city);
+        });
+      }
     }
   };
 
@@ -249,13 +264,13 @@ export default function AddAddressScreen() {
 
           <Field label="Address line 1" value={line1} onChangeText={setLine1} placeholder="Flat / Building" />
           <Field label="Address line 2" value={line2} onChangeText={setLine2} placeholder="Street (optional)" />
-          <Field label="Area" value={area} onChangeText={setArea} placeholder="Indiranagar" />
-          <Field label="City" value={city} onChangeText={setCity} placeholder="Bengaluru" />
+          <Field label="Area" value={area} onChangeText={setArea} placeholder="Banjara Hills" />
+          <Field label="City" value={city} onChangeText={setCity} placeholder={SERVICE_CITY} />
           <Field
             label="Pincode"
             value={pincode}
             onChangeText={setPincode}
-            placeholder="560038"
+            placeholder="500034"
             keyboardType="number-pad"
             maxLength={6}
           />
@@ -296,6 +311,11 @@ export default function AddAddressScreen() {
                 <View style={[styles.knob, isDefault && styles.knobOn]} />
               </View>
             </Pressable>
+          ) : null}
+
+          {located && !inArea ? <OutOfAreaNotice /> : null}
+          {missing.length && (!located || inArea) ? (
+            <Text style={styles.missing}>Add {listMissing(missing)} to continue.</Text>
           ) : null}
 
           <Button
@@ -369,6 +389,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   inputMulti: { minHeight: 88, textAlignVertical: 'top' },
+  missing: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 13, textAlign: 'center' },
   typeRow: { flexDirection: 'row', gap: 8 },
   typeChip: {
     flex: 1,

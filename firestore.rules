@@ -115,8 +115,20 @@ service cloud.firestore {
       // Claims go through the claimDeliveryOrder function only (server-time
       // payment/status/window checks). Riders may update their own jobs
       // (status, GPS, coords backfill) but never self-assign.
+      // Riders only touch delivery progress — never payment, prices, or who owns the run.
       allow update: if isOps()
-        || (isActiveRider() && resource.data.riderId == request.auth.uid);
+        || (isActiveRider()
+          && resource.data.riderId == request.auth.uid
+          && request.resource.data.riderId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'progressPercent', 'updatedAt', 'liveDispatch', 'completedAt',
+            'etaLabel', 'etaMinutes', 'etaSource', 'riderDistanceKm',
+            'riderLat', 'riderLng', 'riderLocationUpdatedAt',
+            'dropoffLat', 'dropoffLng',
+            'riderName', 'riderPhone', 'riderAcceptedAt'
+          ])
+          && request.resource.data.status in
+            ['preparing', 'out_for_delivery', 'delivered', 'active', 'returning', 'completed']);
     }
 
     match /riders/{riderId} {

@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
+import { reverseGeocodeLatLng } from '@/lib/places';
 
 export type PinGuess = {
   area?: string;
@@ -51,24 +52,34 @@ export function LocationPinSection({ lat, lng, onPinLocked, onPinCleared, onPick
       const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 
       // Best-effort text prefill; the coords are the source of truth either way.
+      // Google via the server first (works on web); the device geocoder is native-only.
       let guess: PinGuess | undefined;
-      try {
-        const [rev] = await Location.reverseGeocodeAsync({
-          latitude: coords.lat,
-          longitude: coords.lng,
-        });
-        if (rev) {
-          const pin = String(rev.postalCode ?? '').replace(/\D/g, '').slice(0, 6);
-          guess = {
-            area:
-              rev.district ?? rev.subregion ?? rev.street ?? undefined,
-            city: rev.city ?? rev.region ?? undefined,
-            pincode: pin || undefined,
-            line1: rev.name ?? rev.street ?? undefined,
-          };
+      const google = await reverseGeocodeLatLng(coords.lat, coords.lng).catch(() => null);
+      if (google) {
+        guess = {
+          area: google.area || undefined,
+          city: google.city || undefined,
+          pincode: google.pincode || undefined,
+          line1: google.line1 || undefined,
+        };
+      } else {
+        try {
+          const [rev] = await Location.reverseGeocodeAsync({
+            latitude: coords.lat,
+            longitude: coords.lng,
+          });
+          if (rev) {
+            const pin = String(rev.postalCode ?? '').replace(/\D/g, '').slice(0, 6);
+            guess = {
+              area: rev.district ?? rev.subregion ?? rev.street ?? undefined,
+              city: rev.city ?? rev.region ?? undefined,
+              pincode: pin || undefined,
+              line1: rev.name ?? rev.street ?? undefined,
+            };
+          }
+        } catch {
+          guess = undefined;
         }
-      } catch {
-        guess = undefined;
       }
       onPinLocked(coords, guess);
     } catch {

@@ -1,4 +1,5 @@
-import type { PlacesSuggestion, ResolvedPlaceAddress } from '@/lib/functions';
+import { callReverseGeocode, type PlacesSuggestion, type ResolvedPlaceAddress } from '@/lib/functions';
+import { SERVICE_CENTER } from '@/utils/serviceArea';
 
 export type { PlacesSuggestion, ResolvedPlaceAddress };
 
@@ -57,7 +58,7 @@ function parsePlaceDetails(place: Record<string, unknown>): ResolvedPlaceAddress
     line1,
     line2: undefined,
     area: neighborhood || city,
-    city: city || 'Bengaluru',
+    city,
     pincode,
     state: state || undefined,
     lat: location?.latitude,
@@ -91,7 +92,7 @@ export async function searchPlaces(
   } else {
     body.locationBias = {
       circle: {
-        center: { latitude: 12.9716, longitude: 77.5946 },
+        center: { latitude: SERVICE_CENTER.lat, longitude: SERVICE_CENTER.lng },
         radius: 50000,
       },
     };
@@ -147,12 +148,19 @@ export type ReverseGeocodedAddress = {
 
 /**
  * Zepto-style pin → address: turn confirmed map coords into address text.
- * Uses the legacy Geocoding API (same key as forward geocoding).
+ * Server first — Google rejects reverse geocoding with the website-restricted
+ * browser key — then the direct call for builds with an unrestricted key.
  */
 export async function reverseGeocodeLatLng(
   lat: number,
   lng: number
 ): Promise<ReverseGeocodedAddress | null> {
+  try {
+    const server = await callReverseGeocode({ lat, lng });
+    if (server) return server;
+  } catch {
+    // fall through to the direct call
+  }
   if (!PLACES_KEY) return null;
   try {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&region=in&language=en&key=${PLACES_KEY}`;
@@ -180,7 +188,7 @@ export async function reverseGeocodeLatLng(
       formattedAddress: best.formatted_address ?? '',
       line1: lineParts.join(', ') || best.formatted_address?.split(',')[0]?.trim() || '',
       area: neighborhood || city,
-      city: city || 'Bengaluru',
+      city,
       pincode,
       state: comp('administrative_area_level_1') || undefined,
     };

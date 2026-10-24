@@ -1,6 +1,8 @@
-/** Mirrors utils/serviceArea.ts — PlayPort delivers in Hyderabad only. */
-export const SERVICE_CENTER = { lat: 17.385, lng: 78.4867 };
-export const SERVICE_RADIUS_KM = 30;
+/** Mirrors utils/serviceArea.ts — PlayPort delivers within 15 km of the Kachiguda hub. */
+export const SERVICE_CENTER = { lat: 17.386683, lng: 78.4895742 };
+export const SERVICE_RADIUS_KM = 15;
+export const OUT_OF_AREA_ERROR =
+  'Sorry, we are not serviceable here. Delivery is available only within a 15 km radius of Kachiguda.';
 
 export function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
@@ -24,5 +26,5 @@ export function isDropoffInServiceArea(opts: {
   const pins = String(opts.addressFull ?? '').match(/\b\d{6}\b/g);
   const pin = pins?.[pins.length - 1];
   if (pin) return pin.startsWith('500');
-  return /\b(hyderabad|secunderabad|cyberabad)\b/i.test(opts.addressFull ?? '');
+  return /\b(hyderabad|secunderabad)\b/i.test(opts.addressFull ?? '');
 }

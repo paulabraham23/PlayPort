@@ -142,7 +142,11 @@ export function daySlots(dayStart: Date, now = new Date()): Date[] {
 }
 
 /** A scheduled start is valid when: in the future (+lead), inside 8 AM–12 AM IST, within MAX_ADVANCE_DAYS. */
-export function isValidScheduledStart(iso: string | null | undefined, now = new Date()): boolean {
+export function isValidScheduledStart(
+  iso: string | null | undefined,
+  now = new Date(),
+  hours?: number
+): boolean {
   if (!iso) return false;
   const t = new Date(iso).getTime();
   if (!Number.isFinite(t)) return false;
@@ -150,7 +154,22 @@ export function isValidScheduledStart(iso: string | null | undefined, now = new 
   const h = istHour(new Date(t));
   if (h < SERVICE_OPEN_HOUR || h >= SERVICE_CLOSE_HOUR) return false;
   if (t > now.getTime() + MAX_ADVANCE_DAYS * DAY_MS) return false;
+  if (hours != null && !rentalEndsInServiceHours(new Date(t), hours)) return false;
   return true;
+}
+
+/**
+ * Pickups run in service hours too, so a rental must end between 8:00 AM and
+ * 11:59 PM IST — e.g. a 3h rental starts by 8 PM, an 11 PM start needs 12h.
+ */
+export function rentalEndsInServiceHours(start: Date, hours: number): boolean {
+  const end = istDate(new Date(start.getTime() + hours * 60 * 60 * 1000));
+  return end.getUTCHours() >= SERVICE_OPEN_HOUR;
+}
+
+/** ASAP is offered only while open and when the rental would end in service hours. */
+export function isAsapAvailable(now: Date, hours: number): boolean {
+  return isServiceOpen(now) && rentalEndsInServiceHours(asapStart(now), hours);
 }
 
 const dayTimeFmt = new Intl.DateTimeFormat('en-IN', {

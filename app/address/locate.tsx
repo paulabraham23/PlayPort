@@ -11,7 +11,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { reverseGeocodeLatLng, type ReverseGeocodedAddress } from '@/lib/places';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useLocationDraftStore } from '@/store/locationDraftStore';
-import { isInServiceArea, OUT_OF_AREA_MESSAGE, SERVICE_CENTER } from '@/utils/serviceArea';
+import { isInServiceArea, OUT_OF_AREA_MESSAGE, OUT_OF_AREA_TITLE, SERVICE_CENTER } from '@/utils/serviceArea';
 
 const FALLBACK = SERVICE_CENTER;
 
@@ -208,7 +208,11 @@ export default function LocateAddressScreen() {
                   <Text style={styles.sheetSub}>Move the map to read the address here.</Text>
                 )}
                 {resolveError ? <Text style={styles.sheetError}>{resolveError}</Text> : null}
-                {outOfArea ? <Text style={styles.sheetError}>{OUT_OF_AREA_MESSAGE}</Text> : null}
+                {outOfArea ? (
+                  <Text style={styles.sheetError}>
+                    {OUT_OF_AREA_TITLE} {OUT_OF_AREA_MESSAGE}
+                  </Text>
+                ) : null}
               </View>
             </View>
             <Button

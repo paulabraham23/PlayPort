@@ -19,7 +19,7 @@ import { useAppStore, useCartTotals } from '@/store/appStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 import { isInServiceArea } from '@/utils/serviceArea';
-import { formatSlot, formatWindow, isValidScheduledStart } from '@/utils/serviceHours';
+import { formatSlot, formatWindow, isAsapAvailable, isValidScheduledStart } from '@/utils/serviceHours';
 
 export default function CheckoutScreen() {
   const { horizontalPadding } = useResponsive();
@@ -31,8 +31,9 @@ export default function CheckoutScreen() {
   const selectedAddressId = useAppStore((s) => s.selectedAddressId);
   const totals = useCartTotals();
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
-  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
   const maxHours = Math.max(1, ...cart.map((c) => c.hours ?? 3));
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), maxHours);
+  const timingOk = scheduledValid || (!scheduledStartAt && isAsapAvailable(new Date(), maxHours));
   const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
   const deliverable = Boolean(address) && isInServiceArea(address);
   const delivery = useDeliveryQuote();
@@ -168,11 +169,18 @@ export default function CheckoutScreen() {
               <View style={{ flex: 1 }}>
                 <View style={styles.timingHeader}>
                   <Text style={styles.timingLabel}>Express dropoff</Text>
-                  <Badge label="20–35 MINS" />
+                  {timingOk ? <Badge label="20–35 MINS" /> : null}
                 </View>
-                <Text style={styles.timingValue}>
-                  Rider heads out after payment — live minutes on Track once accepted.
-                </Text>
+                {timingOk ? (
+                  <Text style={styles.timingValue}>
+                    Rider heads out after payment — live minutes on Track once accepted.
+                  </Text>
+                ) : (
+                  <Text style={styles.timingWarn}>
+                    Too late for a {maxHours}h rental now — it would end after midnight, when we can’t pick
+                    up. Go back to the cart to schedule it or choose a longer plan.
+                  </Text>
+                )}
               </View>
             </View>
           )}
@@ -229,9 +237,9 @@ export default function CheckoutScreen() {
         <Button
           title="Continue to Payment"
           iconRight={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
-          disabled={!deliverable || !deliveryReady}
+          disabled={!deliverable || !deliveryReady || !timingOk}
           onPress={() => {
-            if (!deliverable || !deliveryReady) return;
+            if (!deliverable || !deliveryReady || !timingOk) return;
             router.push('/checkout/payment');
           }}
           style={styles.cta}
@@ -264,6 +272,7 @@ const styles = StyleSheet.create({
   timingHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   timingLabel: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.body },
   timingValue: { color: colors.primaryText, fontFamily: fonts.body, fontSize: typeScale.body, marginTop: 4 },
+  timingWarn: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: typeScale.body, marginTop: 4 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSubtle },
   returnBox: {
     alignSelf: 'flex-start',

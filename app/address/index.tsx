@@ -13,7 +13,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
-import { isInServiceArea, OUT_OF_AREA_MESSAGE } from '@/utils/serviceArea';
+import { isInServiceArea, OUT_OF_AREA_MESSAGE, OUT_OF_AREA_TITLE } from '@/utils/serviceArea';
 
 export default function AddressIndexScreen() {
   const { horizontalPadding } = useResponsive();
@@ -110,7 +110,7 @@ export default function AddressIndexScreen() {
                   selected={selected}
                   onPress={() => {
                     if (!isInServiceArea(address)) {
-                      useFeelStore.getState().showToast(OUT_OF_AREA_MESSAGE);
+                      useFeelStore.getState().showToast(`${OUT_OF_AREA_TITLE} ${OUT_OF_AREA_MESSAGE}`);
                       return;
                     }
                     selectAddress(address.id);

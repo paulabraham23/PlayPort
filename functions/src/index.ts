@@ -17,7 +17,7 @@ import {
   type FnCartItem,
   type FnProduct,
 } from './rentalPricing';
-import { isDropoffInServiceArea, SERVICE_CENTER } from './serviceArea';
+import { isDropoffInServiceArea, OUT_OF_AREA_ERROR, SERVICE_CENTER } from './serviceArea';
 import { DELIVERY_RATE_PER_KM, FREE_DELIVERY_KM, quoteDeliveryFee, TRIPS_PER_ORDER } from './delivery';
 
 initializeApp();
@@ -163,6 +163,11 @@ async function resolveHubId(requested?: string, userId?: string): Promise<string
   return active.docs[0].id;
 }
 
+/** Pickups run 8 AM – midnight IST, so a rental must end between 8:00 AM and 11:59 PM. */
+function endsInServiceHours(endMs: number): boolean {
+  return new Date(endMs + 5.5 * 60 * 60 * 1000).getUTCHours() >= 8;
+}
+
 function validLatLng(lat: unknown, lng: unknown): { lat: number; lng: number } | null {
   if (typeof lat !== 'number' || typeof lng !== 'number') return null;
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
@@ -187,7 +192,7 @@ export const quoteDelivery = onCall({ region: REGION }, async (request) => {
   const dropoff = validLatLng(lat, lng);
   if (!dropoff) throw new HttpsError('invalid-argument', 'Pin the address on the map first');
   if (!isDropoffInServiceArea(dropoff)) {
-    throw new HttpsError('failed-precondition', 'We only deliver in Hyderabad right now.');
+    throw new HttpsError('failed-precondition', OUT_OF_AREA_ERROR);
   }
   const hubId = await resolveHubId(requestedHubId, uid);
   const quote = await deliveryQuoteFor(hubId, dropoff);
@@ -341,10 +346,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
       addressFull,
     })
   ) {
-    throw new HttpsError(
-      'failed-precondition',
-      'We only deliver in Hyderabad right now. Choose a Hyderabad address.'
-    );
+    throw new HttpsError('failed-precondition', OUT_OF_AREA_ERROR);
   }
 
   const hubId = await resolveHubId(requestedHubId, uid);
@@ -467,6 +469,12 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
 
   const maxHours = Math.max(...cart.map((c) => cartItemHours(c)));
   const endAt = new Date(startAt.getTime() + maxHours * 60 * 60 * 1000);
+  if (!endsInServiceHours(endAt.getTime())) {
+    throw new HttpsError(
+      'failed-precondition',
+      `This ${maxHours}h rental would end after midnight, when we can’t pick up. Pick an earlier start or a longer plan.`
+    );
+  }
   const startMs = startAt.getTime();
   const endMs = endAt.getTime();
   const holdExpiresAt = new Date(now + HOLD_TTL_MS).toISOString();
@@ -1055,6 +1063,12 @@ async function computeExtensionQuote(orderId: string, extraHours: number) {
   const oldEndMs = new Date(order.endAt).getTime();
   if (Number.isNaN(oldEndMs)) throw new HttpsError('failed-precondition', 'Invalid order end time');
   const newEndMs = oldEndMs + extraHours * 60 * 60 * 1000;
+  if (!endsInServiceHours(newEndMs)) {
+    throw new HttpsError(
+      'failed-precondition',
+      'That extension would end after midnight, when we can’t pick up. Try fewer hours, or enough to reach 8 AM.'
+    );
+  }
   const newEndIso = new Date(newEndMs).toISOString();
 
   // Availability: every held unit must be free in [oldEnd, newEnd].

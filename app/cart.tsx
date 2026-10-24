@@ -22,7 +22,13 @@ import { useAppStore, useCartTotals } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
-import { formatSlot, formatWindow, isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
+import {
+  formatSlot,
+  formatWindow,
+  isAsapAvailable,
+  isServiceOpen,
+  isValidScheduledStart,
+} from '@/utils/serviceHours';
 import { addonsTotal, experiencePlans, isControllerAddon, normalizeProduct } from '@/utils/rentalPricing';
 import type { CartItem, Experience, Product, RentalPlan } from '@/types';
 
@@ -52,10 +58,9 @@ export default function CartScreen() {
   const delivery = useDeliveryQuote();
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
   const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
-  const [schedMode, setSchedMode] = useState<'asap' | 'scheduled'>('asap');
+  const [pickedMode, setSchedMode] = useState<'asap' | 'scheduled'>('asap');
   const now = useMemo(() => new Date(), []);
   const open = isServiceOpen(now);
-  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
 
   const locationLabel =
     hub?.city && hub.city !== '—' ? hub.city : 'Your hub';
@@ -76,6 +81,11 @@ export default function CartScreen() {
   }
 
   const maxHours = Math.max(1, ...cart.map((c) => c.hours ?? 3));
+  const asapOk = isAsapAvailable(now, maxHours);
+  const schedMode = asapOk ? pickedMode : 'scheduled';
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), maxHours);
+  const startTooLate =
+    Boolean(scheduledStartAt) && isValidScheduledStart(scheduledStartAt, new Date()) && !scheduledValid;
   const checkItems = expandCheckItems(
     cart.map((c) => ({
       productId: c.productId,
@@ -94,17 +104,17 @@ export default function CartScreen() {
       <View style={styles.modeRow}>
         <Pressable
           accessibilityRole="button"
-          disabled={!open}
+          disabled={!asapOk}
           onPress={() => {
             setSchedMode('asap');
             setScheduledStartAt(null);
           }}
-          style={[styles.modeChip, schedMode === 'asap' && styles.chipOn, !open && styles.chipOff]}
+          style={[styles.modeChip, schedMode === 'asap' && styles.chipOn, !asapOk && styles.chipOff]}
         >
           <Ionicons
             name="flash"
             size={14}
-            color={open && schedMode === 'asap' ? colors.playportOrange : colors.secondaryText}
+            color={asapOk && schedMode === 'asap' ? colors.playportOrange : colors.secondaryText}
           />
           <Text style={[styles.chipText, schedMode === 'asap' && styles.chipTextOn]}>
             ASAP · ~45 min
@@ -128,14 +138,29 @@ export default function CartScreen() {
 
       {!open ? (
         <Text style={styles.scheduleSub}>Closed 12–8 AM — pick a slot from 8 AM onwards.</Text>
+      ) : !asapOk ? (
+        <Text style={styles.scheduleSub}>
+          Too late for a {maxHours}h rental now — it would end after midnight. Schedule it, or pick a longer
+          plan above.
+        </Text>
       ) : null}
 
       {schedMode === 'scheduled' ? (
         <>
-          <ScheduleCalendar now={now} selectedIso={scheduledStartAt} onSelect={setScheduledStartAt} />
+          <ScheduleCalendar
+            now={now}
+            hours={maxHours}
+            selectedIso={scheduledStartAt}
+            onSelect={setScheduledStartAt}
+          />
           {scheduledValid && scheduledStartAt ? (
             <Text style={styles.scheduleTime}>
               {formatSlot(scheduledStartAt, now)} · {formatWindow(scheduledStartAt, maxHours)} ({maxHours}h)
+            </Text>
+          ) : startTooLate ? (
+            <Text style={styles.scheduleWarn}>
+              That start would end your {maxHours}h rental after midnight — pick an earlier time or change
+              the hours above.
             </Text>
           ) : (
             <Text style={styles.scheduleSub}>
@@ -362,6 +387,15 @@ export default function CartScreen() {
           <Text style={styles.finalPrice}>
             {formatINR(totals.total)} · {totals.count} Item{totals.count === 1 ? '' : 's'}
           </Text>
+          <Text style={styles.finalDelivery}>
+            {delivery.status === 'ready' && delivery.quote
+              ? delivery.quote.fee > 0
+                ? `Incl. ${formatINR(delivery.quote.fee)} delivery & pickup (${delivery.quote.km} km)`
+                : `Free delivery & pickup (${delivery.quote.km} km)`
+              : delivery.status === 'loading'
+                ? 'Working out delivery…'
+                : 'Delivery added at checkout'}
+          </Text>
         </View>
         <Button
           title="Proceed to Pay"
@@ -492,6 +526,8 @@ const styles = StyleSheet.create({
   scheduleLabel: { color: colors.mutedText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption, letterSpacing: 0.5 },
   scheduleTime: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg, marginTop: 2 },
   scheduleSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, marginTop: 2 },
+  scheduleWarn: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: typeScale.small, marginTop: 2 },
+  finalDelivery: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.caption, marginTop: 1 },
   scheduleDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSubtle },
   modeRow: { flexDirection: 'row', gap: 8 },
   modeChip: {

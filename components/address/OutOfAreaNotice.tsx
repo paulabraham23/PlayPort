@@ -1,25 +1,26 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
-import { OUT_OF_AREA_MESSAGE } from '@/utils/serviceArea';
+import { OUT_OF_AREA_MESSAGE, OUT_OF_AREA_TITLE } from '@/utils/serviceArea';
 
 interface Props {
-  /** Where the address is, e.g. "Indiranagar, Bengaluru". */
+  /** Where the address is, e.g. "Gachibowli, Hyderabad". */
   place?: string;
   actionLabel?: string;
   onAction?: () => void;
 }
 
-/** Shown wherever an address falls outside the Hyderabad delivery area. */
+/** Shown wherever an address falls outside the 15 km Kachiguda delivery radius. */
 export function OutOfAreaNotice({ place, actionLabel, onAction }: Props) {
   return (
     <View style={styles.box} accessibilityRole="alert">
       <Ionicons name="location-outline" size={18} color={colors.danger} />
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={styles.title}>
-          {place ? `We don’t deliver to ${place} yet` : 'This address is outside our delivery area'}
+        <Text style={styles.title}>{OUT_OF_AREA_TITLE}</Text>
+        <Text style={styles.sub}>
+          {place ? `${place} is outside our delivery area. ` : ''}
+          {OUT_OF_AREA_MESSAGE}
         </Text>
-        <Text style={styles.sub}>{OUT_OF_AREA_MESSAGE} Pick an address in Hyderabad to book.</Text>
         {actionLabel && onAction ? (
           <Pressable accessibilityRole="button" onPress={onAction} hitSlop={8} style={styles.action}>
             <Text style={styles.actionText}>{actionLabel}</Text>

@@ -7,6 +7,7 @@ import {
   daySlots,
   formatScheduleDay,
   formatSlotTime,
+  rentalEndsInServiceHours,
   scheduleDayKey,
 } from '@/utils/serviceHours';
 
@@ -16,10 +17,12 @@ interface Props {
   now: Date;
   selectedIso: string | null;
   onSelect: (iso: string) => void;
+  /** Rental length — start times that would end overnight are disabled. */
+  hours: number;
 }
 
 /** Month calendar of bookable days, with that day's hourly dropoff slots below. */
-export function ScheduleCalendar({ now, selectedIso, onSelect }: Props) {
+export function ScheduleCalendar({ now, selectedIso, onSelect, hours }: Props) {
   const months = useMemo(() => calendarMonths(now), [now]);
   const firstOpen = useMemo(
     () => months.flatMap((m) => m.cells).find((c) => c?.available) ?? null,
@@ -108,19 +111,30 @@ export function ScheduleCalendar({ now, selectedIso, onSelect }: Props) {
           <View style={styles.slotGrid}>
             {slots.map((slot) => {
               const iso = slot.toISOString();
-              const on = selectedIso === iso;
+              const fits = rentalEndsInServiceHours(slot, hours);
+              const on = fits && selectedIso === iso;
               return (
                 <Pressable
                   key={iso}
                   accessibilityRole="button"
+                  accessibilityState={{ selected: on, disabled: !fits }}
+                  disabled={!fits}
                   onPress={() => onSelect(iso)}
-                  style={[styles.slotChip, on && styles.chipOn]}
+                  style={[styles.slotChip, on && styles.chipOn, !fits && styles.slotOff]}
                 >
-                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{formatSlotTime(iso)}</Text>
+                  <Text style={[styles.chipText, on && styles.chipTextOn, !fits && styles.slotOffText]}>
+                    {formatSlotTime(iso)}
+                  </Text>
                 </Pressable>
               );
             })}
           </View>
+          {slots.some((slot) => !rentalEndsInServiceHours(slot, hours)) ? (
+            <Text style={styles.slotsNote}>
+              Greyed-out times would end your {hours}h rental after midnight. We pick up between 8 AM and
+              midnight, so choose an earlier start or a longer plan.
+            </Text>
+          ) : null}
         </>
       ) : null}
     </View>
@@ -169,6 +183,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   chipOn: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTint },
+  slotOff: { backgroundColor: colors.surfaceAlt, borderColor: colors.surfaceAlt },
+  slotOffText: { color: colors.border, textDecorationLine: 'line-through' },
+  slotsNote: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.small, lineHeight: 17 },
   chipText: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, fontSize: 13 },
   chipTextOn: { color: colors.primaryText },
 });

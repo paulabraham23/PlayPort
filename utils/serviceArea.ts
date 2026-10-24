@@ -1,11 +1,12 @@
 import { distanceKm } from '@/utils/geo';
 
-/** PlayPort delivers in Hyderabad only (Kachiguda hub, ~30 km radius). */
+/** PlayPort delivers within 15 km (straight line) of the Kachiguda hub. */
 export const SERVICE_CITY = 'Hyderabad';
-export const SERVICE_CENTER = { lat: 17.385, lng: 78.4867 };
-export const SERVICE_RADIUS_KM = 30;
+export const SERVICE_HUB_NAME = 'Kachiguda';
+export const SERVICE_CENTER = { lat: 17.386683, lng: 78.4895742 };
+export const SERVICE_RADIUS_KM = 15;
 
-const CITY_NAMES = /\b(hyderabad|secunderabad|cyberabad)\b/i;
+const CITY_NAMES = /\b(hyderabad|secunderabad)\b/i;
 
 export type ServiceAreaInput = {
   lat?: number | null;
@@ -15,8 +16,9 @@ export type ServiceAreaInput = {
 };
 
 /**
- * A map pin decides when present (pins are what riders drive to). Without one,
- * Hyderabad pincodes start with 500; the city name is the last resort.
+ * A map pin decides when present (pins are what riders drive to). Without one
+ * we can only guess from Hyderabad pincodes (500xxx) or the city name; checkout
+ * still needs a pin, and the server re-checks the 15 km radius from it.
  */
 export function isInServiceArea(place: ServiceAreaInput | null | undefined): boolean {
   if (!place) return false;
@@ -29,4 +31,5 @@ export function isInServiceArea(place: ServiceAreaInput | null | undefined): boo
   return CITY_NAMES.test(place.city ?? '');
 }
 
-export const OUT_OF_AREA_MESSAGE = `We only deliver in ${SERVICE_CITY} right now.`;
+export const OUT_OF_AREA_TITLE = 'Sorry, we are not serviceable here.';
+export const OUT_OF_AREA_MESSAGE = `Delivery is available only within a ${SERVICE_RADIUS_KM} km radius of ${SERVICE_HUB_NAME}.`;

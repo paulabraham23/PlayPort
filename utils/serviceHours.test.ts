@@ -10,6 +10,8 @@ import {
   isServiceOpen,
   isValidScheduledStart,
   nextOpenStart,
+  isAsapAvailable,
+  rentalEndsInServiceHours,
 } from './serviceHours';
 
 // Fixed reference: Monday 2026-10-12. IST = UTC + 5:30.
@@ -140,5 +142,30 @@ describe('isDispatchable (rider pool gating, 60-min lead)', () => {
     expect(isDispatchable({}, now)).toBe(true);
     expect(isDispatchable({ startAt: 'garbage' }, now)).toBe(true);
     expect(isDispatchable(null, now)).toBe(false);
+  });
+});
+
+describe('rentalEndsInServiceHours (pickup must land 8 AM – 11:59 PM IST)', () => {
+  const ist = (h: number, m = 0) => new Date(Date.UTC(2026, 9, 31, h, m) - 5.5 * 3600 * 1000);
+  it('lets a 3h rental start by 8 PM but not later', () => {
+    expect(rentalEndsInServiceHours(ist(20), 3)).toBe(true); // 8 PM → 11 PM
+    expect(rentalEndsInServiceHours(ist(21), 3)).toBe(false); // 9 PM → midnight
+    expect(rentalEndsInServiceHours(ist(23), 3)).toBe(false); // 11 PM → 2 AM
+  });
+  it('lets an 11 PM start through on plans that end after 8 AM', () => {
+    expect(rentalEndsInServiceHours(ist(23), 12)).toBe(true); // 11 PM → 11 AM
+    expect(rentalEndsInServiceHours(ist(23), 24)).toBe(true); // 11 PM → 11 PM
+    expect(rentalEndsInServiceHours(ist(23), 6)).toBe(false); // 11 PM → 5 AM
+  });
+  it('folds into isValidScheduledStart when hours are given', () => {
+    const now = ist(10);
+    expect(isValidScheduledStart(ist(23).toISOString(), now)).toBe(true);
+    expect(isValidScheduledStart(ist(23).toISOString(), now, 3)).toBe(false);
+    expect(isValidScheduledStart(ist(23).toISOString(), now, 12)).toBe(true);
+  });
+  it('turns ASAP off late in the evening for short plans', () => {
+    expect(isAsapAvailable(ist(18), 3)).toBe(true); // 6:45 PM → 9:45 PM
+    expect(isAsapAvailable(ist(22), 3)).toBe(false); // 10:45 PM → 1:45 AM
+    expect(isAsapAvailable(ist(22), 12)).toBe(true); // → 10:45 AM
   });
 });

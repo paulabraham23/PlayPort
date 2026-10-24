@@ -177,7 +177,11 @@ export default function ExperienceDetailScreen() {
           <AvailabilityBlock
             items={comboCheckItems}
             hubId={hub?.id}
-            startIso={scheduledValid ? (scheduledStartAt as string) : null}
+            startIso={
+              scheduledValid && isValidScheduledStart(scheduledStartAt, new Date(), plan?.hours ?? 12)
+                ? (scheduledStartAt as string)
+                : null
+            }
             onApplySlot={(iso) => {
               setScheduledStartAt(iso);
               showToast('Slot set — book the combo to lock it in');

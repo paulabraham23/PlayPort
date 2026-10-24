@@ -41,8 +41,8 @@ import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { calcCartTotals } from '@/utils/format';
 import { experienceImage } from '@/utils/images';
-import { isInServiceArea, OUT_OF_AREA_MESSAGE } from '@/utils/serviceArea';
-import { isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
+import { isInServiceArea, OUT_OF_AREA_MESSAGE, OUT_OF_AREA_TITLE } from '@/utils/serviceArea';
+import { isAsapAvailable, isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
 import { formatFunctionsError } from '@/utils/functionsError';
 import { isPlaceholderName } from '@/utils/onboarding';
 import {
@@ -764,13 +764,26 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!user?.id) return { ok: false, error: 'Sign in required' };
 
     // Scheduled start wins when valid; otherwise ASAP. Closed nights force scheduling.
+    // Pickups run 8 AM – midnight too, so the whole window must end in service hours.
     const now = new Date();
-    const scheduledOk = isValidScheduledStart(scheduledStartAt, now);
+    const hours = Math.max(1, ...cart.map((c) => c.hours ?? 3));
+    const scheduledOk = isValidScheduledStart(scheduledStartAt, now, hours);
     if (scheduledStartAt && !scheduledOk) {
-      return { ok: false, error: 'That slot passed — pick a new time.' };
+      return {
+        ok: false,
+        error: isValidScheduledStart(scheduledStartAt, now)
+          ? `That start would end your ${hours}h rental after midnight — pick an earlier time or a longer plan.`
+          : 'That slot passed — pick a new time.',
+      };
     }
     if (!isServiceOpen(now) && !scheduledOk) {
       return { ok: false, error: 'We’re closed 12–8 AM. Schedule for 8 AM onwards.' };
+    }
+    if (!scheduledOk && !isAsapAvailable(now, hours)) {
+      return {
+        ok: false,
+        error: `Too late for a ${hours}h rental now — it would end after midnight. Schedule it or pick a longer plan.`,
+      };
     }
     const startAt = scheduledOk
       ? new Date(scheduledStartAt as string).toISOString()
@@ -781,7 +794,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       return { ok: false, error: 'Add a delivery address before paying' };
     }
     if (!isInServiceArea(address)) {
-      return { ok: false, error: `${OUT_OF_AREA_MESSAGE} Choose a Hyderabad address.` };
+      return { ok: false, error: `${OUT_OF_AREA_TITLE} ${OUT_OF_AREA_MESSAGE}` };
     }
 
     if (!deliveryQuoteKey(address)) {

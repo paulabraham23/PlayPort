@@ -4,7 +4,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScheduleCalendar } from '@/components/booking/ScheduleCalendar';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useAppStore } from '@/store/appStore';
-import { formatSlot, formatWindow, isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
+import {
+  formatSlot,
+  formatWindow,
+  isAsapAvailable,
+  isServiceOpen,
+  isValidScheduledStart,
+} from '@/utils/serviceHours';
 
 interface Props {
   /** Longest rental window in the booking — drives the "ends at" preview. */
@@ -18,10 +24,16 @@ interface Props {
 export function SchedulePicker({ maxHours }: Props) {
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
   const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
-  const [schedMode, setSchedMode] = useState<'asap' | 'scheduled'>('asap');
+  const [pickedMode, setSchedMode] = useState<'asap' | 'scheduled'>('asap');
   const now = useMemo(() => new Date(), []);
   const open = isServiceOpen(now);
-  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
+  const asapOk = isAsapAvailable(now, maxHours);
+  const schedMode = asapOk ? pickedMode : 'scheduled';
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), maxHours);
+  const startTooLate =
+    Boolean(scheduledStartAt) &&
+    isValidScheduledStart(scheduledStartAt, new Date()) &&
+    !scheduledValid;
 
   return (
     <View style={styles.scheduleCard}>
@@ -29,17 +41,17 @@ export function SchedulePicker({ maxHours }: Props) {
       <View style={styles.modeRow}>
         <Pressable
           accessibilityRole="button"
-          disabled={!open}
+          disabled={!asapOk}
           onPress={() => {
             setSchedMode('asap');
             setScheduledStartAt(null);
           }}
-          style={[styles.modeChip, schedMode === 'asap' && styles.chipOn, !open && styles.chipOff]}
+          style={[styles.modeChip, schedMode === 'asap' && styles.chipOn, !asapOk && styles.chipOff]}
         >
           <Ionicons
             name="flash"
             size={14}
-            color={open && schedMode === 'asap' ? colors.playportOrange : colors.secondaryText}
+            color={asapOk && schedMode === 'asap' ? colors.playportOrange : colors.secondaryText}
           />
           <Text style={[styles.chipText, schedMode === 'asap' && styles.chipTextOn]}>
             ASAP · ~45 min
@@ -63,14 +75,29 @@ export function SchedulePicker({ maxHours }: Props) {
 
       {!open ? (
         <Text style={styles.scheduleSub}>Closed 12–8 AM — pick a slot from 8 AM onwards.</Text>
+      ) : !asapOk ? (
+        <Text style={styles.scheduleSub}>
+          Too late for a {maxHours}h rental now — it would end after midnight. Schedule it, or pick a longer
+          plan.
+        </Text>
       ) : null}
 
       {schedMode === 'scheduled' ? (
         <>
-          <ScheduleCalendar now={now} selectedIso={scheduledStartAt} onSelect={setScheduledStartAt} />
+          <ScheduleCalendar
+            now={now}
+            hours={maxHours}
+            selectedIso={scheduledStartAt}
+            onSelect={setScheduledStartAt}
+          />
           {scheduledValid && scheduledStartAt ? (
             <Text style={styles.scheduleTime}>
               {formatSlot(scheduledStartAt, now)} · {formatWindow(scheduledStartAt, maxHours)} ({maxHours}h)
+            </Text>
+          ) : startTooLate ? (
+            <Text style={styles.scheduleWarn}>
+              That start would end your {maxHours}h rental after midnight — pick an earlier time or a longer
+              plan.
             </Text>
           ) : (
             <Text style={styles.scheduleSub}>
@@ -100,6 +127,7 @@ const styles = StyleSheet.create({
   scheduleLabel: { color: colors.mutedText, fontFamily: fonts.bodyMedium, fontSize: typeScale.caption, letterSpacing: 0.5 },
   scheduleTime: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.bodyLg, marginTop: 2 },
   scheduleSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small, marginTop: 2 },
+  scheduleWarn: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: typeScale.small, marginTop: 2 },
   modeRow: { flexDirection: 'row', gap: 8 },
   modeChip: {
     flex: 1,

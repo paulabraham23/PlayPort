@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { formatAddressLine } from '@/utils/format';
-import { isInServiceArea, SERVICE_CITY } from '@/utils/serviceArea';
+import { isInServiceArea } from '@/utils/serviceArea';
 import type { Address } from '@/types';
 
 interface Props {
@@ -51,7 +51,7 @@ export function AddressCard({
               ) : null}
               {!serviceable ? (
                 <Badge
-                  label={`OUTSIDE ${SERVICE_CITY.toUpperCase()}`}
+                  label="NOT SERVICEABLE"
                   color={colors.danger}
                   backgroundColor={colors.dangerBg}
                 />

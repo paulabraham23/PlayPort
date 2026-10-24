@@ -23,6 +23,7 @@ import { useFeelStore } from '@/store/feelStore';
 import { formatINR, formatReturnLabel } from '@/utils/format';
 import { formatFunctionsError } from '@/utils/functionsError';
 import { normalizeProduct, priceForHourly } from '@/utils/rentalPricing';
+import { rentalEndsInServiceHours } from '@/utils/serviceHours';
 
 const OPTIONS = [1, 2, 3, 6, 12];
 
@@ -64,6 +65,15 @@ export default function ExtendOrderScreen() {
 
   const extendable =
     Boolean(order) && order!.paymentStatus === 'paid' && isExtendableStatus(order!.status);
+
+  // Start on an option that doesn't end overnight (e.g. +1h from 11 PM is out).
+  const endAt = order?.endAt;
+  useEffect(() => {
+    if (!endAt) return;
+    const fitting = OPTIONS.filter((h) => rentalEndsInServiceHours(new Date(endAt), h));
+    if (fitting.length && !fitting.includes(hours)) setHours(fitting[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endAt]);
 
   const estimate = useMemo(() => {
     if (!order) return 0;
@@ -212,14 +222,16 @@ export default function ExtendOrderScreen() {
         <Text style={styles.sectionSub}>Priced from the same kit plans · availability checked live</Text>
         <View style={styles.grid}>
           {OPTIONS.map((h) => {
-            const active = hours === h;
+            const fits = !order.endAt || rentalEndsInServiceHours(new Date(order.endAt), h);
+            const active = fits && hours === h;
             return (
               <Pressable
                 key={h}
                 accessibilityRole="radio"
-                accessibilityState={{ selected: active }}
+                accessibilityState={{ selected: active, disabled: !fits }}
+                disabled={!fits}
                 onPress={() => setHours(h)}
-                style={[styles.opt, active && styles.optActive]}
+                style={[styles.opt, active && styles.optActive, !fits && styles.optOff]}
               >
                 <Text style={[styles.optHours, active && styles.optHoursActive]}>+{h}h</Text>
                 <Text style={[styles.optPrice, active && styles.optPriceActive]}>
@@ -229,6 +241,11 @@ export default function ExtendOrderScreen() {
             );
           })}
         </View>
+        {order.endAt && OPTIONS.some((h) => !rentalEndsInServiceHours(new Date(order.endAt!), h)) ? (
+          <Text style={styles.sectionSub}>
+            Greyed-out options would end after midnight, when we can’t pick up.
+          </Text>
+        ) : null}
 
         <Card style={styles.quote}>
           {quoting ? (
@@ -319,6 +336,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   optActive: { borderColor: colors.playportOrange, backgroundColor: colors.orangeTint, borderWidth: 1.5 },
+  optOff: { opacity: 0.35 },
   optHours: { color: colors.primaryText, fontFamily: fonts.heading, fontSize: 20 },
   optHoursActive: { color: colors.playportOrange },
   optPrice: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: typeScale.small },

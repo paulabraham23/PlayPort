@@ -10,7 +10,7 @@ import {
   windowLabel,
   type SlotCheckItem,
 } from '@/lib/availability';
-import { isServiceOpen } from '@/utils/serviceHours';
+import { isAsapAvailable, isServiceOpen } from '@/utils/serviceHours';
 
 interface Props {
   items: SlotCheckItem[];
@@ -49,7 +49,7 @@ export function AvailabilityBlock({ items, hubId, startIso, onApplySlot }: Props
     const now = new Date();
     const startedAt = Date.now();
     const start = startIso ?? asapWindowStart(now);
-    if (!startIso && !isServiceOpen(now)) {
+    if (!startIso && !isAsapAvailable(now, Math.max(1, ...items.map((i) => i.hours)))) {
       setState({ kind: 'closed' });
       return;
     }
@@ -162,8 +162,14 @@ export function AvailabilityBlock({ items, hubId, startIso, onApplySlot }: Props
         <View style={[styles.card, styles.soldCard]}>
           <IoniconsIcon name="moon-outline" size={20} color={colors.secondaryText} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.soldTitle}>We’re closed 12–8 AM.</Text>
-            <Text style={styles.soldSub}>ASAP resumes at 8 AM — or schedule a slot ahead.</Text>
+            <Text style={styles.soldTitle}>
+              {isServiceOpen(new Date()) ? 'Too late for ASAP on this plan.' : 'We’re closed 12–8 AM.'}
+            </Text>
+            <Text style={styles.soldSub}>
+              {isServiceOpen(new Date())
+                ? 'It would end after midnight, when we can’t pick up. Schedule a slot or pick a longer plan.'
+                : 'ASAP resumes at 8 AM — or schedule a slot ahead.'}
+            </Text>
           </View>
         </View>
       ) : null}

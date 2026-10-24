@@ -246,7 +246,11 @@ export default function ProductDetailScreen() {
           <AvailabilityBlock
             items={[{ productId: product.id, hours, name: product.shortName }]}
             hubId={hub?.id}
-            startIso={scheduledValid ? (scheduledStartAt as string) : null}
+            startIso={
+              scheduledValid && isValidScheduledStart(scheduledStartAt, new Date(), hours)
+                ? (scheduledStartAt as string)
+                : null
+            }
             onApplySlot={(iso) => {
               setScheduledStartAt(iso);
               showToast('Slot set — add to cart to book it');

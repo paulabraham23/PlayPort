@@ -96,8 +96,6 @@ export default function TabsLayout() {
         name="experiences"
         options={{
           title: 'Experiences',
-          // Placeholder route kept for deep links — combos tab is the real surface.
-          tabBarButton: () => null,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               name={focused ? 'sparkles' : 'sparkles-outline'}

@@ -9,6 +9,8 @@ import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/Sticky
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
+import { TermsAcceptance } from '@/components/legal/TermsAcceptance';
+import { LEGAL_VERSION } from '@/constants/legal';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { deliveryNoteFor, useDeliveryQuote } from '@/hooks/useDeliveryQuote';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -42,6 +44,7 @@ export default function PaymentScreen() {
   const delivery = useDeliveryQuote();
   const [paying, setPaying] = useState(false);
   const [displayTotal, setDisplayTotal] = useState(totals.total);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     if (authReady && !isAuthenticated) {
@@ -55,7 +58,7 @@ export default function PaymentScreen() {
     setDisplayTotal(totals.total);
     clearPaymentError();
     try {
-      const result = await placeOrder(fail);
+      const result = await placeOrder(fail, { termsVersion: termsAccepted ? LEGAL_VERSION : undefined });
       if (result.ok && result.orderId) {
         router.replace({ pathname: '/checkout/confirmation', params: { id: result.orderId } });
         return;
@@ -96,6 +99,7 @@ export default function PaymentScreen() {
   }
 
   const amount = (paying ? displayTotal : totals.total) || 0;
+  const termsOk = termsAccepted;
   const deliveryReady = Boolean(pendingOrderId) || (delivery.status === 'ready' && Boolean(delivery.quote));
   const deliveryLine =
     delivery.status === 'ready' && delivery.quote
@@ -176,6 +180,8 @@ export default function PaymentScreen() {
           </Text>
         </View>
 
+        <TermsAcceptance accepted={termsAccepted} onChange={setTermsAccepted} />
+
         {paymentError ? (
           <ErrorState
             title="Payment failed"
@@ -204,9 +210,12 @@ export default function PaymentScreen() {
               )
             }
             fullWidth
-            disabled={paying || !cart.length || !deliveryReady}
+            disabled={paying || !cart.length || !deliveryReady || !termsOk}
             onPress={() => pay(false)}
           />
+          {!termsOk ? (
+            <Text style={styles.termsHint}>Tick the box above to accept the Terms and continue.</Text>
+          ) : null}
           {__DEV__ ? (
             <Button
               title="Simulate failure"
@@ -293,4 +302,11 @@ const styles = StyleSheet.create({
   summaryNote: { color: colors.mutedText, fontFamily: fonts.body, fontSize: typeScale.small },
   stickyBar: { flexDirection: 'column', alignItems: 'stretch' },
   stickyCol: { width: '100%' },
+  termsHint: {
+    color: colors.mutedText,
+    fontFamily: fonts.body,
+    fontSize: typeScale.caption,
+    textAlign: 'center',
+    marginTop: 6,
+  },
 });

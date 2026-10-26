@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { BUSINESS } from '@/constants/legal';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
@@ -95,7 +96,7 @@ export default function CancelOrderScreen() {
         <EmptyState
           icon="bicycle-outline"
           title="Delivery partner assigned"
-          subtitle={`${order.riderName ?? 'Your rider'} has already accepted this run, so #${order.id} can no longer be cancelled. Reach out to support if you need help.`}
+          subtitle={`${order.riderName ?? 'Your rider'} has already accepted this run, so #${order.id} can't be cancelled in the app. WhatsApp us at ${BUSINESS.phone} to cancel or reschedule — it's free until we dispatch; after that a ₹${BUSINESS.failedDeliveryFee} failed-delivery fee may apply.`}
           actionLabel="Contact support"
           onAction={() => router.push('/profile/help')}
         />
@@ -180,8 +181,15 @@ export default function CancelOrderScreen() {
           </View>
           <Text style={styles.refundBody}>
             {order.paymentStatus === 'cod'
-              ? 'Free cancellation until a delivery partner is assigned. Nothing was charged, so there is nothing to refund.'
-              : `Free cancellation until a delivery partner is assigned. Full amount of ${formatINR(order.total)} returns to ${order.paymentMethodLabel} in 3–5 business days.`}
+              ? 'Free cancellation before dispatch. Nothing was charged, so there is nothing to refund.'
+              : `Free cancellation before dispatch. The full ${formatINR(order.total)} goes back to your original payment method within 7 working days; your bank may take a few extra days to show it.`}
+          </Text>
+          <Text
+            style={styles.refundLink}
+            accessibilityRole="link"
+            onPress={() => router.push('/legal/refunds' as never)}
+          >
+            Read the Refund & Cancellation Policy
           </Text>
         </Card>
 
@@ -237,6 +245,13 @@ const styles = StyleSheet.create({
   refund: { gap: spacing.sm },
   refundHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   refundTitle: { color: colors.primaryText, fontFamily: fonts.headingMedium, fontSize: 15 },
+  refundLink: {
+    color: colors.playportOrange,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    marginTop: 6,
+    textDecorationLine: 'underline',
+  },
   refundBody: {
     color: colors.secondaryText,
     fontFamily: fonts.body,

@@ -5,6 +5,7 @@ import { Screen } from '@/components/layout/Screen';
 import { ServiceAreaBanner } from '@/components/layout/ServiceAreaBanner';
 import { ServiceHoursBanner } from '@/components/layout/ServiceHoursBanner';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
+import { LegalLinks } from '@/components/legal/LegalLinks';
 import { ProductCard } from '@/components/products/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, layout, spacing, typeScale } from '@/constants/theme';
@@ -127,6 +128,7 @@ export default function HomeScreen() {
                   <View key={product.id}>{renderCard(product)}</View>
                 ))}
               </ResponsiveGrid>
+              <LegalLinks />
             </>
           ) : (
             <>
@@ -137,6 +139,7 @@ export default function HomeScreen() {
                 {renderCard(product)}
               </View>
               ))}
+              <LegalLinks />
             </>
           )
         ) : products.length ? null : (

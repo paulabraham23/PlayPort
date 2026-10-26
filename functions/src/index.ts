@@ -24,6 +24,8 @@ initializeApp();
 const db = getFirestore();
 
 const REGION = 'asia-south1';
+/** Must match constants/legal.ts LEGAL_VERSION — bump both when the policies change. */
+const LEGAL_VERSION = '2026-10-26';
 /** Payment hold TTL before inventory is released automatically. */
 const HOLD_TTL_MS = 15 * 60 * 1000;
 
@@ -316,6 +318,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     total,
     startAt: startAtInput,
     payOnDelivery,
+    termsVersion,
   } = request.data as {
     hubId?: string;
     cart: CartItem[];
@@ -329,7 +332,16 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     total: number;
     startAt?: string;
     payOnDelivery?: boolean;
+    termsVersion?: string;
   };
+
+  // Terms 3.7: the checkout tick is the customer's agreement; we keep the version and time.
+  if (termsVersion !== LEGAL_VERSION) {
+    throw new HttpsError(
+      'failed-precondition',
+      'Please review and accept the latest Terms & Conditions, Refund Policy and Privacy Policy to book.'
+    );
+  }
 
   const isCod = payOnDelivery === true;
 
@@ -594,6 +606,8 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     deliveryKm: delivery.km,
     deliveryDistanceMethod: delivery.method,
     total: expectedTotal,
+    termsVersion: LEGAL_VERSION,
+    termsAcceptedAt: nowIso,
     paymentMethodLabel,
     progressPercent: isCod ? 20 : 10,
     setupIncluded: true,
@@ -609,6 +623,11 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
   };
 
   batch.set(db.collection('orders').doc(id), order);
+  batch.set(
+    db.collection('users').doc(uid),
+    { legalAcceptance: { version: LEGAL_VERSION, acceptedAt: nowIso, orderId: id } },
+    { merge: true }
+  );
   await batch.commit();
 
   await pushNotification(uid, {

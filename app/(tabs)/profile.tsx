@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { Screen } from '@/components/layout/Screen';
+import { LegalLinks } from '@/components/legal/LegalLinks';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -111,6 +112,14 @@ export default function ProfileScreen() {
           { label: 'Settings', icon: 'settings-outline', href: '/profile/settings' },
         ],
       },
+      {
+        title: 'Legal',
+        items: [
+          { label: 'Terms & Conditions', icon: 'document-text-outline', href: '/legal/terms' },
+          { label: 'Privacy Policy', icon: 'lock-closed-outline', href: '/legal/privacy' },
+          { label: 'Refund & Cancellation Policy', icon: 'return-down-back-outline', href: '/legal/refunds' },
+        ],
+      },
     ];
     if (isAdmin) {
       base.unshift({
@@ -143,6 +152,7 @@ export default function ProfileScreen() {
             </Text>
             <Button title="Log in" fullWidth onPress={() => router.push('/(auth)/login')} />
           </Card>
+          <LegalLinks />
         </ScrollView>
       </Screen>
     );

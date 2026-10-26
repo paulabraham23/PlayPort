@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors, fonts, spacing } from '@/constants/theme';
 import { FAQS, HELP_TOPICS } from '@/constants/helpContent';
+import { BUSINESS } from '@/constants/legal';
+import { LegalLinks } from '@/components/legal/LegalLinks';
 import { useResponsive } from '@/hooks/useResponsive';
 
 export default function HelpScreen() {
@@ -15,16 +17,22 @@ export default function HelpScreen() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
 
-  const contactSupport = async () => {
-    const url = 'mailto:support@playport.app?subject=PlayPort%20Support';
+  const open = async (url: string, fallback: string) => {
     try {
       const can = await Linking.canOpenURL(url);
       if (can) await Linking.openURL(url);
-      else Alert.alert('Contact support', 'Email us at support@playport.app');
+      else Alert.alert('Contact support', fallback);
     } catch {
-      Alert.alert('Contact support', 'Email us at support@playport.app');
+      Alert.alert('Contact support', fallback);
     }
   };
+  const whatsappSupport = () =>
+    open(
+      `https://wa.me/91${BUSINESS.phone}?text=${encodeURIComponent('Hi PlayPort, I need help with my booking.')}`,
+      `WhatsApp us at ${BUSINESS.phone}`
+    );
+  const emailSupport = () =>
+    open(`mailto:${BUSINESS.email}?subject=PlayPort%20Support`, `Email us at ${BUSINESS.email}`);
 
   return (
     <Screen showHeader={false}>
@@ -86,11 +94,23 @@ export default function HelpScreen() {
         </Card>
 
         <Button
-          title="Contact support"
+          title={`WhatsApp us · ${BUSINESS.phone}`}
           fullWidth
-          icon={<Ionicons name="mail-outline" size={18} color={colors.white} />}
-          onPress={contactSupport}
+          icon={<Ionicons name="logo-whatsapp" size={18} color={colors.white} />}
+          onPress={() => void whatsappSupport()}
         />
+        <Button
+          title={`Email ${BUSINESS.email}`}
+          variant="secondary"
+          fullWidth
+          icon={<Ionicons name="mail-outline" size={18} color={colors.primaryText} />}
+          onPress={() => void emailSupport()}
+        />
+        <Text style={styles.grievance}>
+          Grievance Officer: {BUSINESS.grievanceOfficer} · {BUSINESS.address}. We acknowledge complaints within 2
+          working days and aim to resolve them within 30 days.
+        </Text>
+        <LegalLinks showContact={false} />
       </ScrollView>
     </Screen>
   );
@@ -120,6 +140,7 @@ const styles = StyleSheet.create({
   topicTitle: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: 15 },
   topicSub: { color: colors.secondaryText, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
   faqBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSubtle },
+  grievance: { color: colors.mutedText, fontFamily: fonts.body, fontSize: 12, lineHeight: 17, textAlign: 'center' },
   faqHead: {
     flexDirection: 'row',
     alignItems: 'center',

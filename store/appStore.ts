@@ -148,7 +148,10 @@ interface AppState {
   setDefaultAddress: (id: string) => void;
 
   selectPaymentMethod: (id: string) => void;
-  placeOrder: (fail?: boolean) => Promise<{ ok: boolean; orderId?: string; error?: string }>;
+  placeOrder: (
+    fail?: boolean,
+    opts?: { termsVersion?: string }
+  ) => Promise<{ ok: boolean; orderId?: string; error?: string }>;
   cancelOrder: (orderId: string, reason: string) => Promise<void>;
   completeReturn: (orderId: string) => Promise<void>;
   applyOrderExtension: (orderId: string, patch: Partial<Order>) => void;
@@ -758,7 +761,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   selectPaymentMethod: (id) => set({ selectedPaymentMethodId: id, paymentError: null }),
 
-  placeOrder: async (fail = false) => {
+  placeOrder: async (fail = false, opts) => {
     const { cart, addresses, selectedAddressId, selectedPaymentMethodId, paymentMethods, user, pendingOrderId, scheduledStartAt } =
       get();
     if (!user?.id) return { ok: false, error: 'Sign in required' };
@@ -828,7 +831,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Resume unpaid hold if we already created a booking this session.
       if (!orderId) {
         if (!cartSnapshot.length) return { ok: false, error: 'Cart is empty' };
+        if (!opts?.termsVersion) {
+          return { ok: false, error: 'Please accept the Terms & Conditions to place your order.' };
+        }
         const booking = await callCreateBooking({
+          termsVersion: opts.termsVersion,
           hubId,
           cart: cartSnapshot,
           addressLabel: address.label || 'Home',

@@ -26,6 +26,8 @@ export type CreateBookingInput = {
   startAt?: string;
   /** Confirm immediately and collect cash at handover (skips Razorpay). */
   payOnDelivery?: boolean;
+  /** Version of the Terms/Privacy/Refund policies the customer ticked at checkout. */
+  termsVersion: string;
 };
 
 export type CreateBookingResult = {

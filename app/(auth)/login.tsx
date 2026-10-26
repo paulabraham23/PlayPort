@@ -146,7 +146,19 @@ export default function LoginScreen() {
           </Pressable>
 
           <Text style={styles.terms}>
-            By continuing, you agree to PlayPort’s Terms of Service and Privacy Policy.
+            By continuing, you confirm you are 18 or older and agree to PlayPort’s{' '}
+            <Text style={styles.termsLink} onPress={() => router.push('/legal/terms' as never)}>
+              Terms & Conditions
+            </Text>
+            ,{' '}
+            <Text style={styles.termsLink} onPress={() => router.push('/legal/privacy' as never)}>
+              Privacy Policy
+            </Text>{' '}
+            and{' '}
+            <Text style={styles.termsLink} onPress={() => router.push('/legal/refunds' as never)}>
+              Refund & Cancellation Policy
+            </Text>
+            .
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -274,4 +286,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 'auto',
   },
+  termsLink: { color: colors.secondaryText, fontFamily: fonts.bodyMedium, textDecorationLine: 'underline' },
 });

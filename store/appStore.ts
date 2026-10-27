@@ -765,6 +765,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { cart, addresses, selectedAddressId, selectedPaymentMethodId, paymentMethods, user, pendingOrderId, scheduledStartAt } =
       get();
     if (!user?.id) return { ok: false, error: 'Sign in required' };
+    if (useCatalogStore.getState().orderingPaused) {
+      return { ok: false, error: 'We’re not taking new orders right now. Please check back soon.' };
+    }
 
     // Scheduled start wins when valid; otherwise ASAP. Closed nights force scheduling.
     // Pickups run 8 AM – midnight too, so the whole window must end in service hours.

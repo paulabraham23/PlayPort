@@ -11,6 +11,7 @@ import { expandCheckItems } from '@/lib/availability';
 import { ControllerAddonRow } from '@/components/products/ControllerAddonRow';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { OrderingPausedBanner } from '@/components/layout/OrderingPausedBanner';
 import { ServiceHoursBanner } from '@/components/layout/ServiceHoursBanner';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
 import { Button } from '@/components/ui/Button';
@@ -54,6 +55,7 @@ export default function CartScreen() {
   const products = useCatalogStore((s) => s.products);
   const experiences = useCatalogStore((s) => s.experiences);
   const hub = useCatalogStore((s) => s.hub);
+  const orderingPaused = useCatalogStore((s) => s.orderingPaused);
   const totals = useCartTotals();
   const delivery = useDeliveryQuote();
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
@@ -189,6 +191,7 @@ export default function CartScreen() {
 
   const itemsColumn = (
     <>
+      <OrderingPausedBanner />
       <ServiceHoursBanner />
       <View style={styles.promise}>
         <Ionicons name="flash" size={18} color={colors.etaText} />
@@ -398,9 +401,11 @@ export default function CartScreen() {
           </Text>
         </View>
         <Button
-          title="Proceed to Pay"
+          title={orderingPaused ? 'Ordering paused' : 'Proceed to Pay'}
           iconRight={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
+          disabled={orderingPaused}
           onPress={() => {
+            if (orderingPaused) return;
             if (!ensureLoggedIn('/checkout')) return;
             router.push('/checkout');
           }}

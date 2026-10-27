@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 import { TermsAcceptance } from '@/components/legal/TermsAcceptance';
+import { OrderingPausedBanner } from '@/components/layout/OrderingPausedBanner';
+import { useCatalogStore } from '@/store/catalogStore';
 import { LEGAL_VERSION } from '@/constants/legal';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { deliveryNoteFor, useDeliveryQuote } from '@/hooks/useDeliveryQuote';
@@ -45,6 +47,7 @@ export default function PaymentScreen() {
   const [paying, setPaying] = useState(false);
   const [displayTotal, setDisplayTotal] = useState(totals.total);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const orderingPaused = useCatalogStore((s) => s.orderingPaused);
 
   useEffect(() => {
     if (authReady && !isAuthenticated) {
@@ -180,6 +183,7 @@ export default function PaymentScreen() {
           </Text>
         </View>
 
+        <OrderingPausedBanner style={{ marginBottom: 0 }} />
         <TermsAcceptance accepted={termsAccepted} onChange={setTermsAccepted} />
 
         {paymentError ? (
@@ -210,7 +214,7 @@ export default function PaymentScreen() {
               )
             }
             fullWidth
-            disabled={paying || !cart.length || !deliveryReady || !termsOk}
+            disabled={paying || !cart.length || !deliveryReady || !termsOk || orderingPaused}
             onPress={() => pay(false)}
           />
           {!termsOk ? (

@@ -10,12 +10,14 @@ import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
+import { OrderingPausedBanner } from '@/components/layout/OrderingPausedBanner';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
+import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 import { isInServiceArea } from '@/utils/serviceArea';
@@ -36,6 +38,7 @@ export default function CheckoutScreen() {
   const timingOk = scheduledValid || (!scheduledStartAt && isAsapAvailable(new Date(), maxHours));
   const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
   const deliverable = Boolean(address) && isInServiceArea(address);
+  const orderingPaused = useCatalogStore((s) => s.orderingPaused);
   const delivery = useDeliveryQuote();
   const deliveryReady = delivery.status === 'ready' && Boolean(delivery.quote);
 
@@ -97,6 +100,7 @@ export default function CheckoutScreen() {
           { paddingHorizontal: horizontalPadding, paddingBottom: stickyPad },
         ]}
       >
+        <OrderingPausedBanner style={{ marginBottom: 0 }} />
         {address ? (
           <AddressCard
             address={address}
@@ -237,9 +241,9 @@ export default function CheckoutScreen() {
         <Button
           title="Continue to Payment"
           iconRight={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
-          disabled={!deliverable || !deliveryReady || !timingOk}
+          disabled={!deliverable || !deliveryReady || !timingOk || orderingPaused}
           onPress={() => {
-            if (!deliverable || !deliveryReady || !timingOk) return;
+            if (!deliverable || !deliveryReady || !timingOk || orderingPaused) return;
             router.push('/checkout/payment');
           }}
           style={styles.cta}

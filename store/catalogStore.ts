@@ -5,6 +5,7 @@ import {
   fetchInventoryUnitsForHub,
   fetchProducts,
   resolveDefaultHub,
+  watchOrderingStatus,
 } from '@/lib/firestore';
 import type { Experience, HubInfo, InventoryUnit, Product } from '@/types';
 import { normalizeProduct } from '@/utils/rentalPricing';
@@ -27,6 +28,9 @@ interface CatalogState {
   hubs: HubInfo[];
   units: InventoryUnit[];
   error: string | null;
+  /** Admin → Settings "Pause ordering": browsing stays on, new orders are blocked. */
+  orderingPaused: boolean;
+  orderingPausedMessage: string;
   hydrate: () => Promise<void>;
   setActiveHub: (hubId: string) => Promise<void>;
   unitsForProduct: (productId: string) => InventoryUnit[];
@@ -34,6 +38,8 @@ interface CatalogState {
 }
 
 const DISALLOWED_TAGS = /deposit|digilocker|kyc/i;
+
+let orderingUnsub: (() => void) | null = null;
 
 function sanitizeProduct(p: Product): Product {
   return {
@@ -64,6 +70,8 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   hubs: [],
   units: [],
   error: null,
+  orderingPaused: false,
+  orderingPausedMessage: '',
 
   unitsForProduct: (productId) =>
     get().units.filter((u) => u.productId === productId && u.status === 'available'),
@@ -86,6 +94,11 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   },
 
   hydrate: async () => {
+    if (!orderingUnsub) {
+      orderingUnsub = watchOrderingStatus(({ paused, message }) =>
+        set({ orderingPaused: paused, orderingPausedMessage: message })
+      );
+    }
     try {
       const [products, experiences, hubs] = await Promise.all([
         fetchProducts(),

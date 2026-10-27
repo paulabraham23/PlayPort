@@ -120,7 +120,10 @@ export default function AdminSettingsScreen() {
 
       <Text style={adminStyles.cardTitle}>Flags</Text>
       <View style={[adminStyles.row, { marginBottom: spacing.md }]}>
-        <Text style={[adminStyles.label, { marginBottom: 0, flex: 1 }]}>Maintenance mode</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[adminStyles.label, { marginBottom: 0 }]}>Pause ordering</Text>
+          <Text style={adminStyles.cardMeta}>Customers can browse but can’t place new orders.</Text>
+        </View>
         <Switch
           value={form.maintenanceMode}
           onValueChange={(v) => setForm((f) => ({ ...f, maintenanceMode: v }))}
@@ -128,7 +131,7 @@ export default function AdminSettingsScreen() {
         />
       </View>
       <View style={adminStyles.field}>
-        <Text style={adminStyles.label}>Maintenance message</Text>
+        <Text style={adminStyles.label}>Message shown to customers while paused</Text>
         <TextInput
           style={[adminStyles.input, { minHeight: 72, textAlignVertical: 'top' }]}
           value={form.maintenanceMessage}

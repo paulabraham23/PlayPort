@@ -32,6 +32,20 @@ function mapDocs<T extends { id: string }>(snap: Awaited<ReturnType<typeof getDo
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as object) }) as T);
 }
 
+export type OrderingStatus = { paused: boolean; message: string };
+
+/** Live "pause ordering" switch from config/app (Admin → Settings). */
+export function watchOrderingStatus(cb: (status: OrderingStatus) => void): Unsubscribe {
+  return onSnapshot(
+    doc(db, 'config', 'app'),
+    (snap) => {
+      const data = snap.data() as { maintenanceMode?: boolean; maintenanceMessage?: string } | undefined;
+      cb({ paused: data?.maintenanceMode === true, message: data?.maintenanceMessage?.trim() ?? '' });
+    },
+    () => cb({ paused: false, message: '' })
+  );
+}
+
 export async function fetchCategories(): Promise<Category[]> {
   const snap = await getDocs(collection(db, 'categories'));
   return mapDocs<Category>(snap);

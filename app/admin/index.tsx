@@ -26,7 +26,7 @@ export default function AdminOverviewScreen() {
     { label: 'Hubs', value: counts?.hubs ?? '—', href: '/admin/hubs' },
     { label: 'Reviews', value: counts?.reviews ?? '—', href: '/admin/reviews' },
     { label: 'Feedback', value: 'Inbox', href: '/admin/feedback' },
-    { label: 'Settings', value: config.maintenanceMode ? 'Maint.' : 'Live', href: '/admin/settings' },
+    { label: 'Ordering', value: config.maintenanceMode ? 'Paused' : 'Live', href: '/admin/settings' },
   ];
 
   return (
@@ -46,7 +46,7 @@ export default function AdminOverviewScreen() {
 
       {config.maintenanceMode ? (
         <View style={styles.warn}>
-          <Text style={styles.warnTitle}>Maintenance mode is ON</Text>
+          <Text style={styles.warnTitle}>Ordering is paused</Text>
           <Text style={styles.warnBody}>{config.maintenanceMessage}</Text>
         </View>
       ) : null}

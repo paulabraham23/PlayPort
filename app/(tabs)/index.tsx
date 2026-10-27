@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
+import { OrderingPausedBanner } from '@/components/layout/OrderingPausedBanner';
 import { ServiceAreaBanner } from '@/components/layout/ServiceAreaBanner';
 import { ServiceHoursBanner } from '@/components/layout/ServiceHoursBanner';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
@@ -115,6 +116,7 @@ export default function HomeScreen() {
         ) : products.length && (gridMode || cardHeight > 0) ? (
           gridMode ? (
             <>
+              <OrderingPausedBanner />
               <ServiceAreaBanner />
               <ServiceHoursBanner />
               <View style={styles.heading}>
@@ -132,6 +134,7 @@ export default function HomeScreen() {
             </>
           ) : (
             <>
+              <OrderingPausedBanner style={{ marginTop: spacing.md }} />
               <ServiceAreaBanner />
               <ServiceHoursBanner />
               {products.map((product) => (

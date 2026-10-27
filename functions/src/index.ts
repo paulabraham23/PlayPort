@@ -335,6 +335,16 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     termsVersion?: string;
   };
 
+  // Admin → Settings "Pause ordering" (config/app.maintenanceMode) stops new bookings.
+  const appConfig = (await db.collection('config').doc('app').get()).data();
+  if (appConfig?.maintenanceMode === true) {
+    throw new HttpsError(
+      'unavailable',
+      String(appConfig.maintenanceMessage || '').trim() ||
+        'We’re not taking new orders right now. Please check back soon.'
+    );
+  }
+
   // Terms 3.7: the checkout tick is the customer's agreement; we keep the version and time.
   if (termsVersion !== LEGAL_VERSION) {
     throw new HttpsError(

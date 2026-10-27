@@ -18,11 +18,9 @@ import {
 } from '@/lib/functions';
 import { openRazorpayCheckout } from '@/lib/razorpay';
 import { useAppStore } from '@/store/appStore';
-import { useCatalogStore } from '@/store/catalogStore';
 import { useFeelStore } from '@/store/feelStore';
 import { formatINR, formatReturnLabel } from '@/utils/format';
 import { formatFunctionsError } from '@/utils/functionsError';
-import { normalizeProduct, priceForHourly } from '@/utils/rentalPricing';
 import { rentalEndsInServiceHours } from '@/utils/serviceHours';
 
 const OPTIONS = [1, 2, 3, 6, 12];
@@ -31,20 +29,7 @@ export function isExtendableStatus(status: string): boolean {
   return status === 'delivered' || status === 'active';
 }
 
-/** Client-side estimate mirroring the server (hourly → exact plan → pro-rated plan rate). */
-function estimateForProduct(productId: string | undefined, extraHours: number, products: ReturnType<typeof useCatalogStore.getState>['products']): number {
-  if (!productId) return 0;
-  const raw = products.find((p) => p.id === productId);
-  if (!raw) return 0;
-  const p = normalizeProduct(raw);
-  if (p.hourly?.enabled) return priceForHourly(p, extraHours);
-  const exact = p.plans.find((x) => x.hours === extraHours);
-  if (exact) return exact.price;
-  const sorted = [...p.plans].filter((x) => x.price > 0).sort((a, b) => a.hours - b.hours);
-  if (!sorted.length) return 0;
-  const cover = sorted.find((x) => x.hours >= extraHours) ?? sorted[sorted.length - 1];
-  return Math.round((cover.price / cover.hours) * extraHours);
-}
+type OptionQuote = { quote?: ExtensionQuote; error?: string };
 
 export default function ExtendOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -53,13 +38,12 @@ export default function ExtendOrderScreen() {
   const order = useAppStore((s) => s.orders.find((o) => o.id === id));
   const applyOrderExtension = useAppStore((s) => s.applyOrderExtension);
   const user = useAppStore((s) => s.user);
-  const products = useCatalogStore((s) => s.products);
   const showToast = useFeelStore((s) => s.showToast);
 
   const [hours, setHours] = useState(1);
-  const [quote, setQuote] = useState<ExtensionQuote | null>(null);
+  // Server quotes for every option, so each button shows exactly what will be charged.
+  const [quotes, setQuotes] = useState<Record<number, OptionQuote>>({});
   const [quoting, setQuoting] = useState(false);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
@@ -75,43 +59,37 @@ export default function ExtendOrderScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endAt]);
 
-  const estimate = useMemo(() => {
-    if (!order) return 0;
-    let sum = 0;
-    const counts = new Map<string, number>();
-    for (const it of order.items) {
-      if (it.productId) counts.set(it.productId, (counts.get(it.productId) ?? 0) + 1);
-    }
-    for (const it of order.items) {
-      const n = (it.productId && counts.get(it.productId)) || 1;
-      const lines = order.items.filter((x) => x.productId === it.productId).length || 1;
-      sum += (estimateForProduct(it.productId ?? undefined, hours, products) * n) / lines;
-    }
-    return Math.round(sum);
-  }, [order, hours, products]);
+  const fittingOptions = useMemo(
+    () => (endAt ? OPTIONS.filter((h) => rentalEndsInServiceHours(new Date(endAt), h)) : OPTIONS),
+    [endAt]
+  );
 
   useEffect(() => {
     if (!order || !extendable) return;
     let cancelled = false;
     setQuoting(true);
-    setQuoteError(null);
-    callGetExtensionQuote(order.id, hours)
-      .then((q) => {
-        if (!cancelled) setQuote(q);
-      })
-      .catch((e) => {
-        if (!cancelled) {
-          setQuote(null);
-          setQuoteError(formatFunctionsError(e));
+    setQuotes({});
+    void Promise.all(
+      fittingOptions.map(async (h): Promise<[number, OptionQuote]> => {
+        try {
+          return [h, { quote: await callGetExtensionQuote(order.id, h) }];
+        } catch (e) {
+          return [h, { error: formatFunctionsError(e) }];
         }
       })
-      .finally(() => {
-        if (!cancelled) setQuoting(false);
-      });
+    ).then((entries) => {
+      if (cancelled) return;
+      setQuotes(Object.fromEntries(entries));
+      setQuoting(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, [order?.id, order?.endAt, hours, extendable]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.id, order?.endAt, extendable, fittingOptions]);
+
+  const quote = quotes[hours]?.quote ?? null;
+  const quoteError = quotes[hours]?.error ?? null;
 
   if (!order) {
     return (
@@ -191,7 +169,7 @@ export default function ExtendOrderScreen() {
     }
   };
 
-  const total = quote?.total ?? Math.round(estimate * 1.05);
+  const total = quote?.total ?? 0;
 
   return (
     <Screen showHeader={false} edges={['top']} narrow>
@@ -219,7 +197,9 @@ export default function ExtendOrderScreen() {
         </Card>
 
         <Text style={styles.sectionTitle}>Add more hours</Text>
-        <Text style={styles.sectionSub}>Priced from the same kit plans · availability checked live</Text>
+        <Text style={styles.sectionSub}>
+          Priced from the same hour packages · prices include tax and any extra controllers
+        </Text>
         <View style={styles.grid}>
           {OPTIONS.map((h) => {
             const fits = !order.endAt || rentalEndsInServiceHours(new Date(order.endAt), h);
@@ -235,7 +215,13 @@ export default function ExtendOrderScreen() {
               >
                 <Text style={[styles.optHours, active && styles.optHoursActive]}>+{h}h</Text>
                 <Text style={[styles.optPrice, active && styles.optPriceActive]}>
-                  ≈ {formatINR(Math.round(estimateForProduct(order.items[0]?.productId ?? undefined, h, products) || (estimate * h) / hours || 0))}
+                  {!fits
+                    ? '—'
+                    : quotes[h]?.quote
+                      ? formatINR(quotes[h]!.quote!.total)
+                      : quotes[h]?.error
+                        ? 'Unavailable'
+                        : '…'}
                 </Text>
               </Pressable>
             );
@@ -287,7 +273,7 @@ export default function ExtendOrderScreen() {
       <StickyBottomBar>
         <View style={{ flex: 1 }}>
           <Text style={styles.stickyLabel}>Extension · +{hours}h</Text>
-          <Text style={styles.stickyPrice}>{quoting ? 'Checking…' : formatINR(total)}</Text>
+          <Text style={styles.stickyPrice}>{quoting ? 'Checking…' : quote ? formatINR(total) : '—'}</Text>
         </View>
         <Button
           title={paying ? 'Extending…' : `Pay & extend +${hours}h`}

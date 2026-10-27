@@ -1051,15 +1051,22 @@ function parseExtraName(label: string): string {
 }
 
 /** Per-unit kit price for an extension chunk. Prefers hourly, then exact plan, else pro-rated plan rate. */
-function extensionKitPrice(product: FnProduct, extraHours: number): number {
-  const p = normalizeFnProduct(product);
-  if (product.hourly?.enabled) return priceForHourly(product, extraHours);
-  const exact = p.plans.find((x) => x.hours === extraHours);
+/** Extra hours priced from hour packages: exact package, else the next package up pro-rated. */
+function planExtensionPrice(plans: { hours?: number; price?: number }[], extraHours: number): number {
+  const valid = plans
+    .map((x) => ({ hours: Number(x.hours) || 0, price: Number(x.price) || 0 }))
+    .filter((x) => x.hours > 0 && x.price > 0)
+    .sort((a, b) => a.hours - b.hours);
+  if (!valid.length) return 0;
+  const exact = valid.find((x) => x.hours === extraHours);
   if (exact) return exact.price;
-  const sorted = [...p.plans].filter((x) => x.price > 0).sort((a, b) => a.hours - b.hours);
-  if (!sorted.length) return 0;
-  const cover = sorted.find((x) => x.hours >= extraHours) ?? sorted[sorted.length - 1];
+  const cover = valid.find((x) => x.hours >= extraHours) ?? valid[valid.length - 1];
   return Math.round((cover.price / cover.hours) * extraHours);
+}
+
+function extensionKitPrice(product: FnProduct, extraHours: number): number {
+  if (product.hourly?.enabled) return priceForHourly(product, extraHours);
+  return planExtensionPrice(normalizeFnProduct(product).plans, extraHours);
 }
 
 async function computeExtensionQuote(orderId: string, extraHours: number) {
@@ -1149,9 +1156,33 @@ async function computeExtensionQuote(orderId: string, extraHours: number) {
         lineExt += Math.round(((it.price ?? 0) / origHours) * extraHours);
       }
     } else {
-      // Combo/experience line without product link: pro-rate.
-      const origHours = Math.max(1, Math.round((oldEndMs - new Date(order.startAt).getTime()) / 3600000));
-      lineExt += Math.round(((it.price ?? 0) / origHours) * extraHours);
+      // Combo line: price the extra hours from the combo's own hour packages.
+      const expId = (it as { experienceId?: string | null }).experienceId ?? undefined;
+      const expSnap = expId ? await db.collection('experiences').doc(expId).get() : null;
+      const exp = expSnap?.exists ? expSnap.data() : undefined;
+      const comboPrice = exp
+        ? planExtensionPrice(
+            (exp.plans as { hours?: number; price?: number }[] | undefined)?.length
+              ? (exp.plans as { hours?: number; price?: number }[])
+              : [{ hours: Number(exp.durationHours) || 0, price: Number(exp.price) || 0 }],
+            extraHours
+          )
+        : 0;
+      if (comboPrice > 0) {
+        lineExt += comboPrice;
+        const comboAddons = (exp?.addons as FnProduct['addons']) ?? [];
+        for (const extra of (it as { extras?: string[] }).extras ?? []) {
+          const qty = parseExtraQty(extra);
+          const nm = parseExtraName(extra);
+          if (!qty || !nm) continue;
+          const addon = comboAddons.find((a) => a.name.toLowerCase() === nm);
+          if (addon) lineExt += priceForAddon(addon, extraHours, qty);
+        }
+      } else {
+        // Unknown combo: pro-rate the original line price.
+        const origHours = Math.max(1, Math.round((oldEndMs - new Date(order.startAt).getTime()) / 3600000));
+        lineExt += Math.round(((it.price ?? 0) / origHours) * extraHours);
+      }
     }
     lineExt = Math.round(lineExt);
     extSubtotal += lineExt;

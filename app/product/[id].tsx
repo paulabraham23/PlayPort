@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ExpandableText } from '@/components/ui/ExpandableText';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
+import { useOrderNotBefore } from '@/hooks/useOrderNotBefore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
@@ -26,6 +27,7 @@ import { gateCartAdd } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 import { isValidScheduledStart } from '@/utils/serviceHours';
 import { firstDisplayableImage } from '@/utils/images';
+import { formatLaunchDay, upcomingLaunch } from '@/utils/launch';
 import {
   addonsTotal,
   computeAddonLines,
@@ -67,7 +69,8 @@ export default function ProductDetailScreen() {
   const hub = useCatalogStore((s) => s.hub);
   const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
-  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
+  const notBefore = useOrderNotBefore({ productId: id });
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), undefined, notBefore);
   const showToast = useFeelStore((s) => s.showToast);
 
   const product = products.find((p) => p.id === id);
@@ -138,6 +141,7 @@ export default function ProductDetailScreen() {
       ? `${hours}h hourly`
       : normalized.plans.find((p) => p.id === planId)?.label ?? planId;
 
+  const launch = upcomingLaunch(product);
   const heroUri = firstDisplayableImage(product.images);
   const showHero = Boolean(heroUri) && !heroFailed;
   const heroBlock = showHero && heroUri ? (
@@ -202,6 +206,14 @@ export default function ProductDetailScreen() {
         ))}
       </View>
       <Text style={[styles.title, useSplitPane && styles.titleLg]}>{product.name}</Text>
+      {launch ? (
+        <View style={styles.launchNote}>
+          <Ionicons name="rocket-outline" size={16} color={colors.playportOrange} />
+          <Text style={styles.launchText}>
+            Pre-book now · rentals start from {formatLaunchDay(launch)}
+          </Text>
+        </View>
+      ) : null}
       {product.description ? <ExpandableText text={product.description} style={styles.desc} /> : null}
       <View style={styles.pricePreview}>
         <Text style={styles.pricePreviewLabel}>Selected</Text>
@@ -242,12 +254,13 @@ export default function ProductDetailScreen() {
             onPlanChange={setPlanId}
             onHourlyHoursChange={setHourlyHours}
           />
-          <SchedulePicker maxHours={hours} />
+          <SchedulePicker maxHours={hours} notBefore={notBefore} />
           <AvailabilityBlock
             items={[{ productId: product.id, hours, name: product.shortName }]}
             hubId={hub?.id}
+            notBefore={notBefore}
             startIso={
-              scheduledValid && isValidScheduledStart(scheduledStartAt, new Date(), hours)
+              scheduledValid && isValidScheduledStart(scheduledStartAt, new Date(), hours, notBefore)
                 ? (scheduledStartAt as string)
                 : null
             }
@@ -504,7 +517,7 @@ export default function ProductDetailScreen() {
           </Text>
         </View>
         <Button
-          title="Add to cart"
+          title={launch ? 'Pre-book' : 'Add to cart'}
           icon={<Ionicons name="bag-add-outline" size={16} color={colors.white} />}
           onPress={() => {
             if (unitsHaveGames && !unitId) {
@@ -534,6 +547,17 @@ export default function ProductDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  launchNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.orangeTint,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  launchText: { color: colors.primaryText, fontFamily: fonts.bodyMedium, fontSize: typeScale.small },
   scrollView: { flex: 1 },
   scroll: { gap: spacing.xl, paddingTop: spacing.sm },
   topBlock: { gap: spacing.lg },

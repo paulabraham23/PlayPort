@@ -46,8 +46,21 @@ const dayFmt = new Intl.DateTimeFormat('en-IN', {
   month: 'short',
 });
 
-/** Today (+ remaining slots) through the last bookable day. */
-export function availableDays(now = new Date()): ScheduleDay[] {
+/**
+ * Earliest start for a pre-book product: "2026-11-19" means 12:00 AM IST that
+ * day (full ISO timestamps are honoured as-is). Null when unset or unreadable.
+ */
+export function launchStart(availableFrom?: string | null): Date | null {
+  if (!availableFrom) return null;
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(availableFrom.trim());
+  const ms = day
+    ? Date.UTC(Number(day[1]), Number(day[2]) - 1, Number(day[3])) - IST_OFFSET_MS
+    : new Date(availableFrom).getTime();
+  return Number.isFinite(ms) ? new Date(ms) : null;
+}
+
+/** Days in the bookable range that still have at least one slot. */
+export function availableDays(now = new Date(), notBefore?: Date | null): ScheduleDay[] {
   const days: ScheduleDay[] = [];
   for (let i = 0; i < MAX_ADVANCE_DAYS; i++) {
     const base = new Date(istDayStart(now).getTime() + i * DAY_MS);
@@ -59,7 +72,7 @@ export function availableDays(now = new Date()): ScheduleDay[] {
       date: base,
     });
   }
-  return days.filter((d, i) => (i === 0 ? daySlots(d.date, now).length > 0 : true));
+  return days.filter((d) => daySlots(d.date, now, notBefore).length > 0);
 }
 
 /** Key of the IST calendar day containing `date` (matches `ScheduleDay.key`). */
@@ -89,8 +102,8 @@ const monthFmt = new Intl.DateTimeFormat('en-IN', {
 });
 
 /** IST month grids covering today through the last bookable day. */
-export function calendarMonths(now = new Date()): CalendarMonth[] {
-  const bookable = new Set(availableDays(now).map((d) => d.key));
+export function calendarMonths(now = new Date(), notBefore?: Date | null): CalendarMonth[] {
+  const bookable = new Set(availableDays(now, notBefore).map((d) => d.key));
   const todayStart = istDayStart(now);
   const todayKey = todayStart.toISOString();
   const first = istDate(todayStart);
@@ -130,9 +143,9 @@ const timeFmt = new Intl.DateTimeFormat('en-IN', {
 });
 
 /** Hourly dropoff slots 8 AM – 11 PM IST for a day; today filters past + lead time. */
-export function daySlots(dayStart: Date, now = new Date()): Date[] {
+export function daySlots(dayStart: Date, now = new Date(), notBefore?: Date | null): Date[] {
   const slots: Date[] = [];
-  const minStart = now.getTime() + SCHEDULE_LEAD_MINUTES * 60 * 1000;
+  const minStart = Math.max(now.getTime() + SCHEDULE_LEAD_MINUTES * 60 * 1000, notBefore?.getTime() ?? 0);
   for (let h = SERVICE_OPEN_HOUR; h < SERVICE_CLOSE_HOUR; h++) {
     const slot = new Date(dayStart.getTime() + h * 60 * 60 * 1000);
     if (slot.getTime() < minStart) continue;
@@ -145,12 +158,14 @@ export function daySlots(dayStart: Date, now = new Date()): Date[] {
 export function isValidScheduledStart(
   iso: string | null | undefined,
   now = new Date(),
-  hours?: number
+  hours?: number,
+  notBefore?: Date | null
 ): boolean {
   if (!iso) return false;
   const t = new Date(iso).getTime();
   if (!Number.isFinite(t)) return false;
   if (t < now.getTime() + SCHEDULE_LEAD_MINUTES * 60 * 1000) return false;
+  if (notBefore && t < notBefore.getTime()) return false;
   const h = istHour(new Date(t));
   if (h < SERVICE_OPEN_HOUR || h >= SERVICE_CLOSE_HOUR) return false;
   if (t > now.getTime() + MAX_ADVANCE_DAYS * DAY_MS) return false;
@@ -167,8 +182,9 @@ export function rentalEndsInServiceHours(start: Date, hours: number): boolean {
   return end.getUTCHours() >= SERVICE_OPEN_HOUR;
 }
 
-/** ASAP is offered only while open and when the rental would end in service hours. */
-export function isAsapAvailable(now: Date, hours: number): boolean {
+/** ASAP is offered only while open, after any launch date, and when the rental would end in service hours. */
+export function isAsapAvailable(now: Date, hours: number, notBefore?: Date | null): boolean {
+  if (notBefore && asapStart(now).getTime() < notBefore.getTime()) return false;
   return isServiceOpen(now) && rentalEndsInServiceHours(asapStart(now), hours);
 }
 

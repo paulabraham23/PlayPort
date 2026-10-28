@@ -10,6 +10,7 @@ import { ValuePop } from '@/components/motion/ValuePop';
 import { colors, fonts, gradients, radii, shadows, spacing, typeScale, webShadows } from '@/constants/theme';
 import { formatINR } from '@/utils/format';
 import { firstDisplayableImage } from '@/utils/images';
+import { formatLaunchDay, upcomingLaunch } from '@/utils/launch';
 import { defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
 import type { InventoryUnit, Product } from '@/types';
 
@@ -218,6 +219,7 @@ export function ProductCard({
       ? Math.round(((product.compareAtPrice - price) / product.compareAtPrice) * 100)
       : 0;
   const soldOut = product.availabilityLabel?.startsWith('No');
+  const launch = upcomingLaunch(product);
   const imageUri = firstDisplayableImage(product.images);
   const add = () => {
     if (onAdd) onAdd(selection);
@@ -301,7 +303,11 @@ export function ProductCard({
             </SoftPulse>
             <Text style={styles.etaBadgeText}>{product.etaMinutes} min</Text>
           </View>
-          {product.popular ? (
+          {launch ? (
+            <View style={[styles.popularBadge, styles.launchBadge]}>
+              <Text style={styles.popularBadgeText}>PRE-BOOK · FROM {formatLaunchDay(launch).toUpperCase()}</Text>
+            </View>
+          ) : product.popular ? (
             <View style={styles.popularBadge}>
               <Text style={styles.popularBadgeText}>POPULAR</Text>
             </View>
@@ -331,7 +337,9 @@ export function ProductCard({
           <Text style={styles.title} numberOfLines={2}>
             {product.shortName}
           </Text>
-          <Text style={styles.unitChip}>Setup included · {planLabel}</Text>
+          <Text style={styles.unitChip}>
+            {launch ? `Rentals from ${formatLaunchDay(launch)}` : 'Setup included'} · {planLabel}
+          </Text>
         </View>
       </PressableScale>
       <View style={styles.choicesSlot}>{choices}</View>
@@ -421,6 +429,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radii.full,
   },
+  launchBadge: { backgroundColor: colors.playportOrange },
   popularBadgeText: {
     color: colors.ctaPrimaryText,
     fontFamily: fonts.heading,

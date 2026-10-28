@@ -19,11 +19,13 @@ interface Props {
   onSelect: (iso: string) => void;
   /** Rental length — start times that would end overnight are disabled. */
   hours: number;
+  /** Pre-book launch: no slots before this moment. */
+  notBefore?: Date | null;
 }
 
 /** Month calendar of bookable days, with that day's hourly dropoff slots below. */
-export function ScheduleCalendar({ now, selectedIso, onSelect, hours }: Props) {
-  const months = useMemo(() => calendarMonths(now), [now]);
+export function ScheduleCalendar({ now, selectedIso, onSelect, hours, notBefore }: Props) {
+  const months = useMemo(() => calendarMonths(now, notBefore), [now, notBefore]);
   const firstOpen = useMemo(
     () => months.flatMap((m) => m.cells).find((c) => c?.available) ?? null,
     [months]
@@ -41,8 +43,8 @@ export function ScheduleCalendar({ now, selectedIso, onSelect, hours }: Props) {
   );
   const month = months[monthIndex] ?? months[0];
   const slots = useMemo(
-    () => (activeCell ? daySlots(activeCell.date, now) : []),
-    [activeCell, now]
+    () => (activeCell ? daySlots(activeCell.date, now, notBefore) : []),
+    [activeCell, now, notBefore]
   );
 
   if (!month) return null;

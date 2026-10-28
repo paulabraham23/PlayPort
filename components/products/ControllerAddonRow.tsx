@@ -31,12 +31,16 @@ export function ControllerAddonRow({
 }: Props) {
   const { pricing } = addon;
   const unitPrice = priceForAddon(addon, hours, 1);
-  const isFlat = pricing.flatPrice > 0 && hours >= pricing.flatMinPlanHours;
-  const isPureHourly = hours <= pricing.perHourMaxPlanHours;
+  const tiers = (pricing.tiers ?? [])
+    .filter((t) => t.upToHours > 0 && t.price >= 0)
+    .sort((a, b) => a.upToHours - b.upToHours);
+  const tier = tiers.length ? (tiers.find((t) => hours <= t.upToHours) ?? tiers[tiers.length - 1]) : null;
+  const isFlat = tier ? tier.mode !== 'hourly' : pricing.flatPrice > 0 && hours >= pricing.flatMinPlanHours;
+  const isPureHourly = tier != null || hours <= pricing.perHourMaxPlanHours;
 
   const breakdown = isFlat
-    ? `${formatINR(pricing.flatPrice)} flat for the whole ${hours}h session`
-    : `${formatINR(pricing.perHour)}/hr × ${hours}h = ${formatINR(unitPrice)} each`;
+    ? `${formatINR(unitPrice)} flat for the whole ${hours}h session`
+    : `${formatINR(tier ? tier.price : pricing.perHour)}/hr × ${hours}h = ${formatINR(unitPrice)} each`;
 
   const modeLabel = isFlat ? 'FLAT RATE' : 'PER HOUR';
 

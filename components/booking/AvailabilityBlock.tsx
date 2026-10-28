@@ -10,6 +10,7 @@ import {
   windowLabel,
   type SlotCheckItem,
 } from '@/lib/availability';
+import { formatLaunchDay } from '@/utils/launch';
 import { isAsapAvailable, isServiceOpen } from '@/utils/serviceHours';
 
 interface Props {
@@ -19,6 +20,8 @@ interface Props {
   startIso: string | null;
   /** Called with the suggested start when the user taps "book X–Y instead". */
   onApplySlot?: (startIso: string) => void;
+  /** Pre-book launch: there is no ASAP window to check before this. */
+  notBefore?: Date | null;
 }
 
 type State =
@@ -27,13 +30,14 @@ type State =
   | { kind: 'available'; window: string }
   | { kind: 'soldout'; name: string; window: string; suggestionIso: string | null; suggestionWindow: string | null; hours: number }
   | { kind: 'nostock'; name: string }
-  | { kind: 'closed' };
+  | { kind: 'closed' }
+  | { kind: 'prebook' };
 
 /**
  * Orange "Check Availability" for ASAP or a scheduled window.
  * Simple verdict UI + next-free-slot suggestion when sold out.
  */
-export function AvailabilityBlock({ items, hubId, startIso, onApplySlot }: Props) {
+export function AvailabilityBlock({ items, hubId, startIso, onApplySlot, notBefore }: Props) {
   const [state, setState] = useState<State>({ kind: 'idle' });
   // A verdict belongs to the exact window + items checked. Any change
   // (new slot, plan, quantity, cart edit) invalidates it back to idle.
@@ -49,6 +53,10 @@ export function AvailabilityBlock({ items, hubId, startIso, onApplySlot }: Props
     const now = new Date();
     const startedAt = Date.now();
     const start = startIso ?? asapWindowStart(now);
+    if (!startIso && notBefore) {
+      setState({ kind: 'prebook' });
+      return;
+    }
     if (!startIso && !isAsapAvailable(now, Math.max(1, ...items.map((i) => i.hours)))) {
       setState({ kind: 'closed' });
       return;
@@ -153,6 +161,18 @@ export function AvailabilityBlock({ items, hubId, startIso, onApplySlot }: Props
             </Text>
             <Text style={styles.soldSub}>
               We’re restocking this kit — check back soon or try another kit.
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
+      {state.kind === 'prebook' && notBefore ? (
+        <View style={[styles.card, styles.soldCard]}>
+          <IoniconsIcon name="calendar-outline" size={20} color={colors.secondaryText} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.soldTitle}>Pick a time first.</Text>
+            <Text style={styles.soldSub}>
+              Rentals start from {formatLaunchDay(notBefore)} — choose a day and time above, then check.
             </Text>
           </View>
         </View>

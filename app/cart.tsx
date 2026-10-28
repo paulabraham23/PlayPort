@@ -18,11 +18,13 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, shadows, spacing, typeScale } from '@/constants/theme';
 import { deliveryNoteFor, useDeliveryQuote } from '@/hooks/useDeliveryQuote';
+import { useOrderNotBefore } from '@/hooks/useOrderNotBefore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
+import { formatLaunchDay } from '@/utils/launch';
 import {
   formatSlot,
   formatWindow,
@@ -63,6 +65,7 @@ export default function CartScreen() {
   const [pickedMode, setSchedMode] = useState<'asap' | 'scheduled'>('asap');
   const now = useMemo(() => new Date(), []);
   const open = isServiceOpen(now);
+  const notBefore = useOrderNotBefore();
 
   const locationLabel =
     hub?.city && hub.city !== '—' ? hub.city : 'Your hub';
@@ -83,11 +86,18 @@ export default function CartScreen() {
   }
 
   const maxHours = Math.max(1, ...cart.map((c) => c.hours ?? 3));
-  const asapOk = isAsapAvailable(now, maxHours);
+  const asapOk = isAsapAvailable(now, maxHours, notBefore);
   const schedMode = asapOk ? pickedMode : 'scheduled';
-  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), maxHours);
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), maxHours, notBefore);
+  const beforeLaunch =
+    Boolean(scheduledStartAt) &&
+    isValidScheduledStart(scheduledStartAt, new Date()) &&
+    !isValidScheduledStart(scheduledStartAt, new Date(), undefined, notBefore);
   const startTooLate =
-    Boolean(scheduledStartAt) && isValidScheduledStart(scheduledStartAt, new Date()) && !scheduledValid;
+    Boolean(scheduledStartAt) &&
+    !beforeLaunch &&
+    isValidScheduledStart(scheduledStartAt, new Date()) &&
+    !scheduledValid;
   const checkItems = expandCheckItems(
     cart.map((c) => ({
       productId: c.productId,
@@ -138,7 +148,12 @@ export default function CartScreen() {
         </Pressable>
       </View>
 
-      {!open ? (
+      {notBefore ? (
+        <Text style={styles.scheduleSub}>
+          Your cart has a pre-book item — rentals start from {formatLaunchDay(notBefore)}. Pick your day and
+          time.
+        </Text>
+      ) : !open ? (
         <Text style={styles.scheduleSub}>Closed 12–8 AM — pick a slot from 8 AM onwards.</Text>
       ) : !asapOk ? (
         <Text style={styles.scheduleSub}>
@@ -152,12 +167,17 @@ export default function CartScreen() {
           <ScheduleCalendar
             now={now}
             hours={maxHours}
+            notBefore={notBefore}
             selectedIso={scheduledStartAt}
             onSelect={setScheduledStartAt}
           />
           {scheduledValid && scheduledStartAt ? (
             <Text style={styles.scheduleTime}>
               {formatSlot(scheduledStartAt, now)} · {formatWindow(scheduledStartAt, maxHours)} ({maxHours}h)
+            </Text>
+          ) : beforeLaunch && notBefore ? (
+            <Text style={styles.scheduleWarn}>
+              That’s before {formatLaunchDay(notBefore)} — pick a time from {formatLaunchDay(notBefore)} onwards.
             </Text>
           ) : startTooLate ? (
             <Text style={styles.scheduleWarn}>
@@ -179,6 +199,7 @@ export default function CartScreen() {
         <AvailabilityBlock
           items={checkItems}
           hubId={hub?.id}
+          notBefore={notBefore}
           startIso={schedMode === 'scheduled' && scheduledValid ? (scheduledStartAt as string) : null}
           onApplySlot={(iso) => {
             setScheduledStartAt(iso);

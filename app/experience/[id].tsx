@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { AvailabilityBlock } from '@/components/booking/AvailabilityBlock';
 import { SchedulePicker } from '@/components/booking/SchedulePicker';
+import { useOrderNotBefore } from '@/hooks/useOrderNotBefore';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { StickyBottomBar, useStickyBarPadding } from '@/components/layout/StickyBottomBar';
@@ -42,7 +43,8 @@ export default function ExperienceDetailScreen() {
   const addProductToCart = useAppStore((s) => s.addProductToCart);
   const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
-  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date());
+  const notBefore = useOrderNotBefore({ experienceId: id });
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), undefined, notBefore);
   const experiences = useCatalogStore((s) => s.experiences);
   const products = useCatalogStore((s) => s.products);
   const hub = useCatalogStore((s) => s.hub);
@@ -171,14 +173,15 @@ export default function ExperienceDetailScreen() {
           </View>
         </View>
 
-        <SchedulePicker maxHours={plan?.hours ?? 12} />
+        <SchedulePicker maxHours={plan?.hours ?? 12} notBefore={notBefore} />
 
         {comboCheckItems.length ? (
           <AvailabilityBlock
             items={comboCheckItems}
             hubId={hub?.id}
+            notBefore={notBefore}
             startIso={
-              scheduledValid && isValidScheduledStart(scheduledStartAt, new Date(), plan?.hours ?? 12)
+              scheduledValid && isValidScheduledStart(scheduledStartAt, new Date(), plan?.hours ?? 12, notBefore)
                 ? (scheduledStartAt as string)
                 : null
             }

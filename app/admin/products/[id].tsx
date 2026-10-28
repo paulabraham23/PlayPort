@@ -207,6 +207,10 @@ export default function AdminProductEditScreen() {
       setError('Add at least one rental plan');
       return;
     }
+    if (form.availableFrom?.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(form.availableFrom.trim())) {
+      setError('Pre-book launch date must look like 2026-11-19');
+      return;
+    }
     const perHour = Math.max(0, num(controllerPerHour));
     const flatPrice = Math.max(0, num(controllerFlat));
     const tiers = controllerTiers
@@ -239,6 +243,8 @@ export default function AdminProductEditScreen() {
         shortName: form.shortName.trim() || form.name.trim(),
         badge: form.badge?.trim() || undefined,
         compareAtPrice: form.compareAtPrice || undefined,
+        // '' (not undefined) so clearing it overwrites the merged doc.
+        availableFrom: form.availableFrom?.trim() ?? '',
         plans: cleanedPlans,
         hourly: hourly.enabled
           ? {
@@ -900,6 +906,19 @@ export default function AdminProductEditScreen() {
           value={tagsText}
           onChangeText={setTagsText}
           placeholder="gaming, ps5, family"
+          placeholderTextColor={colors.mutedText}
+        />
+      </View>
+      <View style={adminStyles.field}>
+        <Text style={adminStyles.label}>
+          Pre-book launch date (optional, YYYY-MM-DD) — rentals can’t start before this day
+        </Text>
+        <TextInput
+          style={adminStyles.input}
+          value={form.availableFrom ?? ''}
+          onChangeText={(t) => setField('availableFrom', t)}
+          placeholder="2026-11-19"
+          autoCapitalize="none"
           placeholderTextColor={colors.mutedText}
         />
       </View>

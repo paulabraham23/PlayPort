@@ -11,28 +11,36 @@ import {
   isServiceOpen,
   isValidScheduledStart,
 } from '@/utils/serviceHours';
+import { formatLaunchDay } from '@/utils/launch';
 
 interface Props {
   /** Longest rental window in the booking — drives the "ends at" preview. */
   maxHours: number;
+  /** Pre-book launch: ASAP is off and no slot can start before this. */
+  notBefore?: Date | null;
 }
 
 /**
  * Shared ASAP-vs-scheduled picker (product page + cart read/write the same
  * store slot, so both screens always agree).
  */
-export function SchedulePicker({ maxHours }: Props) {
+export function SchedulePicker({ maxHours, notBefore }: Props) {
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
   const setScheduledStartAt = useAppStore((s) => s.setScheduledStartAt);
   const [pickedMode, setSchedMode] = useState<'asap' | 'scheduled'>('asap');
   const now = useMemo(() => new Date(), []);
   const open = isServiceOpen(now);
-  const asapOk = isAsapAvailable(now, maxHours);
+  const asapOk = isAsapAvailable(now, maxHours, notBefore);
   const schedMode = asapOk ? pickedMode : 'scheduled';
-  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), maxHours);
-  const startTooLate =
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), maxHours, notBefore);
+  const beforeLaunch =
     Boolean(scheduledStartAt) &&
     isValidScheduledStart(scheduledStartAt, new Date()) &&
+    !isValidScheduledStart(scheduledStartAt, new Date(), undefined, notBefore);
+  const startTooLate =
+    Boolean(scheduledStartAt) &&
+    !beforeLaunch &&
+    isValidScheduledStart(scheduledStartAt, new Date(), undefined, notBefore) &&
     !scheduledValid;
 
   return (
@@ -73,7 +81,11 @@ export function SchedulePicker({ maxHours }: Props) {
         </Pressable>
       </View>
 
-      {!open ? (
+      {notBefore ? (
+        <Text style={styles.scheduleSub}>
+          Pre-booking — rentals start from {formatLaunchDay(notBefore)}. Pick your day and time.
+        </Text>
+      ) : !open ? (
         <Text style={styles.scheduleSub}>Closed 12–8 AM — pick a slot from 8 AM onwards.</Text>
       ) : !asapOk ? (
         <Text style={styles.scheduleSub}>
@@ -87,12 +99,17 @@ export function SchedulePicker({ maxHours }: Props) {
           <ScheduleCalendar
             now={now}
             hours={maxHours}
+            notBefore={notBefore}
             selectedIso={scheduledStartAt}
             onSelect={setScheduledStartAt}
           />
           {scheduledValid && scheduledStartAt ? (
             <Text style={styles.scheduleTime}>
               {formatSlot(scheduledStartAt, now)} · {formatWindow(scheduledStartAt, maxHours)} ({maxHours}h)
+            </Text>
+          ) : beforeLaunch && notBefore ? (
+            <Text style={styles.scheduleWarn}>
+              That’s before {formatLaunchDay(notBefore)} — pick a time from {formatLaunchDay(notBefore)} onwards.
             </Text>
           ) : startTooLate ? (
             <Text style={styles.scheduleWarn}>

@@ -170,6 +170,28 @@ function endsInServiceHours(endMs: number): boolean {
   return new Date(endMs + 5.5 * 60 * 60 * 1000).getUTCHours() >= 8;
 }
 
+/** Pre-book products: availableFrom "YYYY-MM-DD" = 12:00 AM IST that day. Mirrors utils/serviceHours launchStart. */
+function launchStartMs(availableFrom: unknown): number | null {
+  if (typeof availableFrom !== 'string' || !availableFrom.trim()) return null;
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(availableFrom.trim());
+  const ms = day
+    ? Date.UTC(Number(day[1]), Number(day[2]) - 1, Number(day[3])) - 5.5 * 60 * 60 * 1000
+    : new Date(availableFrom).getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+const launchDayFmt = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' });
+
+function assertLaunched(startMs: number, availableFrom: unknown, name: string): void {
+  const launch = launchStartMs(availableFrom);
+  if (launch != null && startMs < launch) {
+    throw new HttpsError(
+      'failed-precondition',
+      `${name} rentals start from ${launchDayFmt.format(new Date(launch))} — pick a time from then onwards.`
+    );
+  }
+}
+
 function validLatLng(lat: unknown, lng: unknown): { lat: number; lng: number } | null {
   if (typeof lat !== 'number' || typeof lng !== 'number') return null;
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
@@ -402,6 +424,10 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
         throw new HttpsError('not-found', `Combo ${line.name || line.experienceId} not found`);
       }
       const expData = expSnap.data()!;
+      for (const pid of (expData?.productIds ?? []) as string[]) {
+        const inner = (await db.collection('products').doc(pid).get()).data();
+        assertLaunched(startAt.getTime(), inner?.availableFrom, String(inner?.shortName || inner?.name || pid));
+      }
       const plans = (expData?.plans ?? []) as { id?: string; hours?: number; price?: number }[];
       const expAddons = (expData?.addons ?? []) as {
         id: string;
@@ -454,7 +480,8 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     if (!snap.exists) {
       throw new HttpsError('not-found', `Product ${line.productId} not found`);
     }
-    const product = snap.data() as FnProduct;
+    const product = snap.data() as FnProduct & { availableFrom?: string; shortName?: string };
+    assertLaunched(startAt.getTime(), product.availableFrom, product.shortName || line.name || line.productId);
     const expected = expectedLineTotal(product, line);
     const client = lineClientTotal(line);
     if (Math.abs(expected - client) > 1) {

@@ -123,6 +123,8 @@ export interface Product {
   requirements?: string[];
   popular?: boolean;
   featured?: boolean;
+  /** Pre-book launch: rentals can't start before this IST day ("YYYY-MM-DD"). */
+  availableFrom?: string;
 }
 
 export interface Experience {

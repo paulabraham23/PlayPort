@@ -43,6 +43,7 @@ import { calcCartTotals } from '@/utils/format';
 import { experienceImage } from '@/utils/images';
 import { isInServiceArea, OUT_OF_AREA_MESSAGE, OUT_OF_AREA_TITLE } from '@/utils/serviceArea';
 import { isAsapAvailable, isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
+import { formatLaunchDay, orderNotBefore } from '@/utils/launch';
 import { formatFunctionsError } from '@/utils/functionsError';
 import { isPlaceholderName } from '@/utils/onboarding';
 import {
@@ -773,7 +774,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Pickups run 8 AM – midnight too, so the whole window must end in service hours.
     const now = new Date();
     const hours = Math.max(1, ...cart.map((c) => c.hours ?? 3));
-    const scheduledOk = isValidScheduledStart(scheduledStartAt, now, hours);
+    const catalog = useCatalogStore.getState();
+    const notBefore = orderNotBefore(cart, catalog.products, catalog.experiences, now);
+    const scheduledOk = isValidScheduledStart(scheduledStartAt, now, hours, notBefore);
+    if (notBefore && !scheduledOk) {
+      return {
+        ok: false,
+        error: `Your cart has a pre-book item — pick a time from ${formatLaunchDay(notBefore)} onwards.`,
+      };
+    }
     if (scheduledStartAt && !scheduledOk) {
       return {
         ok: false,

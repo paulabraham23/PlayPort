@@ -15,11 +15,13 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors, fonts, radii, spacing, typeScale } from '@/constants/theme';
+import { useOrderNotBefore } from '@/hooks/useOrderNotBefore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore, useCartTotals } from '@/store/appStore';
 import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
+import { formatLaunchDay } from '@/utils/launch';
 import { isInServiceArea } from '@/utils/serviceArea';
 import { formatSlot, formatWindow, isAsapAvailable, isValidScheduledStart } from '@/utils/serviceHours';
 
@@ -34,8 +36,9 @@ export default function CheckoutScreen() {
   const totals = useCartTotals();
   const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
   const maxHours = Math.max(1, ...cart.map((c) => c.hours ?? 3));
-  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), maxHours);
-  const timingOk = scheduledValid || (!scheduledStartAt && isAsapAvailable(new Date(), maxHours));
+  const notBefore = useOrderNotBefore();
+  const scheduledValid = isValidScheduledStart(scheduledStartAt, new Date(), maxHours, notBefore);
+  const timingOk = scheduledValid || (!scheduledStartAt && isAsapAvailable(new Date(), maxHours, notBefore));
   const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
   const deliverable = Boolean(address) && isInServiceArea(address);
   const orderingPaused = useCatalogStore((s) => s.orderingPaused);
@@ -178,6 +181,11 @@ export default function CheckoutScreen() {
                 {timingOk ? (
                   <Text style={styles.timingValue}>
                     Rider heads out after payment — live minutes on Track once accepted.
+                  </Text>
+                ) : notBefore ? (
+                  <Text style={styles.timingWarn}>
+                    Your cart has a pre-book item. Go back to the cart and pick a time from{' '}
+                    {formatLaunchDay(notBefore)} onwards.
                   </Text>
                 ) : (
                   <Text style={styles.timingWarn}>

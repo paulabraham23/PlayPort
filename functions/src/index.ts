@@ -14,6 +14,7 @@ import {
   normalizeFnProduct,
   priceForAddon,
   priceForHourly,
+  productForStart,
   type FnCartItem,
   type FnProduct,
 } from './rentalPricing';
@@ -482,7 +483,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     }
     const product = snap.data() as FnProduct & { availableFrom?: string; shortName?: string };
     assertLaunched(startAt.getTime(), product.availableFrom, product.shortName || line.name || line.productId);
-    const expected = expectedLineTotal(product, line);
+    const expected = expectedLineTotal(productForStart(product, startAt.getTime()), line);
     const client = lineClientTotal(line);
     if (Math.abs(expected - client) > 1) {
       throw new HttpsError(
@@ -1177,7 +1178,7 @@ async function computeExtensionQuote(orderId: string, extraHours: number) {
     if (pid) {
       const pSnap = await db.collection('products').doc(pid).get();
       if (pSnap.exists) {
-        const product = pSnap.data() as FnProduct;
+        const product = productForStart(pSnap.data() as FnProduct, new Date(order.startAt).getTime());
         lineExt += extensionKitPrice(product, extraHours) * share;
         const catalog = normalizeFnProduct(product).addons ?? [];
         for (const extra of (it as { extras?: string[] }).extras ?? []) {

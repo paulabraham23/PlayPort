@@ -34,7 +34,28 @@ export type FnProduct = {
   hourly?: FnHourly | null;
   addons?: FnAddon[];
   priceByDuration?: Record<string, number>;
+  /** Rentals starting on/after `from` (IST day "YYYY-MM-DD") use these plans. */
+  priceChange?: { from: string; plans: FnRentalPlan[] } | null;
 };
+
+/** "YYYY-MM-DD" = 12:00 AM IST that day; full ISO strings as-is. Mirrors utils/serviceHours launchStart. */
+export function istDayStartMs(value: unknown): number | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  const ms = day
+    ? Date.UTC(Number(day[1]), Number(day[2]) - 1, Number(day[3])) - 5.5 * 60 * 60 * 1000
+    : new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+/** The product as priced for a rental starting at `startMs`. Mirrors utils/priceChange productForStart. */
+export function productForStart<T extends FnProduct>(product: T, startMs: number): T {
+  const change = product.priceChange;
+  if (!change?.plans?.length) return product;
+  const from = istDayStartMs(change.from);
+  if (from == null || startMs < from) return product;
+  return { ...product, plans: change.plans };
+}
 
 export type FnCartAddon = {
   id: string;

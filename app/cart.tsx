@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown';
 import { QuantitySelector } from '@/components/cart/QuantitySelector';
@@ -25,6 +25,7 @@ import { useCatalogStore } from '@/store/catalogStore';
 import { ensureLoggedIn } from '@/utils/authGate';
 import { formatINR } from '@/utils/format';
 import { formatLaunchDay } from '@/utils/launch';
+import { productForStart } from '@/utils/priceChange';
 import {
   formatSlot,
   formatWindow,
@@ -35,10 +36,17 @@ import {
 import { addonsTotal, experiencePlans, isControllerAddon, normalizeProduct } from '@/utils/rentalPricing';
 import type { CartItem, Experience, Product, RentalPlan } from '@/types';
 
-function plansForCartItem(item: CartItem, products: Product[], experiences: Experience[]): RentalPlan[] {
+function plansForCartItem(
+  item: CartItem,
+  products: Product[],
+  experiences: Experience[],
+  startIso: string | null
+): RentalPlan[] {
   if (item.productId) {
     const product = products.find((p) => p.id === item.productId);
-    return product ? normalizeProduct(product).plans.filter((plan) => plan.hours > 0) : [];
+    return product
+      ? normalizeProduct(productForStart(product, startIso)).plans.filter((plan) => plan.hours > 0)
+      : [];
   }
   if (item.experienceId) {
     const experience = experiences.find((e) => e.id === item.experienceId);
@@ -66,6 +74,10 @@ export default function CartScreen() {
   const now = useMemo(() => new Date(), []);
   const open = isServiceOpen(now);
   const notBefore = useOrderNotBefore();
+  const refreshCartPrices = useAppStore((s) => s.refreshCartPrices);
+  useEffect(() => {
+    refreshCartPrices();
+  }, [products, refreshCartPrices]);
 
   const locationLabel =
     hub?.city && hub.city !== '—' ? hub.city : 'Your hub';
@@ -285,7 +297,7 @@ export default function CartScreen() {
             <Text style={styles.note}>each kit keeps its own package</Text>
           </View>
           {cart.map((item) => {
-            const plans = plansForCartItem(item, products, experiences);
+            const plans = plansForCartItem(item, products, experiences, scheduledStartAt);
             if (!plans.length) return null;
             return (
               <View key={item.id} style={styles.hoursCard}>

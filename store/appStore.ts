@@ -44,6 +44,7 @@ import { experienceImage } from '@/utils/images';
 import { isInServiceArea, OUT_OF_AREA_MESSAGE, OUT_OF_AREA_TITLE } from '@/utils/serviceArea';
 import { isAsapAvailable, isServiceOpen, isValidScheduledStart } from '@/utils/serviceHours';
 import { formatLaunchDay, orderNotBefore } from '@/utils/launch';
+import { productForStart, repriceCartForStart } from '@/utils/priceChange';
 import { formatFunctionsError } from '@/utils/functionsError';
 import { isPlaceholderName } from '@/utils/onboarding';
 import {
@@ -142,6 +143,8 @@ interface AppState {
 
   selectAddress: (id: string) => void;
   setScheduledStartAt: (iso: string | null) => void;
+  /** Re-price cart lines for the chosen start (scheduled price changes). */
+  refreshCartPrices: () => void;
   refreshDeliveryQuote: () => Promise<DeliveryQuote | null>;
   addAddress: (address: Omit<Address, 'id'>) => Promise<string>;
   updateAddress: (id: string, patch: Partial<Address>) => void;
@@ -434,7 +437,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   addProductToCart: (productId, options = {}) => {
     const raw = useCatalogStore.getState().products.find((p) => p.id === productId);
     if (!raw) return;
-    const product = normalizeProduct(raw);
+    const product = normalizeProduct(productForStart(raw, get().scheduledStartAt));
     const quantity = options.quantity ?? 1;
     const pricingMode: PricingMode = options.pricingMode ?? 'package';
     const plan =
@@ -621,7 +624,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (!c.productId) return c;
         const raw = products.find((p) => p.id === c.productId);
         if (!raw) return c;
-        const product = normalizeProduct(raw);
+        const product = normalizeProduct(productForStart(raw, get().scheduledStartAt));
         const pricingMode = patch.pricingMode ?? c.pricingMode ?? 'package';
         const planId =
           pricingMode === 'hourly'
@@ -670,7 +673,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   selectAddress: (id) => set({ selectedAddressId: id }),
 
-  setScheduledStartAt: (iso) => set({ scheduledStartAt: iso }),
+  setScheduledStartAt: (iso) => {
+    set({ scheduledStartAt: iso });
+    get().refreshCartPrices();
+  },
+
+  refreshCartPrices: () => {
+    const { cart, scheduledStartAt } = get();
+    const next = repriceCartForStart(cart, useCatalogStore.getState().products, scheduledStartAt);
+    if (next === cart) return;
+    set({ cart: next });
+    get().syncCartRemote();
+  },
 
   refreshDeliveryQuote: async () => {
     const { addresses, selectedAddressId, user, deliveryQuote } = get();
@@ -803,6 +817,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     const startAt = scheduledOk
       ? new Date(scheduledStartAt as string).toISOString()
       : new Date(now.getTime() + 45 * 60 * 1000).toISOString();
+    if (!pendingOrderId && repriceCartForStart(cart, catalog.products, startAt, now) !== cart) {
+      get().refreshCartPrices();
+      return { ok: false, error: 'Prices changed for your chosen time — check the new total and pay again.' };
+    }
 
     const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
     if (!address?.line1 && !address?.area) {

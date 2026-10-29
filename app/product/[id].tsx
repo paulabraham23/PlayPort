@@ -28,6 +28,7 @@ import { formatINR } from '@/utils/format';
 import { isValidScheduledStart } from '@/utils/serviceHours';
 import { firstDisplayableImage } from '@/utils/images';
 import { formatLaunchDay, upcomingLaunch } from '@/utils/launch';
+import { productForStart, upcomingPriceChange } from '@/utils/priceChange';
 import {
   addonsTotal,
   computeAddonLines,
@@ -74,7 +75,10 @@ export default function ProductDetailScreen() {
   const showToast = useFeelStore((s) => s.showToast);
 
   const product = products.find((p) => p.id === id);
-  const normalized = product ? normalizeProduct(product) : null;
+  const priceStart = scheduledValid ? scheduledStartAt : null;
+  const normalized = product ? normalizeProduct(productForStart(product, priceStart)) : null;
+  const priceChangeOn = product ? upcomingPriceChange(product) : null;
+  const priceChangeApplies = Boolean(priceChangeOn && priceStart && new Date(priceStart) >= priceChangeOn);
   const initialPlan = product ? defaultPlan(product) : null;
 
   const [mode, setMode] = useState<PricingMode>('package');
@@ -211,6 +215,16 @@ export default function ProductDetailScreen() {
           <Ionicons name="rocket-outline" size={16} color={colors.playportOrange} />
           <Text style={styles.launchText}>
             Pre-book now · rentals start from {formatLaunchDay(launch)}
+          </Text>
+        </View>
+      ) : null}
+      {priceChangeOn ? (
+        <View style={styles.launchNote}>
+          <Ionicons name="pricetag-outline" size={16} color={colors.playportOrange} />
+          <Text style={styles.launchText}>
+            {priceChangeApplies
+              ? `Showing prices for rentals from ${formatLaunchDay(priceChangeOn)}`
+              : `New prices from ${formatLaunchDay(priceChangeOn)} — schedule a slot from then to see them`}
           </Text>
         </View>
       ) : null}

@@ -11,6 +11,8 @@ import { colors, fonts, gradients, radii, shadows, spacing, typeScale, webShadow
 import { formatINR } from '@/utils/format';
 import { firstDisplayableImage } from '@/utils/images';
 import { formatLaunchDay, upcomingLaunch } from '@/utils/launch';
+import { productForStart, upcomingPriceChange } from '@/utils/priceChange';
+import { useAppStore } from '@/store/appStore';
 import { defaultPlan, normalizeProduct } from '@/utils/rentalPricing';
 import type { InventoryUnit, Product } from '@/types';
 
@@ -194,7 +196,12 @@ export function ProductCard({
   fill,
   showUnitOptions = true,
 }: Props) {
-  const normalized = normalizeProduct(product);
+  const scheduledStartAt = useAppStore((s) => s.scheduledStartAt);
+  const normalized = normalizeProduct(productForStart(product, scheduledStartAt));
+  const priceChangeOn = upcomingPriceChange(product);
+  const priceChangeApplies = Boolean(
+    priceChangeOn && scheduledStartAt && new Date(scheduledStartAt) >= priceChangeOn
+  );
   const plans = normalized.plans.filter((plan) => plan.hours > 0);
   const [planId, setPlanId] = useState(defaultPlan(normalized)?.id ?? plans[0]?.id ?? '');
   const [unitId, setUnitId] = useState(units[0]?.id);
@@ -338,7 +345,14 @@ export function ProductCard({
             {product.shortName}
           </Text>
           <Text style={styles.unitChip}>
-            {launch ? `Rentals from ${formatLaunchDay(launch)}` : 'Setup included'} · {planLabel}
+            {launch
+              ? `Rentals from ${formatLaunchDay(launch)}`
+              : priceChangeOn
+                ? priceChangeApplies
+                  ? `${formatLaunchDay(priceChangeOn)}+ price`
+                  : `New prices from ${formatLaunchDay(priceChangeOn)}`
+                : 'Setup included'}{' '}
+            · {planLabel}
           </Text>
         </View>
       </PressableScale>

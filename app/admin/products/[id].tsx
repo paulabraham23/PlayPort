@@ -71,6 +71,8 @@ export default function AdminProductEditScreen() {
   const [unitNumber, setUnitNumber] = useState('001');
   const [form, setForm] = useState<Product>(EMPTY);
   const [plans, setPlans] = useState<RentalPlan[]>(EMPTY.plans);
+  const [changeFrom, setChangeFrom] = useState('');
+  const [changePrices, setChangePrices] = useState<Record<string, string>>({});
   const [hourly, setHourly] = useState<ProductHourlyRate>(
     EMPTY.hourly ?? { enabled: false, firstHourPrice: 0, extraHourPrice: 0, maxHours: 24 }
   );
@@ -96,6 +98,8 @@ export default function AdminProductEditScreen() {
     if (isNew) {
       setForm(EMPTY);
       setPlans(EMPTY.plans);
+      setChangeFrom('');
+      setChangePrices({});
       setHourly(EMPTY.hourly!);
       setAddons([]);
       setControllerPerHour('');
@@ -118,6 +122,10 @@ export default function AdminProductEditScreen() {
         const n = normalizeProduct({ ...EMPTY, ...p });
         setForm({ ...EMPTY, ...n, badge: n.badge ?? '', compareAtPrice: n.compareAtPrice });
         setPlans(n.plans.length ? n.plans : EMPTY.plans);
+        setChangeFrom(p.priceChange?.from ?? '');
+        setChangePrices(
+          Object.fromEntries((p.priceChange?.plans ?? []).map((pl) => [pl.id, String(pl.price)]))
+        );
         setHourly(
           n.hourly ?? { enabled: false, firstHourPrice: 0, extraHourPrice: 0, maxHours: 24 }
         );
@@ -211,6 +219,20 @@ export default function AdminProductEditScreen() {
       setError('Pre-book launch date must look like 2026-11-19');
       return;
     }
+    const changeDay = changeFrom.trim();
+    if (changeDay && !/^\d{4}-\d{2}-\d{2}$/.test(changeDay)) {
+      setError('Price change date must look like 2026-11-19');
+      return;
+    }
+    const priceChange = changeDay
+      ? {
+          from: changeDay,
+          plans: cleanedPlans.map((p) => ({
+            ...p,
+            price: Math.max(0, num(changePrices[p.id] ?? '') || p.price),
+          })),
+        }
+      : null;
     const perHour = Math.max(0, num(controllerPerHour));
     const flatPrice = Math.max(0, num(controllerFlat));
     const tiers = controllerTiers
@@ -246,6 +268,7 @@ export default function AdminProductEditScreen() {
         // '' (not undefined) so clearing it overwrites the merged doc.
         availableFrom: form.availableFrom?.trim() ?? '',
         plans: cleanedPlans,
+        priceChange,
         hourly: hourly.enabled
           ? {
               enabled: true,
@@ -479,6 +502,40 @@ export default function AdminProductEditScreen() {
           </Pressable>
         </View>
       ))}
+
+      <Text style={adminStyles.cardTitle}>Scheduled price change</Text>
+      <Text style={[adminStyles.subtitle, { marginBottom: spacing.sm }]}>
+        Rentals starting on or after this day use the new prices below — including pre-bookings made now.
+        Leave the date empty for no change.
+      </Text>
+      <View style={adminStyles.field}>
+        <Text style={adminStyles.label}>New prices from (YYYY-MM-DD)</Text>
+        <TextInput
+          style={adminStyles.input}
+          value={changeFrom}
+          onChangeText={setChangeFrom}
+          placeholder="2026-11-19"
+          autoCapitalize="none"
+          placeholderTextColor={colors.mutedText}
+        />
+      </View>
+      {changeFrom.trim()
+        ? plans.map((plan) => (
+            <View key={`change-${plan.id}`} style={[adminStyles.row, { marginBottom: 8 }]}>
+              <Text style={[adminStyles.label, { flex: 1, marginBottom: 0 }]}>
+                {plan.label} (now ₹{plan.price})
+              </Text>
+              <TextInput
+                style={[adminStyles.input, { flex: 1 }]}
+                keyboardType="numeric"
+                value={changePrices[plan.id] ?? ''}
+                onChangeText={(t) => setChangePrices((prev) => ({ ...prev, [plan.id]: t }))}
+                placeholder={`New ₹ (blank = ₹${plan.price})`}
+                placeholderTextColor={colors.mutedText}
+              />
+            </View>
+          ))
+        : null}
 
       <Text style={adminStyles.cardTitle}>Hourly rates</Text>
       <View style={[adminStyles.row, { marginBottom: spacing.md }]}>

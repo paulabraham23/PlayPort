@@ -125,6 +125,13 @@ export interface Product {
   featured?: boolean;
   /** Pre-book launch: rentals can't start before this IST day ("YYYY-MM-DD"). */
   availableFrom?: string;
+  /** Scheduled price change: rentals starting on/after `from` (IST day) use these plans. */
+  priceChange?: ProductPriceChange | null;
+}
+
+export interface ProductPriceChange {
+  from: string;
+  plans: RentalPlan[];
 }
 
 export interface Experience {

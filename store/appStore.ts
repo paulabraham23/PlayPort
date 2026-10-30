@@ -33,6 +33,7 @@ import {
   callConfirmPayment,
   callCreateBooking,
   callCreateRazorpayOrder,
+  callGeocodeAddress,
   callQuoteDelivery,
   type DeliveryQuote,
 } from '@/lib/functions';
@@ -690,6 +691,19 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { addresses, selectedAddressId, user, deliveryQuote } = get();
     const address = addresses.find((a) => a.id === selectedAddressId) ?? addresses[0];
     const key = deliveryQuoteKey(address);
+    if (address && !key && get().isAuthenticated) {
+      // No map pin: place one from the typed address so delivery can be priced.
+      set({ deliveryQuote: null, deliveryQuoteStatus: 'loading', deliveryQuoteError: null });
+      const text = [address.line1, address.line2, address.area, address.city || 'Hyderabad', address.pincode]
+        .filter(Boolean)
+        .join(', ');
+      const found = await callGeocodeAddress(text).catch(() => null);
+      const current = get().addresses.find((a) => a.id === address.id);
+      if (found?.point && current && !deliveryQuoteKey(current)) {
+        get().updateAddress(address.id, { lat: found.point.lat, lng: found.point.lng });
+        return get().refreshDeliveryQuote();
+      }
+    }
     if (!address || !key) {
       set({ deliveryQuote: null, deliveryQuoteStatus: address ? 'needsPin' : 'idle', deliveryQuoteError: null });
       return null;

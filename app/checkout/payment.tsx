@@ -178,8 +178,8 @@ export default function PaymentScreen() {
           <Text style={styles.summaryNote}>{deliveryLine}</Text>
           <Text style={styles.summaryNote}>
             {isCod
-              ? 'Taxes included · pay the rider in cash or UPI at handover'
-              : 'Taxes included · pay only what you see'}
+              ? 'Pay the rider in cash or UPI at handover'
+              : 'Pay only what you see'}
           </Text>
         </View>
 

@@ -46,15 +46,15 @@ describe('searchProducts', () => {
 });
 
 describe('calcCartTotals', () => {
-  it('sums lines with addons, applies 5% tax, counts quantity', () => {
+  it('sums lines with addons, adds no tax, counts quantity', () => {
     const t = calcCartTotals([
       { unitPrice: 449, quantity: 1 },
       { unitPrice: 150, quantity: 2, addons: [{ unitPrice: 100, quantity: 1 }] },
     ]);
-    // (449) + ((150 + 100) * 2) = 949 items; tax = round(949 * .05) = 47
+    // (449) + ((150 + 100) * 2) = 949 items
     expect(t.itemsTotal).toBe(949);
-    expect(t.taxes).toBe(47);
-    expect(t.total).toBe(996);
+    expect(t.taxes).toBe(0);
+    expect(t.total).toBe(949);
     expect(t.count).toBe(3);
   });
   it('prefers explicit addonsTotal and handles empty carts', () => {

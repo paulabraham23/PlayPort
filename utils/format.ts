@@ -84,7 +84,7 @@ export function calcCartTotals(
       (item.addons ?? []).reduce((s, a) => s + a.unitPrice * a.quantity, 0);
     return sum + (item.unitPrice + extras) * item.quantity;
   }, 0);
-  const taxes = items.length ? Math.round(itemsTotal * 0.05) : 0;
+  const taxes = 0;
   const sanitization = 0;
   const delivery = items.length ? Math.max(0, Math.round(deliveryFee)) : 0;
   const deposit = 0;

@@ -24,11 +24,11 @@ describe('deliveryFeeForKm (free ≤ 5 km, then ₹7/km on all 4 trips)', () => 
 });
 
 describe('calcCartTotals with delivery', () => {
-  it('adds delivery after tax and skips it for an empty cart', () => {
-    const t = calcCartTotals([{ unitPrice: 499, quantity: 1 }], 21);
-    expect(t.taxes).toBe(25);
-    expect(t.delivery).toBe(21);
-    expect(t.total).toBe(499 + 25 + 21);
-    expect(calcCartTotals([], 21).total).toBe(0);
+  it('adds delivery to the items and skips it for an empty cart', () => {
+    const t = calcCartTotals([{ unitPrice: 499, quantity: 1 }], 168);
+    expect(t.taxes).toBe(0);
+    expect(t.delivery).toBe(168);
+    expect(t.total).toBe(499 + 168);
+    expect(calcCartTotals([], 168).total).toBe(0);
   });
 });

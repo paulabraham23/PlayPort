@@ -300,6 +300,15 @@ export type ReverseGeocodeResult = {
   state?: string;
 };
 
+export async function callGeocodeAddress(address: string) {
+  const fn = httpsCallable<
+    { address: string },
+    { point: { lat: number; lng: number } | null; approximate?: boolean }
+  >(functions, 'geocodeAddress');
+  const res = await fn({ address });
+  return res.data;
+}
+
 export async function callReverseGeocode(input: { lat: number; lng: number }) {
   const fn = httpsCallable<typeof input, { address: ReverseGeocodeResult | null }>(functions, 'reverseGeocode');
   const res = await fn(input);

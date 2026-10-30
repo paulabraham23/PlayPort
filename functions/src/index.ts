@@ -508,7 +508,7 @@ export const createBooking = onCall({ region: REGION }, async (request) => {
     );
   }
   const delivery = await deliveryQuoteFor(hubId, dropoff);
-  const expectedTaxes = Math.round(expectedSubtotal * 0.05);
+  const expectedTaxes = 0;
   const expectedTotal = expectedSubtotal + expectedTaxes + delivery.fee;
   if (typeof total === 'number' && Math.abs(expectedTotal - total) > 1) {
     throw new HttpsError(
@@ -1228,7 +1228,7 @@ async function computeExtensionQuote(orderId: string, extraHours: number) {
   }
 
   extSubtotal = Math.round(extSubtotal);
-  const taxes = Math.round(extSubtotal * 0.05);
+  const taxes = 0;
   const total = extSubtotal + taxes;
   return { order, ref, oldEndMs, newEndMs, newEndIso, extSubtotal, taxes, total, perItem, unitIds, reservationIds };
 }
@@ -1944,6 +1944,37 @@ export const placeDetails = onCall({ region: REGION }, async (request) => {
  * Pin → address (incl. pincode). Runs server-side because Google refuses
  * reverse geocoding with the app's website-restricted browser key.
  */
+/** Typed address → map point, for addresses saved without a pin (so delivery can be priced). */
+export const geocodeAddress = onCall({ region: REGION }, async (request) => {
+  requireAuth(request.auth?.uid);
+  const text = String((request.data as { address?: string } | undefined)?.address ?? '')
+    .trim()
+    .slice(0, 300);
+  if (text.length < 5) throw new HttpsError('invalid-argument', 'address required');
+  const key = googleMapsApiKey.value();
+  if (!key) throw new HttpsError('failed-precondition', 'Maps API key not configured');
+
+  // Bias to Hyderabad; components keeps results inside India.
+  const url =
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(text)}` +
+    `&components=country:IN&region=in&bounds=17.20,78.20|17.60,78.75&key=${key}`;
+  const data = (await (await fetch(url)).json()) as {
+    status?: string;
+    error_message?: string;
+    results?: Array<{ geometry?: { location?: { lat: number; lng: number }; location_type?: string }; partial_match?: boolean }>;
+  };
+  const best = data.results?.[0];
+  const point = validLatLng(best?.geometry?.location?.lat, best?.geometry?.location?.lng);
+  if (data.status !== 'OK' || !point) {
+    logger.warn('geocodeAddress failed', { status: data.status, error: data.error_message });
+    return { point: null };
+  }
+  return {
+    point,
+    approximate: best?.geometry?.location_type === 'APPROXIMATE' || best?.partial_match === true,
+  };
+});
+
 export const reverseGeocode = onCall({ region: REGION }, async (request) => {
   requireAuth(request.auth?.uid);
   const { lat, lng } = (request.data || {}) as { lat?: number; lng?: number };

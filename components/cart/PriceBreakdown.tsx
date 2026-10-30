@@ -48,10 +48,10 @@ export function PriceBreakdown({
       {deposit > 0 ? (
         <Row label="Refundable Security Deposit" value={formatINR(deposit)} />
       ) : null}
-      <Row label="Government Taxes" value={formatINR(taxes)} />
+      {taxes > 0 ? <Row label="Government Taxes" value={formatINR(taxes)} /> : null}
       <View style={styles.divider} />
       <Row label="Total Payable" value={formatINR(total)} strong valueColor={colors.playportOrange} />
-      <Text style={styles.note}>Taxes included · no hidden fees</Text>
+      <Text style={styles.note}>No hidden fees</Text>
     </View>
   );
 }

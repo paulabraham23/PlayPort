@@ -198,7 +198,7 @@ export default function ExtendOrderScreen() {
 
         <Text style={styles.sectionTitle}>Add more hours</Text>
         <Text style={styles.sectionSub}>
-          Priced from the same hour packages · prices include tax and any extra controllers
+          Priced from the same hour packages · prices include any extra controllers
         </Text>
         <View style={styles.grid}>
           {OPTIONS.map((h) => {
@@ -260,7 +260,7 @@ export default function ExtendOrderScreen() {
                 </View>
               ))}
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Extension total (incl. tax)</Text>
+                <Text style={styles.totalLabel}>Extension total</Text>
                 <Text style={styles.totalValue}>{formatINR(quote.total)}</Text>
               </View>
             </View>
